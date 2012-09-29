@@ -3,6 +3,11 @@
 #  - display_name line
 #  - <description> ... </description>
 
+# To do:
+# handle Uxxx in IMML
+# ignore comment anywhere (.*--) 
+# Handle a folder hierarchy of probes
+
 import os
 import sys
 import re
@@ -33,10 +38,6 @@ def outputdisplayname(path, infile):
 			return
 
 # Emit good HTML code for this line
-# To do:
-# Uxxx
-# * in first column could be <li>
-# ignore comment anywhere (.*--) 
 
 def htmlize(aLine):
 	
