@@ -1,12 +1,12 @@
 display_name = "Test/Blah blah blah"
 <description>
 1
-2 take the form "domain\\user" for a domain login.  [Should Be (sb) single backslash in final]
+2 take the form "domain\\user" for a domain login.  [Should Be (sb) two backslashes in final; IMML processing will remove one.]
 3 You may enter \${ADDRESS} ...
 4 You may enter \${ADDRESS} and \${PORT} will  [Backslash shoud remain - it escapes the ${...} macro to prevent it from being processed by IMML in the description.]
-4 Testing "# of objects" - [should retain the octothorpe]
-5 All kinds of underlined: a \u2\BlitzMail\p0\ server ... see \U2\http://www.nagios.org\P0\ defined in \U2=http://www.ietf.org/rfc/rfc1034.txt\RFC 1034\p0\ [sb simple underline, link & text is "www.nagios.org", link is different from text]
-6 ... in a \u4=http://dartware.com/support/users/probes.html#tableviewer\single zip archive.\p0\ [Note: octothorpe in middle of URL]
+4 Testing "# of objects" - [should retain the pound sign]
+5 All kinds of underlines: a \u2\BlitzMail\p0\ server ... see \U2\http://www.nagios.org\P0\ defined in \U2=http://www.ietf.org/rfc/rfc1034.txt\RFC 1034\p0\ [sb simple underline, link & text is "www.nagios.org", link is different from text]
+6 ... in a \u4=http://dartware.com/support/users/probes.html#tableviewer\single zip archive.\p0\ [Note: pound sign in middle of URL]
 7 \m-\  command[check_swap]=/usr/local/nagios/libexec/check_swap -w 20% -c 10%\g+\ [sb monospaced]
 8 \g0i++\For APC UPS devices that have the AP961x Network Management Card.\p--\ [sb italics]
 9 \bG3\Bugs or Requests? \p\\iG3\\U=mailto:upsbundle@dartware.com\Please contact us.\p\\pM0\ ["Bugs or requests" sb bold; URL sb italics]
@@ -14,12 +14,13 @@ display_name = "Test/Blah blah blah"
 - Second bullet
 * Third bullet
 * Fourth bullet
+9 Prop \g0\Prop, too \m0\mono\g0\ prop \m0\ mono
 10 blah blah blah \m\Code code code [next line should be proportional space]
 11 The probe waits to receive a "RFB ###.###" string. 
-12 
-13 
-14 
-15 
+12 Evil URLs: \u2\http://example.com/mgmgm\p\ \u2\http://example.com/mgmg\p\ \u2\http://example.com/gmgmg\p\ \u2\http://example.com/gmgm\p\ 
+13 and more... \u2=http://example.com/mgmgm\http://example.com/mgmgm\p\ \u2=http://example.com/mgmg\http://example.com/mgmg\p\ \u2=http://example.com/gmgmg\http://example.com/gmgmg\p\ \u2=http://example.com/gmgm\http://example.com/gmgm\p\ 
+14 Evil URLs: \mu2\http://example.com/mgmgm\p\ \um2\http://example.com/mgmg\p\ \u2m\http://example.com/gmgmg\p\ \u2m\http://example.com/gmgm\p\ 
+15 and more... \u2m=http://example.com/mgmgm\http://example.com/mgmgm\p\ \um2=http://example.com/mgmg\http://example.com/mgmg\p\ \g\and back to prop:  \mu2=http://example.com/gmgmg\http://example.com/gmgmg\p\ \mu2=http://example.com/gmgm\http://example.com/gmgm\p\ 
 16 
 17 \b\Looking for Bold strings\p\ 
 18 \B\Looking for Bold strings\P\ 
