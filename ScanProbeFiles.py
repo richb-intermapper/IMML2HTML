@@ -23,11 +23,28 @@ closepTag 	= '</p>'
 liTag		= '<li class="proberef">'
 closeliTag 	= '</li>'
 
-def StripLineEndings(aLine):
+def CleanLineEndings(aLine):
 	aLine = aLine.replace(crlf, "")      # remove crlf
 	aLine = aLine.replace(cr, "")         # remove cr
 	aLine = aLine.replace(lf, "")         # remove lf
 	return aLine
+	
+# Clean up markup string
+# remove the tag (M or G), and +, -, 0-9
+def CleanMarkup(markup, urlString, tag):
+	result = markup
+	chars = set("0123456789+-" + tag)
+	i = 0
+	while i < len(result):
+		if result[i] in chars:
+			result = result[:i] + result[(i+1):]
+		else:
+			i += 1
+	result = result + urlString
+	if result != "":
+		result = "`" + result + "`"
+	# print "Cleaned markup: '" + markup + "|" + result + "' <br />"
+	return result
 	
 # Get the meta-info about the probe:
 # - display_name
@@ -48,7 +65,7 @@ def GetProbeMetaInfo(path, infile):
 			break
 		bLine = aLine.lower()
 		if dispPat.search(bLine) is not None:
-			displayName = StripLineEndings(aLine)
+			displayName = CleanLineEndings(aLine)
 #			print "Found Display Name*****:" + infile + ": " + aLine
 		if versPat.search(bLine) is not None:
 #			print "Found Version*****"
@@ -86,16 +103,18 @@ def IMMLtoHTML(aLine):
 			if inMarkup:				# if we're already within markup
 				inMarkup = False		# this is the end
 				# Time to output the markup
-				s = markup.lower() 		# get the markup before any "="
+				markup = markup.lower() # make lower case
 				#print "Markup, looking for m: '" + s + "'<br />"
-				if s.find("m") != -1:	# found a "m" that's not in a URL
+				if markup.find("m") != -1:	# found a "m" that's not in a URL
 					inMono = True
-					cLine += "`" + markup + urlStr + "`<code>"
-				elif s.find("g") != -1: # Found a "g" not in a URL
+					markup = CleanMarkup(markup, urlStr, "m")
+					cLine += markup + "<code>"
+				elif markup.find("g") != -1: # Found a "g" not in a URL
+					markup = CleanMarkup(markup, urlStr, "g")
 					if inMono:			# if we're in mono run, terminate it
 						cLine += "</code>"
 						inMono = False	# and remember that we're not
-					cLine += "`" + markup + + urlStr + "`"
+					cLine += markup
 				else:					# regular markup
 					cLine += "`" + markup + urlStr + "`"
 				c = markup = urlStr = "" # and clear accumulated markup 
@@ -119,15 +138,16 @@ def IMMLtoHTML(aLine):
 		cLine += "`" + markup			# append any accumulated markup
 	if inMono:
 		cLine += "</code>"				# 
-	#print "End result: [" + markup + "]" + cLine + "<br />"
+	# print "End result: [" + markup + "]" + cLine + "<br />"
 
 # Set up constant regular expressions
- 	bPat =  re.compile("`[-+b0-9mg]+?`(.*?)`[-+P0-9mg]+?`", re.I)		# bold text
- 	iPat =  re.compile("`[-+i0-9mg]+?`(.*?)`[-+P0-9mg]+?`", re.I)		# italic text
- 	ibPat = re.compile("`[-+ib0-9mg]+?`(.*?)`[-+P0-9mg]+?`", re.I)		# italic & bold
- 	uPat =  re.compile("`[-+u0-9mgib]+?`(.*?)`[-+P0-9mg]+?`", re.I)		# just underlined text
- 	uhPat = re.compile("`[-+u0-9mgib]+?`(http)(.*?)`[-+P0-9mg]+?`", re.I) # URL between markup
- 	uePat = re.compile("`[-+u0-9mgib]+?=(.*?)`(.*?)`[-+P0-9mg]+?`", re.I) # URL within markup
+ 	bPat =  re.compile("`[-+b0-9]+?`(.*?)`[-+P0-9]+?`", re.I)		# bold text
+ 	iPat =  re.compile("`[-+i0-9]+?`(.*?)`[-+P0-9]+?`", re.I)		# italic text
+ 	ibPat = re.compile("`[-+ib0-9]+?`(.*?)`[-+P0-9]+?`", re.I)		# italic & bold
+ 	uPat =  re.compile("`[-+u0-9ib]+?`(.*?)`[-+P0-9]+?`", re.I)		# just underlined text
+ 	uhPat = re.compile("`[-+u0-9ib]+?`(http)(.*?)`[-+P0-9]+?`", re.I) # URL between markup
+ 	uePat = re.compile("`[-+u0-9ib]+?=(.*?)`(.*?)`[-+P0-9]+?`", re.I) # URL within markup
+ 	pPat =  re.compile("`[-+p0-9]+?`(.*?)`[-+P0-9]+?`", re.I)		# \p\ ... \p\
 
 #	cLine = re.sub(mPat,  r"<code>\1</code>", cLine) 		# monospace
 	cLine = re.sub(iPat,  r"<i>\1</i>", cLine) 				# italics
@@ -136,6 +156,8 @@ def IMMLtoHTML(aLine):
 	cLine = re.sub(uePat, r'<a href="\1">\2</a>', cLine)	# u=... (has URL within markup)
 	cLine = re.sub(uhPat, r'<a href="\1\2">\1\2</a>', cLine)	# u with URL (markup brackets URL)
 	cLine = re.sub(uPat,  r'<u>\1</u>', cLine)				# u... (underlined text)
+	cLine = re.sub(pPat,  r'\1', cLine)						# \p\ ... \p\ is a no-op
+
 	if cLine[0] == "*" or cLine[0] == "-":			# bullet-ish character at front of line
 		cLine = cLine[1:]
 		cLine = liTag + cLine + closeliTag			# wrap in <li> ... </li> tags
@@ -149,7 +171,7 @@ def GetProbeDescription(path, infile):
 	resultstr = ""
 	while notDone:
 		aLine = f.readline()
-		aLine = StripLineEndings(aLine)
+		aLine = CleanLineEndings(aLine)
 		if aLine == "":
 			break
 		#print "Next line: '" + aLine + "'"
@@ -186,19 +208,18 @@ def ProcessProbeFile(path, ifile):
 # 	Output the information in the proper format
 
 # Print heading info with date
-today = str(datetime.date.today())
+# today = str(datetime.date.today())
+# print pTag
+# print "<h1>InterMapper Builtin Probe Reference</h1>"
+# print "<i>Updated: " + today + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>"
+# print closepTag
 
-print pTag
-print "<h1>InterMapper Builtin Probe Reference</h1>"
-print "<i>Updated: " + today + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>"
-print closepTag
+# path = './'
+# infile = 'testtags.txt'
+# ProcessProbeFile(path, infile)
 
-path = './'
-infile = 'testtags.txt'
-ProcessProbeFile(path, infile)
+path = '/Users/richb/Desktop/Newstuff/BuiltinProbes/'
+listing = os.listdir(path)
 
-# path = '/Users/richb/Desktop/Newstuff/BuiltinProbes/'
-# listing = os.listdir(path)
-# 
-# for infile in listing:
-# 	ProcessProbeFile(path, infile)
+for infile in listing:
+	ProcessProbeFile(path, infile)

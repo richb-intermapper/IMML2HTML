@@ -17,11 +17,9 @@ display_name = "Test/Blah blah blah"
 9 Prop \g0\Prop, too \m0\mono\g0\ prop \m0\ mono
 10 blah blah blah \m\Code code code [next line should be proportional space]
 11 The probe waits to receive a "RFB ###.###" string. 
-12 Evil URLs: \u2\http://example.com/mgmgm\p\ \u2\http://example.com/mgmg\p\ \u2\http://example.com/gmgmg\p\ \u2\http://example.com/gmgm\p\ 
-13 and more... \u2=http://example.com/mgmgm\http://example.com/mgmgm\p\ \u2=http://example.com/mgmg\http://example.com/mgmg\p\ \u2=http://example.com/gmgmg\http://example.com/gmgmg\p\ \u2=http://example.com/gmgm\http://example.com/gmgm\p\ 
-14 Evil URLs: \mu2\http://example.com/mgmgm\p\ \um2\http://example.com/mgmg\p\ \u2m\http://example.com/gmgmg\p\ \u2m\http://example.com/gmgm\p\ 
-15 and more... \u2m=http://example.com/mgmgm\http://example.com/mgmgm\p\ \um2=http://example.com/mgmg\http://example.com/mgmg\p\ \g\and back to prop:  \mu2=http://example.com/gmgmg\http://example.com/gmgmg\p\ \mu2=http://example.com/gmgm\http://example.com/gmgm\p\ 
-16 
+12 Evil URLs should be prop: \u2\http://example.com/mgmgm\p\ \u2\http://example.com/mgmg\p\ \u2\http://example.com/gmgmg\p\ \u2\http://example.com/gmgm\p\ 
+13 and more prop... \u2=http://example.com/mgmgm\http://example.com/mgmgm\p\ \u2=http://example.com/mgmg\http://example.com/mgmg\p\ \u2=http://example.com/gmgmg\http://example.com/gmgmg\p\ \u2=http://example.com/gmgm\http://example.com/gmgm\p\ 
+16 [This line should be prop spacing]
 17 \b\Looking for Bold strings\p\ 
 18 \B\Looking for Bold strings\P\ 
 19 \b\Looking for Bold strings\P\ 
