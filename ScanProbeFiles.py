@@ -15,13 +15,13 @@ import re
 import datetime
 import time
 
-crlf    = "\r\n"
-cr = "\r"
-lf = "\n"
-pTag = '<p class="proberef">'
-closepTag = '</p>'
-liTag = '<li class="proberef">'
-closeliTag = '</li>'
+crlf    	= "\r\n"
+cr 			= "\r"
+lf 			= "\n"
+pTag 		= '<p class="proberef">'
+closepTag 	= '</p>'
+liTag		= '<li class="proberef">'
+closeliTag 	= '</li>'
 
 def StripLineEndings(aLine):
 	aLine = aLine.replace(crlf, "")      # remove crlf
