@@ -74,33 +74,40 @@ def IMMLtoHTML(aLine):
 #	switch to monospace and follow by with '<code>'
 # when we encounter closing \...g...\, precede with </code> and continue on
 
-	bLine = ""
+	bLine = aLine.replace("\\", "#")	# convert '\' to '#' for parsing
+	cLine = ""
 	inMarkup = False
 	inMono = False
 	markup = ""
 	for c in aLine:
-		if c == "#":				# start/end markup section
-			if inMarkup:			# if we're already within markup
-				inMarkup = False	# this is the end
+		if c == "#":					# start/end markup section
+			if inMarkup:				# if we're already within markup
+				inMarkup = False		# this is the end
 				s = markup.lower()	
 				if s.find("m") != -1:	# found a "m"
 					inMono = True
-					bLine += "#" + markup + "#<code>"
+					cLine += "#" + markup + "#<code>"
 				elif s.find("g") != -1: # Found a "g"
-					if inMono:		# if we're in mono run, terminate it
-						bLine += "</code>"
-					bLine += "#" + markup + "#"
+					if inMono:			# if we're in mono run, terminate it
+						cLine += "</code>"
+						inMono = False	# and remember that we're not
+					cLine += "#" + markup + "#"
 				else:					# regular markup
-					bLine += "#" + markup + "#"
-				markup = ""			# and clear accumulated markup 
+					cLine += "#" + markup + "#"
+				c = markup = ""			# and clear accumulated markup 
 			else:
-				inMarkup = True		# we're starting the markup
-				markup= ""			# clear accumulator
-		elif inMarkup:				# Not a "#" but we're in markup
-			markup += c				# add to markup
+				inMarkup = True			# we're starting the markup
+				markup= ""				# clear accumulator
+		elif inMarkup:					# Not a "#" but we're in markup
+			markup += c					# add to markup; don't output it
 		else:
-			bLine += c				# append the character to the output string
-	bLine += markup					# append any accumulated markup
+			cLine += c					# append the character to the output string
+		#print "[" + markup + "]" + cLine + "<br />"
+	#print "End result: [" + markup + "]" + cLine + "<br />"
+	if markup != "":
+		cLine += "#" + markup			# append any accumulated markup
+	if inMono:
+		cLine += "</code>"				# 
 
 # Set up constant regular expressions
  	bPat =  re.compile("#[-+B0-9mg]+?#(.*?)#[-+P0-9mg]+?#", re.I)		# bold text
@@ -110,7 +117,6 @@ def IMMLtoHTML(aLine):
  	uhPat = re.compile("#[-+u0-9mgi]+?#(http)(.*?)#[-+P0-9mg]+?#", re.I) # URL between markup
  	uePat = re.compile("#[-+u0-9mgi]+?=(.*?)#(.*?)#[-+P0-9mg]+?#", re.I) # URL within markup
 
-	cLine = bLine.replace("\\", "#")						# convert '\' to '#' for parsing
 #	cLine = re.sub(mPat,  r"<code>\1</code>", cLine) 		# monospace
 	cLine = re.sub(ibPat, r"<b><i>\1</i></b>", cLine) 		# bold italics
 	cLine = re.sub(iPat,  r"<i>\1</i>", cLine) 				# italics
