@@ -60,7 +60,8 @@ def GetProbeMetaInfo(path, infile):
 	return (displayName, infile, version)
 
 # Emit attractive HTML code for this line
-#  replace lonely "#" with "\" after processing the line
+# Replace all "\" with "`" for ease of RE processing
+# Put back all backslashes when complete
 
 def IMMLtoHTML(aLine):
 	
@@ -74,48 +75,48 @@ def IMMLtoHTML(aLine):
 #	switch to monospace and follow by with '<code>'
 # when we encounter closing \...g...\, precede with </code> and continue on
 
-	bLine = aLine.replace("\\", "#")	# convert '\' to '#' for parsing
+	bLine = aLine.replace("\\", "`")	# convert '\' to '`' for parsing
 	cLine = ""
 	inMarkup = False
 	inMono = False
 	markup = ""
 	for c in aLine:
-		if c == "#":					# start/end markup section
+		if c == "`":					# start/end markup section
 			if inMarkup:				# if we're already within markup
 				inMarkup = False		# this is the end
 				s = markup.lower()	
 				if s.find("m") != -1:	# found a "m"
 					inMono = True
-					cLine += "#" + markup + "#<code>"
+					cLine += "`" + markup + "`<code>"
 				elif s.find("g") != -1: # Found a "g"
 					if inMono:			# if we're in mono run, terminate it
 						cLine += "</code>"
 						inMono = False	# and remember that we're not
-					cLine += "#" + markup + "#"
+					cLine += "`" + markup + "`"
 				else:					# regular markup
-					cLine += "#" + markup + "#"
+					cLine += "`" + markup + "`"
 				c = markup = ""			# and clear accumulated markup 
 			else:
 				inMarkup = True			# we're starting the markup
 				markup= ""				# clear accumulator
-		elif inMarkup:					# Not a "#" but we're in markup
+		elif inMarkup:					# Not a "`" but we're in markup
 			markup += c					# add to markup; don't output it
 		else:
 			cLine += c					# append the character to the output string
 		#print "[" + markup + "]" + cLine + "<br />"
 	#print "End result: [" + markup + "]" + cLine + "<br />"
 	if markup != "":
-		cLine += "#" + markup			# append any accumulated markup
+		cLine += "`" + markup			# append any accumulated markup
 	if inMono:
 		cLine += "</code>"				# 
 
 # Set up constant regular expressions
- 	bPat =  re.compile("#[-+B0-9mg]+?#(.*?)#[-+P0-9mg]+?#", re.I)		# bold text
- 	iPat =  re.compile("#[-+i0-9mg]+?#(.*?)#[-+P0-9mg]+?#", re.I)		# italic text
- 	ibPat = re.compile("#[-+ib0-9mg]+?#(.*?)#[-+P0-9mg]+?#", re.I)		# italic & bold
- 	uPat =  re.compile("#[-+u0-9mgi]+?#(.*?)#[-+P0-9mg]+?#", re.I)		# just underlined text
- 	uhPat = re.compile("#[-+u0-9mgi]+?#(http)(.*?)#[-+P0-9mg]+?#", re.I) # URL between markup
- 	uePat = re.compile("#[-+u0-9mgi]+?=(.*?)#(.*?)#[-+P0-9mg]+?#", re.I) # URL within markup
+ 	bPat =  re.compile("`[-+B0-9mg]+?`(.*?)`[-+P0-9mg]+?`", re.I)		# bold text
+ 	iPat =  re.compile("`[-+i0-9mg]+?`(.*?)`[-+P0-9mg]+?`", re.I)		# italic text
+ 	ibPat = re.compile("`[-+ib0-9mg]+?`(.*?)`[-+P0-9mg]+?`", re.I)		# italic & bold
+ 	uPat =  re.compile("`[-+u0-9mgi]+?`(.*?)`[-+P0-9mg]+?`", re.I)		# just underlined text
+ 	uhPat = re.compile("`[-+u0-9mgi]+?`(http)(.*?)`[-+P0-9mg]+?`", re.I) # URL between markup
+ 	uePat = re.compile("`[-+u0-9mgi]+?=(.*?)`(.*?)`[-+P0-9mg]+?`", re.I) # URL within markup
 
 #	cLine = re.sub(mPat,  r"<code>\1</code>", cLine) 		# monospace
 	cLine = re.sub(ibPat, r"<b><i>\1</i></b>", cLine) 		# bold italics
@@ -127,7 +128,7 @@ def IMMLtoHTML(aLine):
 	if cLine[0] == "*" or cLine[0] == "-":			# bullet-ish character at front of line
 		cLine = cLine[1:]
 		cLine = liTag + cLine + closeliTag			# wrap in <li> ... </li> tags
-#	cLine = cLine.replace("#", "\\")				# finally put back bare '\'s
+#	cLine = cLine.replace("`", "\\")				# finally put back bare '\'s
 	return cLine + closepTag + lf + pTag	
 
 def GetProbeDescription(path, infile):
