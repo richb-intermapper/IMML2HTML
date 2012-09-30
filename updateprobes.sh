@@ -16,11 +16,11 @@
 # categories.txt - a file with the category names at the beginning of the line
 
 python ScanProbeFiles.py > probedescr.txt
-# pcregrep -M -e display_name -e '(?s)(<description>\s*?.*?<\/description>)' * > ~/Desktop/Junk/probedescr.xml
+# pcregrep -M -e '(?s)(<header>\s*?.*?<\/header>)' -e '(?s)(<description>\s*?.*?<\/description>)' * > ~/Documents/src/Probe->HTML/probesections.txt
 # cd ~/Desktop/Junk/
 python PrefixWithCategory.py < probedescr.txt > categories.txt
 sort -t"|" -k1,1 -k2n,2 < categories.txt \
-  |	sed -e 's/^\(.*\):\|1\|\(.*\)/<h2>\1<\/h2> <i>Filename: \2<\/i>/' \
+  |	sed -e 's/^\(.*\):\|1\|\(.*\)/<h2>\1<\/h2> /' \
   |	sed -e 's/^.*:\|[0-9]*\|/	/' > cleancategories.html
 
 
