@@ -245,13 +245,12 @@ def ProcessProbeFile(path, ifile):
 #     Retrieve the <definitions> section
 #     Output the information in the proper format
 
-
 # Print heading info with date
-# today = str(datetime.date.today())
-# print pTag
-# print "<h1>InterMapper Builtin Probe Reference</h1>"
-# print "<i>Updated: " + today + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>"
-# print closepTag
+today = str(datetime.date.today())
+print ":|1|"
+print ":|2|<description>"
+print ":|3|<h1>InterMapper Builtin Probe Documentation</h1>"
+print ":|4|<i>Updated: " + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>"
 
 # path = './'
 # infile = 'com.dartware.email.imap.txt'
