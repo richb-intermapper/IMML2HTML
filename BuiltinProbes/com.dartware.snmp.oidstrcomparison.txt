@@ -1,0 +1,109 @@
+<!--
+	Test an OID for Equality (com.dartware.snmp.oidcomparison.txt)
+    Custom Probe for InterMapper (http://www.intermapper.com)
+    Please feel free to use this as a base for further development.
+
+	 3 Jul 2007 Modified from Single OID Viewer -reb
+	 5 May 2008 Added autorecord section -cls
+	22 Apr 2009 Added clear-exists flag to handle the case where the variable doesn't
+	            exist anymore, and clean up messages to identify that situation. -dns
+	 4 Sep 2012 Change autorecord to datasets section. -jpd
+
+	You can read the Developer Guide to learn more about InterMapper Probes. It's at:
+		http://intermapper.com/go.php?to=intermapper.devguide
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"snmp.oidstrcomparison"
+	"human_name"	=	"SNMP - String Comparison"
+	"version"		=	"1.8"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"display_name"	=	"SNMP/String Comparison"
+	"flags"			=	"Minimal"
+</header>
+
+<snmp-device-properties>
+	nomib2="true"
+	pdutype="get-request"
+	clear-exists="true"
+</snmp-device-properties>
+
+<description>
+\GB\Comparison Probe\P\
+
+This probe retrieves a single SNMP MIB variable, compares it to a specified value, and sets the device's severity based on the comparison. It also displays the value in the Status Window.
+
+\ib\Variable\p\ specifies the MIB name or OID for the value to retrieve. If you have imported the MIB for this device, you may enter the symbolic name for this value, otherwise, simply enter its OID here. 
+
+\ib\Test\p\ set the dropdown to indicate whether to alarm if the device is equal/not equal to the \ib\Value\p\ parameter. 
+
+\ib\Value\p\ is the value to compare against.
+
+\ib\Severity\p\ for the device if the comparison isn't as expected. 
+
+\bi\Legend\p\ is a text string used to identify the variable in the status window and any strip charts. If left blank, the variable's name or OID will be used.
+
+\bi\Units\p\ is an optional text string that will be displayed next to the value in the Status Window. You can use it for the unit of measure (packets/sec, degrees, etc.) 
+
+\bi\Tag\p\ is a short text string that identifies a particular class of dataset. Tags will be used to correlate different variables from different probes that describe the same thing, such as CPU% or temperature.
+</description>
+
+-- Parameters are user-settable values that the probe uses for its comparisons.
+-- Specify the default values here. The customer can change them and they will be retained for each device.
+
+<parameters>
+	"Variable"								=	"ifNumber.0"
+	"Test[Equal,NotEqual]"					=	"NotEqual"
+	"Value"									=	""
+	"Severity[Critical,Alarm,Warning]"		=	"Warning"
+	"Legend"								=	""
+	"Units"									=	""
+	"Tag"									=	"exampletag"
+</parameters>
+
+-- Specify the variable name, its OID, a format (usually DEFAULT) and a short description.
+-- CALCULATION variables are computed from other values already retrieved from the device.
+
+<snmp-device-variables>
+
+	theLegend,	$Legend != "" ? "$Legend" : "$Variable",	CALCULATION,	"Legend/OID"
+	theOID,		$Variable,									DEFAULT,		"$theLegend"
+
+	checkNE,	${Test[Equal,NotEqual]} == "NotEqual",		CALCULATION,	"checkNE"
+	checkEQ,	${Test[Equal,NotEqual]} == "Equal",			CALCULATION,	"checkEQ"
+
+	goCRIT,		${Severity[Critical,Alarm,Warning]} == "Critical",	CALCULATION,	"goCRIT"
+	goALRM,		${Severity[Critical,Alarm,Warning]} == "Alarm",		CALCULATION,	"goALRM"
+	goWARN,		${Severity[Critical,Alarm,Warning]} == "Warning",	CALCULATION,	"goWARN"
+
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+
+	okay:		$checkEQ && !defined("theOID")					"$theLegend is undefined (not equal to anything)"
+
+	critical:	$goCRIT && $checkNE && !defined("theOID")		"$theLegend is undefined (not equal to $Value)"
+	critical:	$goCRIT && $checkNE && ("$theOID" != "$Value")	"$theLegend is $theOID (not equal to $Value)"
+	critical:	$goCRIT && $checkEQ && ("$theOID" == "$Value")	"$theLegend is equal to $Value"
+
+	alarm:		$goALRM && $checkNE && !defined("theOID")		"$theLegend is undefined (not equal to $Value)"
+	alarm:		$goALRM && $checkNE && ("$theOID" != "$Value")	"$theLegend is $theOID (not equal to $Value)"
+	alarm:		$goALRM && $checkEQ && ("$theOID" == "$Value")	"$theLegend is equal to $Value"
+
+	warning:	$goWARN && $checkNE && !defined("theOID")		"$theLegend is undefined (not equal to $Value)"
+	warning:	$goWARN && $checkNE && ("$theOID" != "$Value")	"$theLegend is $theOID (not equal to $Value)"
+	warning:	$goWARN && $checkEQ && ("$theOID" == "$Value")	"$theLegend is equal to $Value"
+
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Comparison Probe\0P\  
+   Value of $theLegend is $theOID \3G\$Units\mp0\ (Expected $Value)
+</snmp-device-display>
+
+<datasets>
+	$theOID, "$Tag", "$Units", "true", "$Legend"
+</datasets>

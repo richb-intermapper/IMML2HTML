@@ -1,0 +1,31 @@
+<!-- 
+	HTTP (Authenticate) (com.dartware.tcp.http.auth)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.http.auth"
+	human_name		=	"HTTP (Authenticate)"
+	version			= 	"1.8"
+	address_type	= 	"IP"
+	port_number		=	"80"
+
+	flags			= 	"INVISIBLE"	# Not visible in probe type menu
+
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8013"
+
+	# Refer lookups for "com.dartware.tcp.http.auth" to "com.dartware.tcp.http"...
+	
+	referto			= 	"com.dartware.tcp.http"
+
+	display_name	=	"Servers-Standard/HTTP & HTTPS/HTTP (Authenticate)"
+	url_hint		=	"http://${ADDRESS}:${PORT}/"
+</header>
+
+<datasets>
+  $_connect,	'conntime',   "msec",   "true",   "Time to establish connection"
+  $_active,   'connactive', "msec",   "true",   "Time spent connected to host"
+</datasets>

@@ -1,0 +1,129 @@
+ <!--
+	Wireless - Trango P5830S (remote) (com.dartware.wrls.trango24)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 22 January 2004 ics,
+	Updates:
+           9 July 2004 by ics
+           9/9/05  rk fixed no snmp response problem for firmware 1.11 (date 9/30/04). Added more info and alarms.
+           10/7/05 rk added upper/lower bound for in chartables for unii/ism tx power, temperature, and rssi values
+-->
+
+<header>
+	"type"				=	"custom-snmp"
+	"package"			=	"com.dartware"
+	"probe_name"		=	"wrls.trangoP5830SRU"
+	"human_name"		=	"Wireless - Trango P5830S (remote)"
+	"display_name" 		=	"Wireless/Trango/Trango P5830S (remote)"
+	"version"			=	"1.6"
+	"address_type"		=	"IP"
+	"port_number"		=	"161"
+	"equiv_class"		= 	"WRLS"
+	"FLAGS"             =   "NOLINKS"
+</header>
+
+<snmp-device-properties>
+nomib2="true"
+</snmp-device-properties>
+
+<description>
+\GB\Trango P5830S Remote Unit\P\
+
+This probe monitors a \u2=http://www.trangobroadband.com\Trango\p0\ P5830S remote unit with firmware version 1.11 (040930) or later. 
+
+It retrieves and displays a number of traffic, physical, and radio status variables. It can go into alarm or warning based on user-defined parameters for transmit power, incoming traffic on the radio interface, and temperature. (This probe calculates counters without using sysUpTime, which isn't available.)
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later. In InterMapper 4.4, please make sure that you use SNMPv1 to query the device.
+
+</description>
+
+<parameters>
+	"Tx power too low alarm"		=	"-85"
+	"Tx power low warning"			=	"-75"
+	"RSSI too low alarm"			=	"-85"
+	"RSSI low warning"			=	"-75"
+	"Too Hot alarm"				=	"60"
+	"Hot warning"				=	"55"
+	"Too Cold alarm"			=	"-40"
+	"Cold warning"				=	"-20"
+	"RF High Traffic Bytes/sec alarm"	=	"100000000"
+	"RF High Traffic Bytes/sec warning"	=	"90000000"
+	"Eth High Traffic Bytes/sec alarm"	=	"100000000"
+	"Eth High Traffic Bytes/sec warning"	=	"90000000"
+</parameters>
+
+<snmp-device-variables>
+	rutrafficEthInOctets, 	1.3.6.1.4.1.5454.1.24.1.9.1.0 , 	PER-SECOND, 	"Ethernet In Octets"
+	rutrafficEthOutOctets, 	1.3.6.1.4.1.5454.1.24.1.9.2.0 , 	PER-SECOND, 	"Ethernet Out Octets"
+
+	rutrafficRfInOctets, 	1.3.6.1.4.1.5454.1.24.1.9.3.0 , 	PER-SECOND, 	"RF In Octets"
+	rutrafficRfOutOctets, 	1.3.6.1.4.1.5454.1.24.1.9.4.0 , 	PER-SECOND, 	"RF Out Octets"
+	rusysTemperature, 	1.3.6.1.4.1.5454.1.24.1.10.0 , 		INTEGER, 	"Temperature"
+
+	rurfRSSI,		1.3.6.1.4.1.5454.1.24.2.1.0,		INTEGER,	"Remote unit RSSI (in dBm)."
+	ruismTxPowerMax,	1.3.6.1.4.1.5454.1.24.2.5.1.0,		INTEGER,	"The maximum ISM Tx power value can be set (in dBm)."
+	ruismTxPowerMin,	1.3.6.1.4.1.5454.1.24.2.5.2.0,		INTEGER,	"The minimum ISM Tx power value can be set (in dBm)."	
+	ruismTxPower,		1.3.6.1.4.1.5454.1.24.2.5.3.0,		INTEGER,	"ISM RF tx power (in dBm), excluding the antenna gain."
+	ruuniiTxPowerMax,	1.3.6.1.4.1.5454.1.24.2.6.1.0,		INTEGER,	"The maximum UNII Tx power value can be set (in dBm)."
+	ruuniiTxPowerMin,	1.3.6.1.4.1.5454.1.24.2.6.2.0,		INTEGER,	"The minimum UNII Tx power value can be set (in dBm)."
+	ruuniiTxPower,		1.3.6.1.4.1.5454.1.24.2.6.3.0,		INTEGER,	"UNII RF tx power (in dBm), excluding the antenna gain"
+	mibinfoVersion,		1.3.6.1.4.1.5454.1.24.5.1.0,		STRING,		"MIB version"
+	ruversionFW,		1.3.6.1.4.1.5454.1.24.1.1.2.0,		STRING,		"Firmware vesion string, format <code version>H<hardware version>D<date>"
+	fwVersion,		"$ruversionFW" =~ "(.+)H.+"; "${1}",	CALCULATION,	"Firmware version"
+	fwDate,			"$ruversionFW" =~ ".+D(......)"; "${1}",	CALCULATION,	"Firmware date"
+	rusysDeviceId,		1.3.6.1.4.1.5454.1.24.1.2.0,		STRING,		"Device sysid"
+	macAddrStr,		sprintf("%a", "$rusysDeviceId"),	CALCULATION,		"MAC Address"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm:		$ruismTxPower < ${Tx power too low alarm}	"ISM Transmit power too low"
+	alarm:		$ruuniiTxPower < ${Tx power too low alarm}	"UNII Transmit power too low"
+
+	alarm:		$ruismTxPower < $ruismTxPowerMin		"ISM Transmit power is lower than the minimum for the device"
+	alarm:		$ruismTxPower > $ruismTxPowerMax		"ISM Transmit power is higher than the maximum for the device"
+
+	alarm:		$ruuniiTxPower < $ruuniiTxPowerMin		"UNII Transmit power is lower than the minimum for the device"
+	alarm:		$ruuniiTxPower > $ruuniiTxPowerMax		"UNII Transmit power is higher than the maximum for the device"
+
+	alarm: 		$rusysTemperature > ${Too Hot alarm} 		"Too Hot"
+	alarm: 		$rusysTemperature < ${Too Cold alarm}	 	"Too Cold"
+
+
+	alarm:		$rurfRSSI < ${RSSI too low alarm}		"RSSI too low"
+	alarm:		$rutrafficRfInOctets > ${RF High Traffic Bytes/sec alarm} or $rutrafficRfOutOctets > ${RF High Traffic Bytes/sec alarm}	"RF Traffic Too High"
+	alarm:		$rutrafficEthInOctets > ${Eth High Traffic Bytes/sec alarm} or $rutrafficEthOutOctets > ${Eth High Traffic Bytes/sec alarm}	"Eth Traffic Too High"
+
+	warning:	$rutrafficEthInOctets > ${Eth High Traffic Bytes/sec warning} or $rutrafficEthOutOctets > ${Eth High Traffic Bytes/sec warning}	"Eth Traffic High"
+	warning:	$rutrafficRfInOctets > ${RF High Traffic Bytes/sec warning} or $rutrafficRfOutOctets > ${RF High Traffic Bytes/sec warning}	"RF Traffic High"
+
+	warning:	$ruismTxPower < ${Tx power low warning} 	"ISM Transmit power low"
+	warning:	$ruuniiTxPower < ${Tx power low warning} 	"UNII Transmit power low"
+
+	warning:	$rusysTemperature > ${Hot warning} 		"Hot"
+	warning:	$rusysTemperature < ${Cold warning} 		"Cold"
+
+	warning:	$rurfRSSI < ${RSSI low warning}			"RSSI ow"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Trango P5830S (remote) Information\0P\
+ \4\MIB/Firmware vers:\0\  $mibinfoVersion/$fwVersion (date: $fwDate)\P0M\
+\4\     Device sys ID:\0\  $macAddrStr \P0M\
+  \4\     Temperature:\0\  ${chartable:-60:+60:#:$rusysTemperature}\3IG\° C\P0M\
+\B5\Ethernet Information\0P\
+  \4\     Ethernet In:\0\  ${chartable: #.##: $rutrafficEthInOctets} \3IG\Bytes per sec.\P0M\
+  \4\    Ethernet Out:\0\  ${chartable: #.##: $rutrafficEthOutOctets} \3IG\Bytes per sec.\P0M\
+\B5\Radio Information\0P\
+  \4\            RSSI:\0\  ${chartable:-100:+0:#:$rurfRSSI} \3IG\dBm\P0M\
+  \4\     Wireless In:\0\  ${chartable: #.##: $rutrafficRfInOctets} \3IG\Bytes per sec.\P0M\
+  \4\    Wireless Out:\0\  ${chartable: #.##: $rutrafficRfOutOctets} \3IG\Bytes per sec.\P0M\
+      \4\ISM Tx Power:\0\  ${chartable:-20:+50:#:$ruismTxPower} \3IG\dBm \P0M\(max $ruismTxPowerMax, min $ruismTxPowerMin)\P0M\
+     \4\UNII Tx Power:\0\  ${chartable:-20:+50:#:$ruuniiTxPower} \3IG\dBm \P0M\(max $ruuniiTxPowerMax, min $ruuniiTxPowerMin)\P0M\
+</snmp-device-display>
+
+<!-- Removed variable and display information:
+-->
+

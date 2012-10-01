@@ -1,0 +1,194 @@
+<!-- 
+	Wireless - smartBridge airPoint 
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. All rights reserved.
+
+	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Supports all series (Pro, XO, Indoor) and all modes of operation
+	(AP, w client, w bridge p2p and p2mp, w repeater).
+
+	Tested against: firmware version 1.4.k.5
+	Should also supports other access points based on the same Atmel AT76C510 chip.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"wrls.airptpro"
+	human_name		=	"Wireless - smartBridges airPoint"
+	display_name	=	"Wireless/smartBridges/airPoint"
+	version			= 	"1.4"
+	address_type	= 	"IP,AT"
+	equiv_class		= 	"WRLS"
+	port_number		=	"161"
+</header>
+
+
+<snmp-device-properties>
+nomib2="true"
+pdutype="get-request"
+</snmp-device-properties>
+
+<description>
+
+\GB\smartBridges airPoint\P\
+
+This probe monitors a \u2=http://www.smartbridges.com\smartBridges\p0\ airPoint device. It retrieves and displays information from the AT76C510 MIB using SNMP v1. Depending on the bridge's operating mode this probe will display different information. 
+
+If device is operating as a wireless client or a wireless repeater, the probe will display information about the connection to the parent access point (ESSID, SSID, channel, RSSI, link quality). 
+
+If the device is operating as a wireless bridge (either point-to-point or point-to-multipoint), the probe will display the list of authorized MAC addresses. 
+
+If the operating mode is a wireless repeater or access point, the probe will monitor the number of clients and list each one with its RSSI/link quality. 
+
+It retrieves and displays a number of traffic (bytes received/transmitted) and physical variables (name, MAC address, firmware revision). 
+
+This probe may not return complete information to SNMPv1 clients using the community string "public". To fully utilize this probe, you must set the community string to the one with the correct permissions.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.3 or later.
+
+Please install InterMapper on a machine where you don't plan to run smartBridges simpleMonitor. To be able to run both InterMapper and smartBridges' simpleMonitor on the same machine, you will need to disable trap processing in InterMapper.
+
+</description>
+
+<parameters>
+"Number of clients warning" = "120"
+"Maximum number of clients" = "128"
+"Too many failed packets/sec" = "100"
+"Too many retry packets/sec" = "100"
+"Link to Device Management Tool" = ""
+</parameters>
+
+<snmp-device-variables>
+PrevTime,  $CurrentTime, CALCULATION, "Prev time"
+PrevEthTx, $EthTx, CALCULATION, "Prev EthTx"
+PrevEthRx, $EthRx, CALCULATION, "Prev EthRx"
+PrevWTx, $WTx, CALCULATION, "Prev WTx"
+PrevWRx, $WRx, CALCULATION, "Prev WRx"
+PrevWFailed, $WFailed, CALCULATION, "Prev WFailed"
+PrevWRetry, $WRetry, CALCULATION, "Prev WRetry"
+
+CurrentTime, time(), CALCULATION, "Current time"
+
+<!-- operWirelessBridgeName -->
+bridgeName, 1.3.6.1.4.1.410.1.2.1.10.0, STRING, "Bridge Name str"
+
+<!-- sysDescr -->
+sysDescr, 1.3.6.1.4.1.410.1.1.1.1.0, STRING, "System description"
+
+<!-- sysDeviceInfo -->
+DeviceInfoStr, 1.3.6.1.4.1.410.1.1.1.5.0, STRING, "Device info str"
+
+<!-- EthTxStatistics -->
+EthTxStr, 1.3.6.1.4.1.410.1.1.7.2.0, STRING, "EthTxStr"
+
+<!-- WirelessStatistics -->
+WStatStr, 1.3.6.1.4.1.410.1.2.3.1.0, STRING, "WStatStr"
+
+<!-- EthRxStatistics -->
+EthRxStr, 1.3.6.1.4.1.410.1.1.7.1.0, STRING, "EthRxStr"
+
+<!-- operESSIDLength -->
+ESSIDLen, 1.3.6.1.4.1.410.1.2.1.2.0, INTEGER, "ESSID Length"
+
+<!-- operESSID -->
+ESSID, 1.3.6.1.4.1.410.1.2.1.3.0, STRING, "ESSID"
+
+<!-- operChannelID -->
+channel, 1.3.6.1.4.1.410.1.2.1.1.0, INTEGER, "Channel ID"
+
+<!-- operEthernetAddress / SSID -->
+SSID, 1.3.6.1.4.1.410.1.1.2.3.0, STRING, "SSID (MAC addr)"
+
+<!-- operPrimaryPort -->
+primaryPortID, 1.3.6.1.4.1.410.1.1.2.6.0, INTEGER, "Primary port id"
+primaryPort, $primaryPortID == 1 ? "Ethernet" : ($primaryPortID == 2? "Wireless" : "Unknown"), CALCULATION, "Primary port"
+
+<!-- associatedSTANum -->
+associatedSTANum, 1.3.6.1.4.1.410.1.2.5.1.0, INTEGER, "Number of associated stations"
+
+<!-- firmware version -->
+versionStr, "$sysDescr" =~ ".+Ver\. ([0-9\.A-Za-z]+).+"; "${1}", CALCULATION, "Version"
+
+<!-- Remove traling zeros from the name -->
+shortBridgeName, "$bridgeName" =~ "([^\\x0]*)";"${1}", CALCULATION, "Bridge Name"
+
+<!-- Product name -->
+productName, substr("$DeviceInfoStr", 56, 32) =~ "([^\\x0]*)";"${1}", CALCULATION, "Product name"
+
+<!-- min is being used to convert string to int -->
+EthRx, min(unpack(substr("$EthRxStr", 0, 4), "<L")), CALCULATION, "Eth Rx Bytes"
+EthTx, min(unpack(substr("$EthTxStr", 0, 4), "<L")), CALCULATION, "Eth Tx Bytes"
+
+UWTx, min(unpack(substr("$WStatStr", 0, 4), "<L")), CALCULATION, "Wireless Unicast Tx Bytes"
+BWTx, min(unpack(substr("$WStatStr", 4, 4), "<L")), CALCULATION, "Wireless Broadcast Tx Bytes"
+MWTx, min(unpack(substr("$WStatStr", 8, 4), "<L")), CALCULATION, "Wireless Multicast Tx Bytes"
+WTx, $UWTx + $BWTx + $MWTx, CALCULATION, "Wireless Tx Bytes"
+
+UWRx, min(unpack(substr("$WStatStr", 28, 4), "<L")), CALCULATION, "Wireless Unicast Rx Bytes"
+BWRx, min(unpack(substr("$WStatStr", 32, 4), "<L")), CALCULATION, "Wireless Broadcast Rx Bytes"
+MWRx, min(unpack(substr("$WStatStr", 36, 4), "<L")), CALCULATION, "Wireless Multicast Rx Bytes"
+WRx, $UWRx + $BWRx + $MWRx, CALCULATION, "Wireless Rx Bytes"
+
+WFailed, min(unpack(substr("$WStatStr", 72, 4), "<L")), CALCULATION, "Failed wireless packets"
+WRetry, min(unpack(substr("$WStatStr", 64, 4), "<L")), CALCULATION, "Retry wireless packets"
+
+WTotal, $WTx + $WRx, CALCULATION, "Total wireless Tx/Rx bytes"
+WPctU, ($UWRx + $UWTx) / $WTotal * 100, CALCULATION, "Pct wireless unicast traffic"
+WPctM, ($MWRx + $MWTx) / $WTotal * 100, CALCULATION, "Pct wireless multicast traffic"
+WPctB, ($BWRx + $BWTx) / $WTotal * 100, CALCULATION, "Pct wireless broadcast traffic"
+
+<!-- these statistics seem to be reset every now and then, use 0 as previous total if it has just been reset, we will
+end up having a little bit low statistic though -->
+
+EthRxRate, (($PrevEthRx <= $EthRx) ? ($EthRx - $PrevEthRx) : $EthRx)/($CurrentTime - $PrevTime), CALCULATION, "Bytes/sec received via eth"
+EthTxRate, (($PrevEthTx <= $EthTx) ? ($EthTx - $PrevEthTx) : $EthTx) /($CurrentTime - $PrevTime), CALCULATION, "Bytes/sec transmitted via eth"
+EthRate, $EthTxRate + $EthRxRate, CALCULATION, "Bytes/sec total eth"
+
+WRxRate, (($PrevWRx <= $WRx) ? ($WRx - $PrevWRx) : $WRx)/($CurrentTime - $PrevTime), CALCULATION, "Bytes/sec received via wireless"
+WTxRate, (($PrevWTx <= $WTx) ? ($WTx - $PrevWTx) : $WTx) /($CurrentTime - $PrevTime), CALCULATION, "Bytes/sec transmitted via wireless"
+WRate, $WRxRate + $WTxRate, CALCULATION, "Bytes/sec total wireless"
+
+WFailedRate, (($PrevWFailed <= $WFailed) ? ($WFailed - $PrevWFailed) : $WFailed)/($CurrentTime - $PrevTime), CALCULATION, "Failed Packets/sec"
+WRetryRate, (($PrevWRetry <= $WRetry) ? ($WRetry - $PrevWRetry) : $WRetry)/($CurrentTime - $PrevTime), CALCULATION, "Retry Packets/sec"
+
+<!-- Device management tool -->
+ToolLink, strlen("${Link to Device Management Tool}") ? sprintf("\\P0\\(\\u2=%s\\manage\\P0\\)", "${Link to Device Management Tool}") : " ", CALCULATION, "Device management tool link"
+
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+
+alarm: ${associatedSTANum} >= ${Maximum number of clients} "Maximum number of clients is reached"
+warning: ${associatedSTANum} >= ${Maximum number of clients} "Too many clients"
+alarm: ${WRetryRate} >= ${Too many retry packets/sec} "Too many retry packets transmitted/sec"
+alarm: ${WFailedRate} >= ${Too many failed packets/sec} "Too many failed packets received/sec"
+
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\${productName} Information $ToolLink\0P\
+\4\               Station name:\0\ ${shortBridgeName}\POM\
+\4\           Firmware Version:\0\ ${versionStr}\POM\
+\4\                       SSID:\0\ ${EVAL: sprintf("%a", "$SSID")}\POM\
+\4\                      ESSID:\0\ ${EVAL: substr("$ESSID", 0, $ESSIDLen)}\POM\
+\4\               Primary port:\0\ $primaryPort \POM\
+\4\                 Channel ID:\0\ $channel \POM\
+\B5\Traffic Information\0P\
+\4\                   Ethernet:\0\ $EthRate total ($EthTxRate Tx $EthRxRate Rx) bytes/sec \POM\
+\4\                   Wireless:\0\ ${WRate} total ($WTxRate Tx $WRxRate Rx) packets/sec \POM\
+\4\                            \0\ ${WRetryRate} Tx retry ${WFailedRate} Rx failed packets/sec \POM\
+\4\     Total wireless traffic:\0\ ${WPctU}% Unicast ${WPctM}% Multicast ${WPctB}% Broadcast\POM\
+<!--
+\4\           associatedSTA :\0\ ${associatedSTANum} \P0M\
+\4\           Eth               :\0\ Rx ${EthRx} Tx ${EthTx} \P0M\
+\4\           Wireless Received :\0\ U ${UWRx} M ${MWRx} B ${BWRx} \P0M\
+\4\           Wireless Trans    :\0\ U ${UWTx} M ${MWTx} B ${BWTx} \P0M\
+\4\           Wireless Err      :\0\ F ${WFailed} R ${WRetry}  \P0M\
+\4\           Wireless Err prev :\0\ F ${PrevWFailed} R ${PrevWRetry}  \P0M\
+-->
+
+</snmp-device-display>

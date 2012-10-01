@@ -1,0 +1,246 @@
+<!-- 
+Command Line WMI Probe to monitor busy processes (com.dartware.wmi.top_process) 
+Copyright (c) 2010 Dartware, LLC. All rights reserved. 
+--> 
+
+<header> 
+	type			=	"cmd-line" 
+	package			=	"com.dartware" 
+	probe_name		=	"wmi.top_process" 
+	human_name		=	"WMI Top Processes" 
+	version			=	"1.10" 
+	address_type	=	"IP"
+	display_name	=	"WMI/WMI Top Processes"
+	visible_in 		=	"Windows"
+	flags			=	"NTCREDENTIALS"	
+</header> 
+
+<description> 
+\GB\WMI Top Processes\p\ 
+
+This probe uses WMI to retrieve information about CPU utilization and processes running on the target host.  Specifically, it queries the PercentProcessorTime property of the Win32_PerfFormattedData_PerfOS_Processor class and compares it against the Warning and Critical parameters you set.  It queries the PercentProcessorTime property of the Win32_PerfFormattedData_PerfProc_Process class and lists up to five processes using the most CPU time.  Because there is a time lapse between collecting the CPU data and the process data, the reported values will not add up exactly.  The target host must be running Windows XP, Windows Server 2003 or later.
+
+The User parameter may be a local user on the target host, or may take the form of "domain\\user" for a domain login.  Leave it blank if authentication is not required, such as when the target is the localhost.
+
+InterMapper invokes the top_cpu.vbs companion script which was placed in the Tools folder of the InterMapper Settings folder when this probe was loaded.  It uses the exit value to set the condition of the device and the performance data returned by the script to create a nice display of chartable data.
+
+</description> 
+
+<parameters>
+	"Warning (%)"="60"
+	"Critical (%)"="80"
+	User=""
+	"Password*" = ""
+	"Timeout (sec)"=""
+</parameters> 
+
+
+<command-line> 
+	-- Empty path forces the InterMapper Settings:Tools directory
+	path="" 
+	cmd="${CSCRIPT} top_cpu.vbs"
+	arg="-h ${address} -w ${Warning (%)} -c ${Critical (%)}"
+	input = "${User} ${Password*}"
+	timeout = ${Timeout (sec)}
+</command-line> 
+
+<command-exit>
+	down:${EXIT_CODE}=3 
+	critical:${EXIT_CODE}=2 
+	alarm:${EXIT_CODE}=1 
+	okay:${EXIT_CODE}=0 
+</command-exit> 
+
+<command-display>
+${^stdout}
+</command-display> 
+
+<tool:top_cpu.vbs>
+' Command Line WMI Probe to find processes making excessive use of the CPU (to be used with com.dartware.wmi.top_process) 
+' Copyright (c) 2009 Dartware, LLC. All rights reserved. 
+
+
+' get args up to next switch in case there are spaces in list
+FUNCTION GetNextArg(j, nargs)
+	arg = ""
+	do until (j = nargs-1)
+		if (instr(wscript.arguments(j+1), "-") = 1) then
+			exit do
+		else
+			arg = arg & wscript.arguments(j+1)
+			j = j + 1
+		end if
+	loop
+	GetNextArg = arg
+END FUNCTION
+
+FUNCTION CheckError(reasonStr)
+	if (err.number <> 0) then
+		reasonStr = vbNewLine & reasonStr & "Error #" & CStr(Err.Number) & " " & Err.Description
+		wscript.echo "\{reason:=""" & reasonStr & """}"
+		wscript.quit(3)
+	end if
+END FUNCTION
+
+On Error Resume Next
+
+' Collect our arguments
+host = ""
+user = ""
+pass = ""
+warn = ""
+crit = ""
+verbose = False
+
+numargs = wscript.arguments.count
+for i=0 to numargs-1
+	test = wscript.arguments(i)
+	if (test = "-v") then verbose = True
+	if (test = "-host") OR (test = "-h") then
+		host = GetNextArg(i, numargs)
+	end if
+	if (test = "-user") OR (test = "-u") then
+		user = GetNextArg(i, numargs)
+	end if
+	if (test = "-pass") OR (test = "-p") then
+		pass = GetNextArg(i, numargs)
+	end if
+	if (test = "-inst") OR (test = "-i") then
+		inst = GetNextArg(i, numargs)
+	end if
+	if (test = "-warn") OR (test = "-w") then
+		warn = GetNextArg(i, numargs)
+		if (warn <> "") then warn = ccur(warn)
+	end if
+	if (test = "-crit") OR (test = "-c") then
+		crit = GetNextArg(i, numargs)
+		if (crit <> "") then crit = ccur(crit)
+	end if
+next
+
+' Read username and password from stdin
+if  not WScript.StdIn.AtEndOfStream then
+	inpStr = WScript.StdIn.ReadLine
+end if
+if verbose then wscript.echo "stdin: " & inpStr
+
+dim cred
+cred = split(inpStr, " ")
+user = cred(0)
+pass = cred(1) 
+
+if (host = "" or warn = "" or crit = "") then
+	Err.Raise vbObjectError + 1, "", "Error processing arguments"
+	CheckError("")
+end if
+
+' Connect with target via WMI
+Set objSWbemLocator = CreateObject("WbemScripting.SWbemLocator")
+CheckError("")
+
+if (user = "") or (lcase(user) = "none")then		' no authentication needed
+	Set objWMIService = GetObject("winmgmts:" & "{impersonationLevel=impersonate}!\\" & host & "\root\cimv2") 
+	CheckError("")
+else						' authenticate with user/pass
+	user = Replace(user,"\\","\")
+	Set objWMIService = objSWbemLocator.ConnectServer (host, "\root\cimv2", user, pass)
+	CheckError("")
+	objWMIService.Security_.ImpersonationLevel = 3
+end if
+
+' Get processor data
+Set colItems = objWMIService.ExecQuery("Select * from Win32_PerfFormattedData_PerfOS_Processor where Name = '_Total'",,48)
+CheckError("")
+
+For Each objItem in colItems
+    PercentProcessor = Fix(objItem.PercentProcessorTime)
+Next
+CheckError("")
+
+' Get process data
+Set colProcs = objWMIService.ExecQuery("Select * from Win32_PerfFormattedData_PerfProc_Process",,48)
+CheckError("")
+
+' Massage data
+dim top(4)
+dim Name()			' colItems.Count won't work because WMI needs to enumerate the entire collection, to slow for VBscript
+dim ProcessTime()	' the redim in a loop below looks ugly, but is the more effecient choice
+dim ProcessID()
+
+for i = 0 to 4
+	top(i) = 0
+next
+
+nP = 0
+For Each objProc in colProcs
+	if (objProc.Name <> "_Total" AND objProc.Name <> "Idle") then
+		nP = nP + 1
+		redim preserve Name(nP)
+		redim preserve ProcessTime(nP)
+		redim preserve ProcessID(nP)
+	
+		Name(nP) = objProc.Name
+		ProcessTime(nP) = ccur(objProc.PercentProcessorTime)
+		ProcessID(nP) = objProc.IDProcess
+		
+		for i = 0 to 4
+			if (ProcessTime(nP) > ProcessTime(top(i))) then
+				l = 4
+				do until (l = i)
+					top(l) = top(l-1)
+					l = l - 1
+				loop
+				top(i) = nP
+				exit for
+			end if
+		next
+	end if
+Next
+CheckError("")
+
+' Evaluate criteria to set returncode
+if (PercentProcessor > crit) then 
+	returncode = 2
+	reason = "CPU utilization is above " & crit & " %"
+elseif (PercentProcessor > warn) then 
+	returncode = 1
+	reason = "CPU utilization is above " & warn & " %"
+else
+	returncode = 0
+	reason = "CPU utilization is below " & warn & " %"
+end if
+
+' Build data output
+output= "\{"
+for n=0 to 4
+	if (ProcessTime(top(n)) > 0) then
+		output = output & "ProcessTime" & n & ":=" & formatnumber(ProcessTime(top(n)),1,vbTrue,vbFalse,vbFalse) & ","
+	end if
+next
+
+' Add CPU utilization
+output = output & "CPU:=" & formatnumber(PercentProcessor,1,vbTrue,vbFalse,vbFalse) & ","
+
+' Set reason based on returncode
+output = output & "reason:=""" & reason & """}"
+
+wscript.echo output & "\B5\WMI Top Processes\0P\"
+output = "  \B4\CPU Utilization:\P0\"
+pad = 34-len(output)
+if (PercentProcessor < 100) then pad = pad + 1
+if (PercentProcessor < 10) then pad = pad + 1
+wscript.echo output & space(pad) & "$CPU %"
+
+for n=0 to 4
+	if (ProcessTime(top(n)) > 0) then
+		output = "    \B4\" & Name(top(n)) & "(" & ProcessID(top(n)) & ")\P0\"
+		pad = 34-len(output)
+		if (ProcessTime(top(n)) < 100) then pad = pad + 1
+		if (ProcessTime(top(n)) < 10) then pad = pad + 1
+		wscript.echo output & space(pad) & "$ProcessTime" & n & " %"
+	end if
+next
+
+' Done
+wscript.quit(returncode)
+</tool:top_cpu.vbs>

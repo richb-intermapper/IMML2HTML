@@ -1,0 +1,25 @@
+<!-- 
+	Non-Polling (com.dartware.nonpolling)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"nonpolling"
+	human_name		=	"Non-Polling"
+	version			= 	"1.5"
+	address_type	= 	"IP,AT,DART"	# IP, AppleTalk, or Dartmouth node number
+	equiv_class		= 	"NONE"			# Non-polling equivalency
+
+	old_protocol	= 	"9"				# Backward compat. with old numbering scheme.
+	old_script		= 	"0"
+
+	display_name	=	"Miscellaneous/Non-Polling"
+</header>
+
+<description>
+\GB\Non-Polling\P\
+
+The Non-polling probe does not cause any action to occur. This probe is often used as a placeholder for a device, because this probe does not count against the number of devices being monitored.
+</description>

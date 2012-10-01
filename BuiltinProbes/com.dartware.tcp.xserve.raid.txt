@@ -1,0 +1,1184 @@
+<!-- 
+	Xserve RAID (com.dartware.tcp.xserve.raid)
+	Copyright (c) 2007 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.xserve.raid"
+	human_name		=	"Xserve RAID"
+	version			= 	"1.9"
+	address_type		= 	"IP"
+	port_number		=	"80"
+	display_name		=	"Servers-Proprietary/Apple/Xserve/Xserve RAID"
+</header>
+
+<description>
+
+\GB\Xserve RAID Probe\P\
+
+This TCP probe queries an \U2=http://www.apple.com/xserve/raid/\Xserve RAID\P0\ for various details using the RAID Admin port and protocol.
+
+Status information is requested from the Xserve RAID via a series of HTTP POSTs. The server responds with XML data that is then parsed by the probe.
+
+\i\Password\p\ is the monitoring password used for RAID Admin.
+
+</description>
+
+<!--
+The password is XOR'ed against a string of bytes.  We can copy the 256-byte string, or discover the algorithm used to calculate it.  Each successive 16 bytes differ from the previous and subsequent 16 by the same few bits (one nibble per byte).
+I wonder if it a simple 16-byte number that is then permuted through an algorithm for each successive 16-byte block and the algorithm repeats every 256 bytes.  It could even be a number with less than 16 bytes.
+
+Here is the 256-byte key:
+390e 05f8 01c4 4f55 ac0c 7d85 8a86 17b5
+093e 35c8 31f4 7f65 9c3c 6db5 9a96 07a5
+192e 25d8 21e4 6f75 8c2c 9da5 6a66 f755
+e9de d528 d114 9f85 7cdc 8d55 7a76 e745
+f9ce c538 c104 8f95 6ccc bd45 4a46 d775
+c9fe f508 f134 bfa5 5cfc ad75 5a56 c765
+d9ee e518 e124 afb5 4cec dd65 2a26 b715
+a99e 9568 9154 dfc5 3c9c cd15 3a36 a705
+b98e 8578 8144 cfd5 2c8c fd05 0a06 9735
+89be b548 b174 ffe5 1cbc ed35 1a16 8725
+99ae a558 a164 eff5 0cac 1d25 eae6 77d5
+695e 55a8 5194 1f05 fc5c 0dd5 faf6 67c5
+794e 45b8 4184 0f15 ec4c 3dc5 cac6 57f5
+497e 7588 71b4 3f25 dc7c 2df5 dad6 47e5
+596e 6598 61a4 2f35 cc6c 5de5 aaa6 3795
+291e 15e8 11d4 5f45 bc1c 4d95 bab6 2785
+-->
+
+<parameters>
+
+	"Password*"			=		"public"
+
+</parameters>
+
+<script>
+CONN #60
+FAIL @FAIL_INIT
+
+#STRT
+
+STOR "alarms" "0"
+STOR "warnings" "0"
+STOR "critical" "0"
+STOR "^reason" ""
+STOR "arrayCounter" "1"
+STOR "^driveoutput" ""
+STOR "^unassigned" ""
+# Older firmware (1.3.1/1.24f and 1.3.2/1.26a)
+#   does not have the following fields
+STOR "dict.ide-error" ""
+STOR "dict.data-loss-during-rebuild" ""
+STOR "dict.ide-reset-failure" ""
+STOR "dict.ide-command-failure""
+STOR "dict.drive" ""
+STOR "^controller.power-supply-state.1" "\\3i\\unknown\\p0\\ "
+STOR "^controller.power-supply-state.2" "\\3i\\unknown\\p0\\ "
+STOR "^top.state" "\\3i\\unknown\\0\\ "
+STOR "^top.link_speed" "--"
+STOR "^top.fibre_link_speed" "--"
+STOR "^top.link" ""
+STOR "^top.notjbod" "true"
+STOR "^top.fibre_link_state" "";
+STOR "^top.blower_str" "\\3i\\unknown\\p0\\ "
+STOR "top.temperature" "\\3i\\unknown\\p0\\ "
+STOR "top.temperatureF" "--"
+STOR "^bottom.state" "\\3i\\unknown\\0\\ "
+STOR "^bottom.link_speed" "--"
+STOR "^bottom.fibre_link_speed" "--"
+STOR "^bottom.link" ""
+STOR "^bottom.notjbod" "true"
+STOR "^bottom.fibre_link_state" "";
+STOR "^bottom.blower_str" "\\3i\\unknown\\p0\\ "
+STOR "bottom.temperature" "\\3i\\unknown\\p0\\ "
+STOR "bottom.temperatureF" "--"
+
+#check top controller first.
+STOR "CONTROLLER" "bottom"
+
+STOR "^obfuscated" ""
+CHCK "${Password*}" else goto @NO_PASSWORD
+#get the 256-byte key
+STOR "^key" "\x0e\x39\xf8\x05\xc4\x01\x55\x4f\x0c\xac\x85\x7d\x86\x8a\xb5\x17\x3e\x09\xc8\x35\xf4\x31\x65\x7f\x3c\x9c\xb5\x6d\x96\x9a\xa5\x07\x2e\x19\xd8\x25\xe4\x21\x75\x6f\x2c\x8c\xa5\x9d\x66\x6a\x55\xf7\xde\xe9\x28\xd5\x14\xd1\x85\x9f\xdc\x7c\x55\x8d\x76\x7a\x45\xe7\xce\xf9\x38\xc5\x04\xc1\x95\x8f\xcc\x6c\x45\xbd\x46\x4a\x75\xd7\xfe\xc9\x08\xf5\x34\xf1\xa5\xbf\xfc\x5c\x75\xad\x56\x5a\x65\xc7\xee\xd9\x18\xe5\x24\xe1\xb5\xaf\xec\x4c\x65\xdd\x26\x2a\x15\xb7\x9e\xa9\x68\x95\x54\x91\xc5\xdf\x9c\x3c\x15\xcd\x36\x3a\x05\xa7\x8e\xb9\x78\x85\x44\x81\xd5\xcf\x8c\x2c\x05\xfd\x06\x0a\x35\x97\xbe\x89\x48\xb5\x74\xb1\xe5\xff\xbc\x1c\x35\xed\x16\x1a\x25\x87\xae\x99\x58\xa5\x64\xa1\xf5\xef\xac\x0c\x25\x1d\xe6\xea\xd5\x77\x5e\x69\xa8\x55\x94\x51\x05\x1f\x5c\xfc\xd5\x0d\xf6\xfa\xc5\x67\x4e\x79\xb8\x45\x84\x41\x15\x0f\x4c\xec\xc5\x3d\xc6\xca\xf5\x57\x7e\x49\x88\x75\xb4\x71\x25\x3f\x7c\xdc\xf5\x2d\xd6\xda\xe5\x47\x6e\x59\x98\x65\xa4\x61\x35\x2f\x6c\xcc\xe5\x5d\xa6\xaa\x95\x37\x1e\x29\xe8\x15\xd4\x11\x45\x5f\x1c\xbc\x95\x4d\xb6\xba\x85\x27"
+#check length of password and key
+STOR "pLen" "${_LENGTH:${Password*}}"
+STOR "kLen" "${_LENGTH:${^key}}"
+#if key is shorter than password, then append key to itself until it is larger (or equal)
+NBGT #${pLen} #${kLen} #+2
+GOTO #+3
+STOR "^key" "${^key}${^key}"
+GOTO #-4
+#if password is shorter than key, then truncate key to same length as password
+#NBGT #${kLen} #${pLen} #+2
+#GOTO #+2
+#EVAL $^key := substr( "${^key}", 0, #${pLen} )
+#xor the password and the key
+#BASE64 encode the xor result
+STOR "^obfuscated" "${_BASE64:${_XOR:${Password*}:${^key}}}"
+@NO_PASSWORD:
+
+STOR "RET" "@START"
+GOTO #+2
+
+@FAIL_INIT:
+STOR "RET" "@FAILED"
+
+@START:
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+
+@SET_CONTROLLER:
+SBNE "${CONTROLLER}" "bottom"i #+3
+STOR "CONTROLLER" "top"
+GOTO #+2
+STOR "CONTROLLER" "bottom"
+
+##########################################################
+#                     Get attributes                     #
+##########################################################
+@ATTR:
+STOR "URL" "/cgi-bin/acp-get"
+STOR "PostData1" "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist SYSTEM \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+STOR "PostData2" "<plist version=\"1.0\">\n<array>\n<string>syPN</string>\n<string>syDs</string>\n<string>syVs</string>\n"
+STOR "PostData3" "<string>syUT</string>\n<string>laIS</string>\n<string>laMA</string>\n"
+#If we're probing the Upper controller, then ask for the syslocation now.
+SBNE "${CONTROLLER}" "top" #+2
+SCAT "PostData3" "<string>syLo</string>\n"
+STOR "PostData4" "<string>laIP</string>\n</array>\n</plist>\n\n"
+
+STOR "RET" "@PARSE_ATTR"
+GOTO @DO_POST
+
+@PARSE_ATTR:
+EXPT "<dict>"i else goto @NO_MATCH
+
+STOR "RET" "@PARSE_ATTR_LOOP"
+@PARSE_ATTR_LOOP:
+#loop over lines and grab what we need, ignoring the rest
+NEXT
+
+MTCH "</dict>"i ELSE #+2
+GOTO @ATTR_DONE
+
+#Match XML of the form:
+#        <key>syNm</key>
+#        <dict>
+#            <key>data</key>
+#            <string>Hauser-2</string>
+#        </dict>
+
+MTCH "<key>([^<]+)</key>"ir else goto @PARSE_ATTR
+STOR "VAR_NAME" "${1}"
+SBNE "${VAR_NAME}" "status" #+2
+GOTO @CHECK_PASSWORD_STATUS
+NEXT
+MTCH "<dict"i ELSE @IGNORE
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @IGNORE
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @IGNORE
+NEXT
+MTCH "</dict"i ELSE @IGNORE
+
+# 4-byte ACP codes
+#syNm = SysName?
+#syDN = Domain Name?
+#syPN = Public Name?
+#syCt = sysContact
+#syDs = sysDescription
+#syVs = sys version
+#syLo = sysLocation
+#syPR = community string? (data = public in at least one known case)
+#syGP = community string? (data = public in at least one known case)
+#syUT = sysUptime?
+#syFl = system flags
+#laMA = MAC address
+#laCV
+#laIP = IP address
+#laSM = subnet mask
+#laRA = Router address?
+#waC1 = dns server?
+#waC2 = dns server?
+#waC3 = dns server?
+#laDC
+#laIS = LAN Interface State
+#smtp = SMTP server?
+#ntpC = NTP server
+#snAF
+#svMd
+#effF
+#emNo = email notifier
+
+SBNE "${VAR_NAME}" "syPN" #+3			//if ( VAR_NAME == syPN )
+STOR "^name" "${2}"                              //then syPN = Name
+GOTO @PARSE_ATTR_LOOP
+SBNE "${VAR_NAME}" "syDs" #+3                   //else if ( VAR_NAME == syDs )
+STOR "^firmware" "${2}"				//then syDs = Firmware name? (probably system description
+GOTO @PARSE_ATTR_LOOP
+SBNE "${VAR_NAME}" "syVs" #+3			//else if ( VAR_NAME == syVs )
+STOR "^firmware.version" "${2}"			//then syVs = Firmware version?	(included in "^firmware" string)
+GOTO @PARSE_ATTR_LOOP
+SBNE "${VAR_NAME}" "syUT" #+3			//else if ( VAR_NAME == syUT )
+STOR "_uptime" "${2}"				//then syUT = Uptime
+GOTO @PARSE_ATTR_LOOP
+SBNE "${VAR_NAME}" "laIS" #+3			//else if ( VAR_NAME == laIS )
+STOR "^${CONTROLLER}.link" "${2}"			//then laIS = link state
+GOTO @PARSE_ATTR_LOOP
+#SBNE "${VAR_NAME}" "laMA" #+3			//else if ( VAR_NAME == laMA )
+#STOR "^${CONTROLLER}.mac" "${2}"			//then laMA = MAC Address
+#GOTO @PARSE_ATTR_LOOP
+SBNE "${VAR_NAME}" "laIP" #+3			//else if ( VAR_NAME == laIP )
+STOR "^${CONTROLLER}.ip" "${2}"			//then laIP = IP Address
+GOTO @PARSE_ATTR_LOOP
+SBNE "${VAR_NAME}" "syLo" #+2			//else if ( VAR_NAME == syLo )
+STOR "^location" "${2}"				//then syLo = SysLocation
+GOTO @PARSE_ATTR_LOOP				//else ignore this element
+
+@ATTR_DONE:
+STOR "counter" "${^${CONTROLLER}.link}"
+EVAL $counter := bitand( 0xFF, ${counter} )
+STOR "^${CONTROLLER}.link_speed" "${counter}"
+NBGT #${^${CONTROLLER}.link_speed} #0 #+3
+STOR "^${CONTROLLER}.link_speed" "--"
+GOTO #+11
+NBGT #${^${CONTROLLER}.link_speed} #1 #+3
+STOR "^${CONTROLLER}.link_speed" "10 Mb/sec"
+GOTO #+8
+NBGT #${^${CONTROLLER}.link_speed} #2 #+3
+STOR "^${CONTROLLER}.link_speed" "100 Mb/sec"
+GOTO #+5
+NBGT #${^${CONTROLLER}.link_speed} #3 #+3
+STOR "^${CONTROLLER}.link_speed" "1 Gb/sec"
+GOTO #+2
+STOR "^${CONTROLLER}.link_speed" " \\i3\\unknown\\p0\\ "
+
+STOR "counter" "${^${CONTROLLER}.link}"
+EVAL $counter := bitand( 0x100, ${counter} )
+STOR "^${CONTROLLER}.link" "${counter}"
+NBNE #0 #${^${CONTROLLER}.link} #+3
+STOR "^${CONTROLLER}.link" "Link Down"
+GOTO @PARSE_ATTR_DONE
+STOR "^${CONTROLLER}.link" "Link Up  "
+
+@PARSE_ATTR_DONE:
+STOR "RET" "@SYSTEM_STATUS"
+GOTO @DRAIN_STREAM
+
+##########################################################
+#          Get system status for controller              #
+##########################################################
+#must get SYSTEM_STATUS for all (top,bottom) CONTROLLER
+@SYSTEM_STATUS:
+STOR "URL" "/cgi-bin/perform"
+STOR "PostData1" "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist SYSTEM \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+STOR "PostData2" "<plist version=\"1.0\"><dict><key>requests</key><array><dict><key>inputs</key><dict/>"
+STOR "PostData3" "<key>method</key><string>/system/get-system-status</string>"
+STOR "PostData4" "</dict></array></dict></plist>\n"
+STOR "RET" "@PARSE_SYSTEM_STATUS"
+
+GOTO @DO_POST
+
+@PARSE_SYSTEM_STATUS:
+STOR "counter" "0"
+STOR "NUM_ITEMS" "2"		#NUM_ITEMS is the number of items minus one
+
+@PARSE_SYSTEM_STATUS_LOOP:
+NEXT
+MTCH "</plist"i ELSE #+2
+GOTO @DIAGS
+
+#<ups> has state
+#<raid-controller> has state
+#<monitor> has state
+
+# controller.fibre-link-state = raid-controller -> fibre-link-state
+# controller.state = raid-controller -> state
+
+MTCH "<key>ups</key>"i ELSE #+3
+#parse dict of UPS status
+STOR "status_tag" "@UPS_STATUS"
+GOTO @PARSE_STATUS_DICT
+MTCH "<key>raid-controller</key>"i ELSE #+3
+#parse dict of RAID-controller status
+STOR "status_tag" "@CONTROLLER_STATUS"
+GOTO @PARSE_STATUS_DICT
+MTCH "<key>monitor</key>"i ELSE @PARSE_SYSTEM_STATUS_LOOP
+#parse dict of misc status
+STOR "status_tag" "@MISC_STATUS"
+#GOTO @PARSE_STATUS_DICT
+
+@PARSE_STATUS_DICT:
+NEXT
+MTCH "<dict"i ELSE @IGNORE
+
+NEXT
+STOR "RET" "${status_tag}"
+GOTO @PARSE_DICT
+
+@UPS_STATUS:
+CHCK "${dict.battery-is-low}" ELSE #+5
+SBNE i"${dict.battery-is-low}" "false" #+2
+GOTO #+3
+SCAT "^reason" "\nUPS battery is low."
+NADD "alarms" #1
+
+CHCK "${dict.battery-in-use}" ELSE #+5
+SBNE i"${dict.battery-in-use}" "false" #+2
+GOTO #+3
+SCAT "^reason" "\nUPS battery in use."
+NADD "warnings" #1
+
+CHCK "${dict.line-power-is-down}" ELSE #+5
+SBNE i"${dict.line-power-is-down}" "false" #+2
+GOTO #+3
+SCAT "^reason" "\nPower is down."
+NADD "warnings" #1
+
+NADD "counter" #1
+NBGT #${counter} #$NUM_ITEMS @SYSTEM_STATUS_DONE
+GOTO @PARSE_SYSTEM_STATUS_LOOP
+
+@MISC_STATUS:
+CHCK "${dict.ide-error}" ELSE #+5
+SBNE i"${dict.ide-error}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nIDE error."
+NADD "alarms" #1
+
+CHCK "${dict.power-supply}" ELSE #+5
+SBNE i"${dict.power-supply}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nA power supply problem occurred."
+NADD "alarms" #1
+
+CHCK "${dict.drive-temperature}" ELSE #+5
+SBNE i"${dict.drive-temperature}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nHard drive temperature is high."
+NADD "alarms" #1
+
+CHCK "${dict.data-loss-during-rebuild}" ELSE #+5
+SBNE i"${dict.data-loss-during-rebuild}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nData loss during rebuild."
+NADD "alarms" #1
+
+CHCK "${dict.blower-temperature}" ELSE #+5
+SBNE i"${dict.blower-temperature}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nA blower temperature problem occurred."
+NADD "alarms" #1
+
+CHCK "${dict.raid-controller-temperature}" ELSE #+5
+SBNE i"${dict.raid-controller-temperature}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nRAID controller temperature is high."
+NADD "alarms" #1
+
+CHCK "${dict.blower-speed}" ELSE #+5
+SBNE i"${dict.blower-speed}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nCheck blower."
+NADD "alarms" #1
+
+CHCK "${dict.emu-temperature}" ELSE #+5
+SBNE i"${dict.emu-temperature}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nAn EMU temperature problem occurred."
+NADD "alarms" #1
+
+CHCK "${dict.ide-reset-failure}" ELSE #+5
+SBNE i"${dict.ide-reset-failure}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nIDE Reset failure."
+NADD "alarms" #1
+
+CHCK "${dict.ide-command-failure}" ELSE #+5
+SBNE i"${dict.ide-command-failure}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nIDE Command failure."
+NADD "alarms" #1
+
+CHCK "${dict.smart}" ELSE #+5
+SBNE i"${dict.smart}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nA hard drive SMART pre-failure occurred."
+NADD "alarms" #1
+
+CHCK "${dict.blower}" ELSE #+5
+SBNE i"${dict.blower}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nA blower problem occurred."
+NADD "alarms" #1
+
+#CHCK "${dict.drive}" ELSE #+5
+#SBNE i"${dict.drive}" "ok" #+2
+#GOTO #+3
+#SCAT "^reason" "\nA hard drive problem occurred."
+#NADD "alarms" #1
+
+CHCK "${dict.raid-communication}" ELSE #+5
+SBNE i"${dict.raid-communication}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nA RAID controller communication problem occurred."
+NADD "alarms" #1
+
+CHCK "${dict.ambient-temperature}" ELSE #+5
+SBNE i"${dict.ambient-temperature}" "ok" #+2
+GOTO #+3
+SCAT "^reason" "\nAmbient temperature is high."
+NADD "warnings" #1
+
+NADD "counter" #1
+NBGT #${counter} #$NUM_ITEMS @SYSTEM_STATUS_DONE
+GOTO @PARSE_SYSTEM_STATUS_LOOP
+
+@CONTROLLER_STATUS:
+CHCK "${dict.fibre-link-state}" ELSE #+2
+STOR "^${CONTROLLER}.fibre_link_state" "${dict.fibre-link-state}"
+SBNE i"${^${CONTROLLER}.fibre_link_state}" "up" #+3
+STOR "^${CONTROLLER}.fibre_link_state" "Link Up"
+GOTO #+3
+SBNE i"${^${CONTROLLER}.fibre_link_state}" "down" #+2
+STOR "^${CONTROLLER}.fibre_link_state" "Link Down"
+
+CHCK "${dict.state}" ELSE #+2
+STOR "^${CONTROLLER}.state" "${dict.state}"
+
+NADD "counter" #1
+NBGT #${counter} #$NUM_ITEMS @SYSTEM_STATUS_DONE
+GOTO @PARSE_SYSTEM_STATUS_LOOP
+
+@SYSTEM_STATUS_DONE:
+STOR "RET" "@DIAGS"
+GOTO @DRAIN_STREAM
+
+###########################################################################
+#        Get temperature, blower speed, and power supply status           #
+###########################################################################
+@DIAGS:
+STOR "URL" "/cgi-bin/diagnostic-action"
+STOR "PostData1" "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist SYSTEM \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+STOR "PostData2" "<plist version=\"1.0\"><dict><key>get-temperature</key><dict><key>name</key><string>ambient</string></dict>"
+STOR "PostData3" "<key>get-device-properties</key><dict><key>name</key><string>power-supply</string><key>id</key><integer>"
+#If we're probing the Upper controller, then ask for the power-supplies.
+SBNE "${CONTROLLER}" "top" #+3
+SCAT "PostData3" "1"
+GOTO #+2
+SCAT "PostData3" "2"
+
+SCAT "PostData3" "</integer></dict>"
+STOR "PostData4" "<key>get-device-properties</key><dict><key>name</key><string>blower</string></dict>"
+SCAT "PostData4" "</dict></plist>\n"
+STOR "RET" "@PARSE_DIAGS"
+
+GOTO @DO_POST
+
+@PARSE_DIAGS:
+NEXT
+MTCH "</plist"i ELSE #+2
+GOTO @PAGE_0
+
+# controller.temperature = get-temperature -> temperature
+# controller.blower = get-device-properties -> rpm
+
+MTCH "<key>get-"i ELSE @PARSE_DIAGS
+NEXT
+MTCH "<dict"i ELSE @IGNORE
+NEXT
+STOR "RET" "@PARSE_DIAG_DICT"
+GOTO @PARSE_DICT
+
+@PARSE_DIAG_DICT:
+SBNE "${dict.name}" "ambient"i else #+3
+CHCK "${dict.temperature}" ELSE @PARSE_DIAGS
+STOR "${CONTROLLER}.temperature" "${dict.temperature}"
+EVAL ${counter} := sprintf( "%d", 1.8 * ${dict.temperature} + 32 )
+STOR "${CONTROLLER}.temperatureF" "${counter}"
+SBNE "${dict.name}" "blower"i else #+10
+SBNE "${dict.present}" "true"i else #+5
+CHCK "${dict.rpm}" ELSE @PARSE_DIAGS
+STOR "${CONTROLLER}.blower" "${dict.rpm}"
+STOR "^${CONTROLLER}.blower_str" "$${${CONTROLLER}.blower} RPM"
+GOTO #+5
+STOR "${CONTROLLER}.blower" #0
+STOR "^${CONTROLLER}.blower_str" "\\1\\Not installed.\\0\\ "
+SCAT "^reason" "\nBlower not installed."
+NADD "critical" #1
+
+SBNE "${dict.name}" "power-supply"i else @PARSE_DIAGS
+STOR "id" "${dict.id}"
+//okay = OK
+//failed = Check power supply
+//predictive-failure = Warning
+//unknown = Unknown
+SBNE "${dict.state}" "okay"i #+3
+STOR "^controller.power-supply-state.${id}" "\\5\\OK\\0\\ "
+GOTO #+10
+SBNE "${dict.state}" "failed"i #+5
+STOR "^controller.power-supply-state.${id}" "\\1\\Check power supply\\0\\ "
+SCAT "^reason" "\nCheck power supply."
+NADD "critical" #1
+GOTO #+5
+SBNE "${dict.state}" "predictive-failure"i #+3
+STOR "^controller.power-supply-state.${id}" "\\7\\Warning\\0\\ "
+GOTO #+2
+STOR "^controller.power-supply-state.${id}" "\\3\\Unknown\\0\\ "
+GOTO @PARSE_DIAGS
+
+@DIAGS_DONE:
+#STOR "RET" "@PAGE_0"
+#GOTO @DRAIN_STREAM
+GOTO @PAGE_0
+
+##########################################################
+#         Get page 0 of specified controller             #
+##########################################################
+#must get page 0 for all (top,bottom) CONTROLLER
+@PAGE_0:
+STOR "URL" "/cgi-bin/rsp-action"
+STOR "PostData1" "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist SYSTEM \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+STOR "PostData2" "<plist version=\"1.0\"><dict><key>get-page</key><dict><key>page-id</key><integer>0</integer>"
+STOR "PostData3" "</dict></dict></plist>\n"
+STOR "PostData4" ""
+STOR "RET" "@PARSE_PAGE_0"
+
+GOTO @DO_POST
+
+@PARSE_PAGE_0:
+STOR "counter" "0"
+STOR "NUM_ITEMS" "3"		#NUM_ITEMS is the number of items minus one
+
+@PARSE_PAGE_0_LOOP:
+NEXT
+MTCH "</plist"i ELSE #+2
+GOTO @PAGE_0_DONE_2
+
+# controller.prefetch_size = prefetch-size
+
+MTCH "<key>prefetch-size</key>"i ELSE #+7
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE @PARSE_PAGE_0_LOOP
+STOR "^${CONTROLLER}.prefetch_size" "${2}"
+NADD "counter" #1
+NBGT #${counter} #$NUM_ITEMS @PAGE_0_DONE
+GOTO @PARSE_PAGE_0_LOOP
+
+MTCH "<key>actual-speed</key>"i ELSE #+7
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE #+7
+STOR "^${CONTROLLER}.fibre_link_speed" "${2}"
+NADD "counter" #1
+NBGT #${counter} #$NUM_ITEMS @PAGE_0_DONE
+GOTO @PARSE_PAGE_0_LOOP
+
+MTCH "<key>firmware-version</key>"i ELSE #+7
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE @PARSE_PAGE_0_LOOP
+STOR "^${CONTROLLER}.firmware" "${2}"
+NADD "counter" #1
+NBGT #${counter} #$NUM_ITEMS @PAGE_0_DONE
+GOTO @PARSE_PAGE_0_LOOP
+
+MTCH "<key>jbod-mask-enabled</key>"i ELSE @PARSE_PAGE_0_LOOP
+NEXT
+MTCH "<([a-z]+)/>"ir ELSE @PARSE_PAGE_0_LOOP
+STOR "^${CONTROLLER}.notjbod" "${1}"
+NADD "counter" #1
+NBGT #${counter} #$NUM_ITEMS @PAGE_0_DONE
+GOTO @PARSE_PAGE_0_LOOP
+
+@PAGE_0_DONE:
+STOR "RET" "@PAGE_0_DONE_2"
+GOTO @DRAIN_STREAM
+
+@PAGE_0_DONE_2:
+#if prefetch-size == 3, then replace it with plain text
+# else replace it with 'unknown'
+SBNE "${^${CONTROLLER}.prefetch_size}" "3" #+3
+STOR "^${CONTROLLER}.prefetch_size" "8 stripes (512KB/disk)"
+GOTO #+2
+STOR "^${CONTROLLER}.prefetch_size" "<unknown (${^${CONTROLLER}.prefetch_size})>"
+
+#check rate of speed
+#store in MB/s
+#display in MB/s or GB/s
+#match speed against (\d+)\s*(.*)
+#compare \2 with GB/s
+#multiply \1 if needed
+#EVAL ${^${CONTROLLER}.fibre_link_speed} ~= "([0-9]+)[ ]*(.)(.*)"
+#SBNE "G" "${2}"i #+2
+#EVAL ${^${CONTROLLER}.fibre_link_speed} := ^${CONTROLLER}.fibre_link_speed * 1024
+
+# Page 1 has info on disks (slots) and arrays (raid-sets)
+#
+#	It appears that array status is in arrays->(array)->(dict)->raid-status,
+#		where each array/raid-set is a (dict) in the (array), and the
+#		(dict) contains an 'id' and a 'raid-status' (among other things).
+#			online/offline/degraded
+#
+#	The disk status is probably the same as slot status:
+#		slots->(array)->(dict)->status->online
+#		where each disk/slot is a (dict) in the (array), and contains
+#		an 'id' and a 'status' dict.  'status' contains booleans:
+#			online
+#			array-member
+#			rebuilding
+#			disk-cache-enabled
+#			broken-raid-member
+
+##########################################################
+#         Get page 1 of specified controller             #
+##########################################################
+#must get page 1 for all (top,bottom) CONTROLLER
+@PAGE_1:
+STOR "URL" "/cgi-bin/rsp-action"
+STOR "PostData1" "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist SYSTEM \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+STOR "PostData2" "<plist version=\"1.0\"><dict><key>get-page</key><dict><key>page-id</key><integer>1</integer>"
+STOR "PostData3" "</dict></dict></plist>\n"
+STOR "PostData4" ""
+STOR "RET" "@PARSE_PAGE_1"
+
+GOTO @DO_POST
+
+@PARSE_PAGE_1:
+STOR "id" "0"
+STOR "arrayCount" "-1"
+STOR "spares" "0"
+STOR "rebuilding" "false"
+CHCK "${^driveoutput}" else #+2
+SCAT "^driveoutput" "\n"
+STOR "^unassignedNeedsHeader" ""
+CHCK "${^unassigned}" #+2
+STOR "^unassignedNeedsHeader" "true"
+
+@PARSE_PAGE_1_LOOP:
+NEXT
+MTCH "</plist"i ELSE #+2
+GOTO @PAGE_1_DONE
+
+# controller.raid-status = raid-status
+
+MTCH "<key>arrays</key>"i ELSE #+2
+GOTO @PARSE_ARRAYS
+
+MTCH "<key>slots</key>"i ELSE @PARSE_PAGE_1_LOOP
+GOTO @PARSE_SLOTS
+
+#arrays contains:
+#	<array>
+#		<dict>
+#			id
+#			stripe-size
+#			raid-level
+#			member-count
+#			raid-type
+#			raid-status
+#			bgrw-status
+#			sector-capacity
+#			slices
+#			   <array>
+#			      <dict>
+#				id
+#				size
+#			progress
+#				initialize
+#					<integer> percent (255 means not applicable)
+#				add-member
+#					<integer> ? percent (255 means not applicable)
+#				verify
+#					<integer> ? percent (255 means not applicable)
+#				expand
+#					<integer> ? percent (255 means not applicable)
+#				background-read-write
+#					<integer> ? percent (255 means not applicable)
+#			members
+#			   <array>
+#			      <dict>
+#				id
+#				slot-id (0 == not in array?)
+
+@PARSE_ARRAYS:
+NEXT
+#skip the first <array> tag
+MTCH "<array>" else goto #+2
+GOTO @PARSE_ARRAYS_LOOP
+MTCH "<array/>" else goto @PARSE_ARRAYS_LOOP
+#no arrays
+GOTO @PARSE_PAGE_1_LOOP
+
+@PARSE_ARRAYS_LOOP:
+NEXT
+STOR "RET" "@PARSE_ARRAYS_LOOP"
+MTCH "</array>" else goto #+3
+GOTO @PARSE_PAGE_1_LOOP
+NEXT
+MTCH "<dict>" else goto @PARSE_ARRAYS_LOOP
+
+NADD "arrayCount" #1
+STOR "RET" "@PARSE_RAID_ARRAY"
+GOTO @PARSE_RAID_ARRAY
+
+@PARSE_RAID_ARRAY:
+NEXT
+
+MTCH "</dict>" else goto #+2
+GOTO @PARSE_ARRAYS_LOOP
+MTCH "<key>id</key>"i ELSE #+5
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE @PARSE_PAGE_1_LOOP
+STOR "^raidset.${arrayCount}.id" "${2}"
+GOTO @PARSE_RAID_ARRAY
+MTCH "<key>raid-level</key>"i ELSE #+5
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE @PARSE_PAGE_1_LOOP
+STOR "^raidset.${arrayCount}.raid-level" "${2}"
+GOTO @PARSE_RAID_ARRAY
+MTCH "<key>member-count</key>"i ELSE #+5
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE @PARSE_PAGE_1_LOOP
+STOR "^raidset.${arrayCount}.member-count" "${2}"
+GOTO @PARSE_RAID_ARRAY
+MTCH "<key>slices</key>"i ELSE #+3
+NEXT
+GOTO @IGNORE
+MTCH "<key>progress</key>"i ELSE #+3
+NEXT
+GOTO @IGNORE
+MTCH "<array>"i ELSE #+2
+GOTO @IGNORE
+MTCH "<dict>"i ELSE #+2
+GOTO @IGNORE
+
+MTCH "<key>raid-status</key>"i ELSE @CHECK_MEMBERS
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE @PARSE_PAGE_1_LOOP
+STOR "^raidset.${arrayCount}.raid-status" "${2}"
+GOTO @PARSE_RAID_ARRAY
+
+@CHECK_MEMBERS:
+MTCH "<key>members</key>"i ELSE @PARSE_RAID_ARRAY
+NEXT
+MTCH "<array>"i else #+2
+#skip <array>
+NEXT
+
+#iterate over the members array, parsing each <dict>
+@MEMBERS_ARRAY_LOOP:
+MTCH "</array>"i else #+2
+GOTO @PARSE_RAID_ARRAY	#done with members array
+
+MTCH "<dict>"i else #+4
+NEXT
+STOR "RET" "@PARSED_RAID_MEMBER"
+GOTO @PARSE_DICT
+NEXT
+GOTO @MEMBERS_ARRAY_LOOP
+
+@PARSED_RAID_MEMBER:
+STOR "id" "${dict.slot-id}"
+SBNE "${id}" "0" #+2
+GOTO #+3
+#If it's the lower controller, then use id + 7
+SBNE "${CONTROLLER}" "bottom" #+2
+NADD "id" #7
+STOR "^raidset.${arrayCount}.${dict.id}" "${id}"
+GOTO @MEMBERS_ARRAY_LOOP
+
+@PARSE_SLOTS:
+NEXT
+MTCH "<array>" else goto #+2	#skip the first <array> tag
+
+@PARSE_SLOTS_LOOP:
+# slots is an <array> of <dict>
+#    Each <dict> in the <array> corresponds to a drive/slot.
+#    Each drive/slot should have a 'status' key in the <dict>.
+#    The value of the 'status' entry is a <dict>.
+NEXT
+STOR "RET" "@PARSE_SLOTS_LOOP"
+MTCH "</array>" else goto #+2
+GOTO @PARSE_PAGE_1_LOOP
+
+MTCH "<key>id</key>"i ELSE #+10
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE @PARSE_SLOTS_LOOP
+STOR "id" "${2}"
+#If it's the lower controller, then use id + 7
+SBNE "${CONTROLLER}" "bottom" #+2
+NADD "id" #7
+STOR "name" "${id}"
+NBGT #${name} #9 #+2
+STOR "name" " ${name}"
+GOTO @PARSE_SLOTS_LOOP
+
+MTCH "<key>status</key>"i ELSE #+6
+NEXT
+MTCH "<dict>"ir ELSE @PARSE_SLOTS_LOOP
+NEXT
+STOR "RET" "@PARSED_DRIVE"
+GOTO @PARSE_DICT
+
+MTCH "<array>"i ELSE @PARSE_SLOTS_LOOP
+GOTO @IGNORE	#ignore <array> elements (otherwise </array> check at @PARSE_SLOTS_LOOP will break out too early
+
+@PARSED_DRIVE:
+STOR "^slot.${id}" "              \\4\\Drive ${name}: "
+SBNE "${dict.online}" "true"i @OFFLINE
+SBNE "${dict.broken-raid-member}" "true"i @DRIVE_REBUILDING
+SCAT "^slot.${id}" "\\7\\Broken RAID Member\\0\\ "
+SCAT "^reason" "\nDrive ${name} is 'broken'."
+NADD "warnings" #1
+GOTO @DRIVE_PARSED
+
+@DRIVE_REBUILDING:
+SBNE "${dict.rebuilding}" "true"i @DRIVE_OK
+STOR "rebuilding" "true"
+SCAT "^slot.${id}" "\\7\\Rebuilding\\0\\ "
+SCAT "^reason" "\nDrive ${name} is rebuilding."
+NADD "alarms" #1
+GOTO @DRIVE_PARSED
+
+@DRIVE_OK:
+SCAT "^slot.${id}" "\\5\\OK\\0\\ "
+
+@DRIVE_PARSED:
+SBNE "${dict.array-member}" "true" @UNASSIGNED
+GOTO @PARSE_SLOTS_LOOP
+
+@OFFLINE:
+SCAT "^slot.${id}" "\\1\\Offline\\0\\ "
+SBNE "${dict.array-member}" "true" @UNASSIGNED
+GOTO @PARSE_SLOTS_LOOP
+
+@UNASSIGNED:
+STOR "^spare.${spares}" "${^slot.${id}}"
+STOR "^spare.id.${id}" "^spare.${spares}"
+NADD "spares" #1
+GOTO @PARSE_SLOTS_LOOP
+
+@PAGE_1_DONE:
+#contruct output for RAID sets
+STOR "counter" "0"
+#while ( counter < arrayCount )
+@RAID_OUTPUT_LOOP:
+NBGT #${counter} #${arrayCount} @RAID_OUTPUT_DONE
+NBGT #1 #${counter} #+2
+SCAT "^driveoutput" "\n"
+SCAT "^driveoutput" "    \\4b\\RAID ${arrayCounter} (level ${^raidset.${counter}.raid-level}):\\0p\\ "
+
+SBNE "${^raidset.${counter}.raid-status}" "online"i #+3
+SCAT "^driveoutput" "\\5\\OK\\0\\ "
+GOTO @OUTPUT_DRIVES
+SBNE "${^raidset.${counter}.raid-status}" "degraded"i #+6
+SCAT "^driveoutput" "\\7\\Degraded\\0\\ "
+SBNE "${rebuilding}" "false"i #+3
+SCAT "^reason" "\nRAID Set ${^raidset.${counter}.raid-level} is 'degraded'."
+NADD "critical" #1
+GOTO @OUTPUT_DRIVES
+SBNE "${^raidset.${counter}.raid-status}" "offline"i #+3
+SCAT "^driveoutput" "\\1\\Offline\\0\\ "
+GOTO @OUTPUT_DRIVES
+SCAT "^driveoutput" "\\3\\--\\0\\ "
+
+@OUTPUT_DRIVES:
+STOR "driveCounter" "1"
+STOR "numDrives" "1"
+#while ( numDrives < member-count )
+@SLOT_OUTPUT_LOOP:
+NBGT #${numDrives} #${^raidset.${counter}.member-count} @SLOT_OUTPUT_DONE
+STOR "id" "${^raidset.${counter}.${driveCounter}}"
+SBNE "0" "${id}" #+2
+GOTO #+5
+SCAT "^driveoutput" "\n${^slot.${id}}"
+NADD "numDrives" #1
+CHCK "${^spare.id.${id}}" else #+2
+STOR "${^spare.id.${id}}" ""
+
+NADD "driveCounter" #1
+GOTO @SLOT_OUTPUT_LOOP
+@SLOT_OUTPUT_DONE:
+NADD "counter" #1
+NADD "arrayCounter" #1
+GOTO @RAID_OUTPUT_LOOP
+
+@RAID_OUTPUT_DONE:
+# check unassigned
+#if ( spares > 0 )
+NBGT #${spares} #0 #+2
+GOTO @UNASSIGNED_OUTPUT_DONE
+#STOR "^unassigned" ""
+STOR "counter" "0"
+STOR "driveCounter" "0"
+NADD "spares" #-1
+#while ( counter < spares )
+@UNASSIGNED_OUTPUT_LOOP:
+NBGT #${counter} #${spares} @UNASSIGNED_OUTPUT_DONE
+CHCK "${^spare.${driveCounter}}" else #+3
+SCAT "^unassigned" "\n${^spare.${driveCounter}}"
+NADD "counter" #1
+NADD "driveCounter" #1
+GOTO @UNASSIGNED_OUTPUT_LOOP
+
+@UNASSIGNED_OUTPUT_DONE:
+CHCK "${^unassigned}" else #+6
+CHCK "${^unassignedNeedsHeader}" else #+5
+SBNE "${^${CONTROLLER}.notjbod}" "false" else #+3
+STOR "^unassigned" "          \\4b\\JBOD:\\0p\\ ${^unassigned}"
+GOTO #+2
+STOR "^unassigned" "          \\4b\\Spare:\\0p\\ ${^unassigned}"
+
+#re-probe if needed
+SBNE "${CONTROLLER}" "top" #+2
+GOTO @SET_CONTROLLER
+
+##########################################################
+#                          Done                          #
+##########################################################
+
+#TIME "Round-trip time"
+
+NBGT #${critical} #0 @CRITICAL
+NBGT #${alarms} #0 @ALARM
+NBGT #${warnings} #0 @WARN
+
+CHCK "${^${CONTROLLER}.state}" else goto #+2
+SBNE i"${^${CONTROLLER}.state}" "on" #+2
+DONE OKAY
+DONE CRIT "RAID controller is not on."
+
+@ALARM:
+DONE ALRM "${^reason}"
+
+@WARN:
+DONE WARN "${^reason}"
+
+@CRITICAL:
+DONE CRIT "${^reason}"
+
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE #+2
+DONE WARN "[Xserve] Error: ${2}"
+#fallthrough to @NO_MATCH
+
+@NO_MATCH:
+DONE WARN "[Xserve] Improperly formed data in response."
+
+@IDLE:
+DONE DOWN "[Xserve] No data for ${_IDLETIMEOUT} seconds. [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[Xserve] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@UNAVAIL_GET_RESPONSE:
+MTCH m"50[0-9]" else goto @BAD_GET_RESPONSE
+DONE DOWN "[Xserve] ${_LINE:50} (${URL})"
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "[Xserve] 201 Created (${URL})"
+MTCH "202" ELSE #+2
+DONE WARN "[Xserve] 202 Accepted (${URL})"
+MTCH "204" ELSE #+2
+DONE WARN "[Xserve] 204 No Content (${URL})"
+MTCH "301" ELSE #+2
+DONE WARN "[Xserve] 301 Moved Permanently (${URL})"
+MTCH "302" ELSE #+2
+DONE WARN "[Xserve] 302 Moved Temporarily (${URL})"
+MTCH "304" ELSE #+2
+DONE WARN "[Xserve] 304 Not Modified (${URL})"
+MTCH "400" ELSE #+2
+DONE WARN "[Xserve] 400 Bad Request (${URL})"
+MTCH "401" ELSE #+2
+DONE WARN "[Xserve] 401 Unauthorized (${URL})"
+MTCH "403" ELSE #+2
+DONE WARN "[Xserve] 403 Forbidden (${URL})"
+MTCH "404" ELSE #+2
+DONE WARN "[Xserve] 404 Not Found (${URL})"
+MTCH "500" ELSE #+2
+DONE ALRM "[Xserve] 500 Internal Server Error (${URL})"
+MTCH "501" ELSE #+2
+DONE ALRM "[Xserve] 501 Not Implemented (${URL})"
+MTCH "502" ELSE #+2
+DONE ALRM "[Xserve] 502 Bad Gateway (${URL})"
+MTCH "503" ELSE #+2
+DONE ALRM "[Xserve] 503 Service Unavailable (${URL})"
+DONE ALRM "[Xserve] Unknown Error Code ${_LINE:4} (${URL})"
+
+@DISCONNECT:
+DONE DOWN "[Xserve] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+@FAILED:
+DONE DOWN "[Xserve] Unknown error occurred."
+
+#generic subroutines for parsing the plist XML
+
+#loop on every <key> in the <dict>
+# create variables: dict.<key> = <value>
+@PARSE_DICT:
+MTCH "</dict>"i ELSE #+2
+GOTO ${RET}
+
+#ignore empty lines
+MTCH "^$"r ELSE #+3
+NEXT
+GOTO @PARSE_DICT
+
+MTCH "<key>([^<]+)</key>"ir else goto ${RET}
+STOR "VAR_NAME" "${1}"
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else #+4
+STOR "dict.${VAR_NAME}" "${2}"
+NEXT
+GOTO @PARSE_DICT
+MTCH "<([^<]+)/>"ir else goto @IGNORE_DICT_ENTRY
+STOR "dict.${VAR_NAME}" "${1}"
+NEXT
+GOTO @PARSE_DICT
+
+@IGNORE_DICT_ENTRY:
+STOR "PARSE_DICT_RET" "${RET}"
+STOR "RET" "@IGNORE_DICT_ENTRY_RET"
+GOTO @IGNORE
+@IGNORE_DICT_ENTRY_RET:
+STOR "RET" "${PARSE_DICT_RET}"
+#NEXT
+GOTO @PARSE_DICT
+
+#subroutine to skip an array or dict or line and return
+@IGNORE_NEXT:
+NEXT
+@IGNORE:
+#figure out what kind of tag it is
+MTCH "<([a-z]+)>"ir else GOTO ${RET}
+STOR "TAG" "${1}"
+STOR "XML_STACK" "0"
+
+@IGNORE_LOOP:
+EXPT "${TAG}>"i else goto ${RET}
+MTCH "</${TAG}>"i ELSE #+2
+#We add -2, then fall through to the ELSE and add 1, to have a net effect of adding -1
+#	(It was easier than a bunch of GOTO statements and an extra label or two...)
+NADD "XML_STACK" #-2
+
+# else assume it's a <${TAG}> tag
+NADD "XML_STACK" #1
+
+NEXT
+NBGT #${XML_STACK} #0 @IGNORE_LOOP
+GOTO ${RET}
+
+@RECURSIVE_SBNE
+STOR "SC" #0
+STOR "RET0" "${RET}"
+GOTO @RECURSIVE_SBNE_INNER
+
+@RECURSIVE_SBNE_INNER
+NADD "SC" #1
+SBNE "${STRING}" "${MATCH}"r #+3
+STOR "RET_VAL" "true"
+GOTO @RECURSE_2
+
+SBNE "${STRING}" ".*\$\{(.*)}(.*)"r @RECURSE_2
+
+STOR "RET${SC}" "@RECURSE_1"
+STOR "STRING${SC}" "${2}"
+STOR "STRING" "${${1}}"
+GOTO @RECURSIVE_SBNE_INNER
+
+@RECURSE_1:
+STOR "RET${SC}" "@RECURSE_2"
+STOR "STRING" "${STRING${SC}}"
+CHCK "${STRING}" #+2
+SBNE "RET_VAL" "true" @RECURSIVE_SBNE_INNER
+
+@RECURSE_2:
+NADD "SC" #-1
+GOTO ${RET${SC}}
+
+#Send $POSTDATA to $URL
+@DO_POST:
+SEND "POST ${URL} HTTP/1.1\r\n"
+STOR "LEN" "${_LENGTH:${PostData1}}"
+NADD "LEN" #${_LENGTH:${PostData2}}
+NADD "LEN" #${_LENGTH:${PostData3}}
+NADD "LEN" #${_LENGTH:${PostData4}}
+SEND "Content-length: ${LEN}\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+2
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "Content-type: application/xml\r\n"
+SEND "ACP-User: guest\r\n"
+CHCK "${CONTROLLER}" else goto #+2
+SEND "Apple-Xsync: ${CONTROLLER}\r\n"
+CHCK "${^obfuscated}" else goto #+2
+SEND "ACP-Password: ${^obfuscated}\r\n"
+SEND "\r\n"
+SEND "${PostData1}"
+SEND "${PostData2}"
+SEND "${PostData3}"
+SEND "${PostData4}"
+
+#Do an EXPT to initialize the buffer so that the following MTCH doesn't fail with an uninitialized buffer.
+# E.G. point this probe at a machine with nothing on port 80 (or a firewall blocking it).
+EXPT "."r else @IDLE
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @UNAVAIL_GET_RESPONSE
+LINE ON
+DISC @NO_MATCH
+EXPT "<plist"i else goto @NO_MATCH
+GOTO ${RET}
+
+#read all the remaining data on the stream (ignoring it)
+@DRAIN_STREAM:
+LINE OFF
+SKIP ".*"r else goto @RECONNECT
+GOTO @RECONNECT
+
+#force the probe to reconnect
+@RECONNECT:
+RCON
+GOTO ${RET}
+
+#if status = -16, then invalid password?
+@CHECK_PASSWORD_STATUS:
+#next line should be <integer>#</integer>
+# otherwise, ignore it and return
+NEXT
+MTCH "<integer>(-?[0-9]+)</integer>"ri else ${RET}
+SBNE "-16" "${1}" #+2
+DONE WARN "[Xserve] Invalid login."
+SBNE "${1}" "-2[78]"r #+2
+DONE WARN "[Xserve] Invalid credentials."
+SBNE "0" "${1}" #+2
+GOTO ${RET}
+#non-zero status (other than -16,-27,-28) means off/dead?
+DONE ALRM "[Xserve] Unknown status (${1})."
+
+</script>
+
+<script-output>
+
+\B5\${^firmware}\0P\
+                \4\Name:\0\ ${^name}
+            \4\Location:\0\ ${^location}
+   \4\Left Power Supply:\0\ ${^controller.power-supply-state.2}
+  \4\Right Power Supply:\0\ ${^controller.power-supply-state.1}
+    \4\Top Blower Speed:\0\ ${^top.blower_str}
+  \4\Lower Blower Speed:\0\ ${^bottom.blower_str}
+\5\Upper Controller (${^top.firmware}):\0\
+              \4\Status:\0\ ${^top.state}
+          \4\IP Address:\0\ ${^top.ip}
+         \4\Temperature:\0\ ${top.temperature} C (${top.temperatureF} F)
+       \4\Fibre Channel:\0\ ${^top.fibre_link_state}    \3\(${^top.fibre_link_speed})\0\
+             \4\Network:\0\ ${^top.link}    \3\(${^top.link_speed})\0\
+\5\Lower Controller (${^bottom.firmware}):\0\
+              \4\Status:\0\ ${^bottom.state}
+          \4\IP Address:\0\ ${^bottom.ip}
+         \4\Temperature:\0\ ${bottom.temperature} C (${bottom.temperatureF} F)
+       \4\Fibre Channel:\0\ ${^bottom.fibre_link_state}    \3\(${^bottom.fibre_link_speed})\0\
+             \4\Network:\0\ ${^bottom.link}    \3\(${^bottom.link_speed})\0\
+${^driveoutput}
+${^unassigned}
+</script-output>

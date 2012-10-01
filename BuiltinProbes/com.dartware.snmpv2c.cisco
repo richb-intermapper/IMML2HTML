@@ -1,0 +1,90 @@
+<!-- 
+	SNMPv2c - Cisco (com.dartware.snmpv2c.cisco)
+	Copyright (c) 2002 Dartware, LLC. All rights reserved.
+	Thanks to S. Erde and W. Schley for initial implementation.
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmpv2c.cisco"
+	human_name		=	"SNMP - Cisco (v2c)"
+	version			= 	"1.10"
+	address_type	= 	"IP,AT"
+	port_number		=	"161"
+	
+	flags 			= 	"SNMPv2c"
+	
+	display_name	=	"Miscellaneous/Legacy/Cisco (v2c)"
+</header>
+
+
+<description>
+
+\GB\SNMP - Cisco (v2c)\P\
+
+This is a legacy probe, provided for compatibility with InterMapper Traditional and older versions of InterMapper (< 4.4). If you are using InterMapper server, please use the Cisco - Process and Memory Pool probe instead and set the probe's SNMP version to SNMP v2 in the Probe Info window.
+
+This probe monitors the CPU and Memory utilization of a Cisco router using SNMPv2c.
+
+\i\CPU Busy - Alarm\p\ is the ALARM threshold for CPU utilization. If the average percentage of CPU usage over a 1 minute interval exceeds this threshold, the device will enter the Alarm state.
+
+\i\CPU Busy - Warning\p\ is the WARNING threshold for CPU utilization. If the average percentage CPU usage over a 1 minute interval exceeds this threshold, the device will enter the Warning state.
+
+\i\Low Memory - Alarm\p\ is the ALARM threshold for the amount of free memory remaining (in bytes). If the free memory drops below this threshold, the device will enter the Alarm state.
+
+\i\Low Memory - Warning\p\ is the WARNING threshold for the amount of free memory remaining (in bytes). If the free memory drops below this threshold, the device will enter the Warning state.
+
+</description>
+
+<parameters>
+
+"CPU Busy - Alarm"   	= "90"
+"CPU Busy - Warning" 	= "80"
+"Low Memory - Alarm"	= "1000"
+"Low Memory - Warning"	= "5000"
+
+</parameters>
+
+<snmp-device-variables>
+	-- TYPE can be one of:  DEFAULT, PER-SECOND, PER-MINUTE, TOTAL-VALUE. 
+	-- Use DEFAULT for string and integer values.
+	
+	-- MIB Variable --		---	OID ---					--- TYPE ---	--- LEGEND ---
+	
+	-- Reference: <ftp://ftp.cisco.com/pub/mibs/v1/OLD-CISCO-CPU-MIB.my>
+
+	lcpu.busyPer,		1.3.6.1.4.1.9.2.1.56.0,		INTEGER, 		"CPU Busy % (For last 5 Seconds in Scheduler)"
+	lcpu.avgBusy1, 		1.3.6.1.4.1.9.2.1.57.0, 	INTEGER, 		"1 Minute Average of CPU Busy %"
+	lcpu.avgBusy5,		1.3.6.1.4.1.9.2.1.58.0,		INTEGER,		"5 Minute Average of CPU Busy %"
+
+	-- Reference: <ftp://ftp.cisco.com/pub/mibs/v1/OLD-CISCO-MEMORY-MIB.my>
+	lmem.freeMem,     	1.3.6.1.4.1.9.2.1.8.0, 		INTEGER,		"Free Memory in Bytes"
+
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+
+	alarm:		${lcpu.avgBusy1} > ${CPU Busy - Alarm}
+	alarm:		${lmem.freeMem} < ${Low Memory - Alarm}
+	warning:	${lcpu.avgBusy1} > ${CPU Busy - Warning}
+	warning:	${lmem.freeMem} < ${Low Memory - Warning}
+
+</snmp-device-thresholds>
+
+<snmp-device-display>
+
+\B5\Cisco Device Information\0P\
+  \4\CPU Percent Busy:\0\ ${lcpu.busyPer} % \3IG\(of last 5 seconds)\P0M\
+  \4\Avg. CPU Percent:\0\ ${lcpu.avgBusy1} % \3IG\(1 min.)\P0M\, ${lcpu.avgBusy5} % \3IG\(5 min.)\P0M\
+  \4\Available Memory:\0\ ${lmem.freeMem} bytes
+ 
+</snmp-device-display>
+
+<datasets>
+  $lcpu.busyPer,	'cpupercent',		"percent",	"true",		"CPU Percent Busy"
+  $lcpu.avgBusy1,	'cpupercentavg',	"percent",	"true",		"Average CPU Percent over 1 min"
+  $lcpu.avgBusy5,	'cpupercentavg',	"percent",	"false",	"Average CPU Percent over 5 min"
+  $lmem.freeMem,	'freemem',			"bytes",	"true",		"Available Memory"
+</datasets>
+

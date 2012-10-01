@@ -1,0 +1,70 @@
+<!-- 
+	High packets-per-second (com.dartware.snmp.pps)
+	Custom Probe for InterMapper (http://www.intermapper.com)
+	Please feel free to use this as a base for further development.
+	Converted to IMML 26Sep2003 -reb
+	Added ifOperStatus flag; added display_name; bumped version. 28 Nov 2005 -reb
+	Converted from octets to packets, version to 0.3 23/01/07 - jm
+	Added $ifOperStatusStr as STRING so it appears as a string - 3May2008 -reb
+	Moved to SNMP folder; bumped version. 23 Nov 2009 -cls
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.pps"
+	human_name		=	"SNMP - High PPS"
+	version			= 	"0.5"
+	address_type	= 	"IP,AT"
+	port_number		=	"161"
+	flags			=   "NOLINKS"
+	display_name	=	"SNMP/SNMP - High PPS"
+</header>
+
+<snmp-device-properties>
+   nomib2="true"
+</snmp-device-properties>
+
+
+<description>
+
+\GB\High PPS Probe\P\
+
+This probe monitors the ifInPackets and ifOutPackets statistics of a particular interface on the device, and sets the device into alarm or warning when the packet rate exceeds certain thresholds. It also gives a DOWN alarm if the interface's ifOperStatus is not equal to 1 (up).
+
+The \i\Port Number\p\ parameter is the ifIndex of the port to monitor. 
+
+The \i\Warn Threshold\p\ and \i\Alarm Threshold\p\ parameters are in packets per second.
+</description>
+
+<parameters>
+
+"Port Number" 	  = "1"
+"Alarm Threshold"   = "500"
+"Warn Threshold"    = "100"
+
+</parameters>
+
+<snmp-device-variables>
+	ifInUcastPkts, 	1.3.6.1.2.1.2.2.1.11.${Port Number}, PER-SECOND, ""
+	ifOutUcastPkts,	1.3.6.1.2.1.2.2.1.17.${Port Number}, PER-SECOND, ""	
+	ifOperStatus,	1.3.6.1.2.1.2.2.1.8.${Port Number}, DEFAULT, ""	
+	ifOperStatusStr, 1.3.6.1.2.1.2.2.1.8.${Port Number}, STRING, ""	
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	down:		${ifOperStatus} != 1 "Interface is $ifOperStatusStr"
+	alarm: 	${ifInUcastPkts}  > ${Alarm Threshold}
+	alarm: 	${ifOutUcastPkts} > ${Alarm Threshold}
+	warning: 	${ifInUcastPkts}  > ${Warn Threshold}
+	warning: 	${ifOutUcastPkts} > ${Warn Threshold}
+
+</snmp-device-thresholds>
+
+<snmp-device-display>
+
+\B5\High PPS Probe\0P\ on interface ifIndex=${Port Number}
+  \4\   Received Packets:\0\ ${ifInUcastPkts} packets/second
+  \4\Transmitted Packets:\0\ ${ifOutUcastPkts} packets/second
+              \4\Link is:\0\ ${ifOperStatusStr} 
+</snmp-device-display>

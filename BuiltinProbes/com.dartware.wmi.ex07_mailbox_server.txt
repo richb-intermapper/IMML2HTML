@@ -1,0 +1,382 @@
+<!-- 
+Command Line WMI Probe to check MS Exchange 2007 Mailbox Server (com.dartware.wmi.ex07_mailbox_server) 
+Copyright (c) 2010 Dartware, LLC. All rights reserved. 
+--> 
+
+<header> 
+	type			=	"cmd-line" 
+	package			=	"com.dartware" 
+	probe_name		=	"wmi.ex07_mailbox_server" 
+	human_name		=	"WMI MSExchange 2007 Mailbox Server" 
+	version			=	"1.4" 
+	address_type	=	"IP"
+	display_name	=	"WMI/WMI MSExchange 2007 Mailbox Server"
+	visible_in 		=	"Windows"
+	flags			=	"NTCREDENTIALS"	
+</header> 
+
+<description> 
+\GB\WMI MSExchange 2007 Mailbox Server\p\ 
+
+This probe uses WMI to retrieve performance information about the delivery queues on a MS Exchange 2007 Mailbox Server.  Specifically, it queries the Win32_PerfFormattedData_MSExchangeIS_MSExchangeIS, Win32_PerfFormattedData_MSExchangeIS_MSExchangeISMailbox, Win32_PerfFormattedData_MSExchangeIS_MSExchangeISPublic, Win32_PerfFormattedData_MSExchangeSearchIndices_MSExchangeSearchIndices classes to collect a variety of statistics and then compares them to the criteria you set.  The default criteria for warning and critical conditions are taken from the Microsoft TechNet article \u2=http://technet.microsoft.com/en-us/library/bb201689.aspx\Monitoring Mailbox Servers\p0\.
+
+The User parameter may be a local user on the target host, or may take the form of "domain\\user" for a domain login.  Leave it blank if authentication is not required, such as when the target is the localhost.
+
+InterMapper invokes the ex07_mailbox.vbs companion script which was placed in the Tools folder of the InterMapper Settings folder when this probe was loaded.  It uses the exit value to set the condition of the device.
+
+</description> 
+
+<parameters>
+	"Warning RPC Requests"=""
+	"Critical RPC Requests"="70"
+	"Warning RCP Averaged Latency (ms)"=""
+	"Critical RCP Averaged Latency (ms)"="25"
+	"Warning RCP Num of Slow Packets"="1"
+	"Critical RCP Num of Slow Packets"="3"
+	"Warning Messages Queued for Submission"=""
+	"Critical Messages Queued for Submission"="50"
+	"Warning Public\Messages Queued for Submission"=""
+	"Critical Public\Messages Queued for Submission"="20"
+	"Warning Public\Replication Receive Queue Size"=""
+	"Critical Public\Replication Receive Queue Size"="100"
+	"Warning Slow Findrow Rate"=""
+	"Critical Slow Findrow Rate"="10"
+	"Warning Search Task Rate"=""
+	"Critical Search Task Rate"="10"
+	"Warning Average Document Indexing Time (sec)"=""
+	"Critical Average Document Indexing Time (sec)"="30"
+	User=""
+	"Password*"=""
+	"Timeout (sec)"="60"
+</parameters> 
+
+
+<command-line> 
+	-- Empty path forces the InterMapper Settings:Tools directory
+	path="" 
+	cmd="${CSCRIPT} ex07_mailbox.vbs"
+	arg="-h ${address} -w ${Warning RPC Requests},${Warning RCP Averaged Latency (ms)},${Warning RCP Num of Slow Packets},${Warning Messages Queued for Submission},${Warning Public\Messages Queued for Submission},${Warning Public\Replication Receive Queue Size},${Warning Slow Findrow Rate},${Warning Search Task Rate},${Warning Average Document Indexing Time (sec)} -c ${Critical RPC Requests},${Critical RCP Averaged Latency (ms)},${Critical RCP Num of Slow Packets},${Critical Messages Queued for Submission},${Critical Public\Messages Queued for Submission},${Critical Public\Replication Receive Queue Size},${Critical Slow Findrow Rate},${Critical Search Task Rate},${Critical Average Document Indexing Time (sec)}"
+	input = "${User} ${Password*}"
+	timeout = ${Timeout (sec)}
+</command-line> 
+
+<command-exit>
+	down:${EXIT_CODE}=3 
+	critical:${EXIT_CODE}=2 
+	alarm:${EXIT_CODE}=1 
+	okay:${EXIT_CODE}=0 
+</command-exit> 
+
+<command-display>
+${^stdout}
+</command-display> 
+
+<tool:ex07_mailbox.vbs>
+'Command Line WMI Probe for MS Exchange 2007 Mailbox Server (to be used with com.dartware.wmi.ex07_mailbox_server)
+'Copyright (c) 2009 Dartware, LLC. All rights reserved. 
+
+On Error Resume Next
+
+' get args up to next switch in case there are spaces in list
+FUNCTION GetNextArg(j, nargs)
+	arg = ""
+	do until (j = nargs-1)
+		if (instr(wscript.arguments(j+1), "-") = 1) then
+			exit do
+		else
+			arg = arg & wscript.arguments(j+1)
+			j = j + 1
+		end if
+	loop
+	GetNextArg = arg
+END FUNCTION
+
+FUNCTION CheckError(reasonStr)
+	if (err.number <> 0) then
+		reasonStr = vbNewLine & reasonStr & "Error #" & CStr(Err.Number) & " " & Err.Description
+		wscript.echo "\{reason:=""" & reasonStr & """}"
+		wscript.quit(3)
+	end if
+END FUNCTION
+
+' Collect our arguments
+host = ""
+user = ""
+pass = ""
+crit = ""
+warn = ""
+verbose = False		' for testing only
+
+numargs = wscript.arguments.count
+for i=0 to numargs-1
+	test = wscript.arguments(i)
+	if (test = "-v") then verbose = True
+	if (test = "-host") OR (test = "-h") then
+		host = GetNextArg(i, numargs)
+	end if
+	if (test = "-user") OR (test = "-u") then
+		user = GetNextArg(i, numargs)
+	end if
+	if (test = "-pass") OR (test = "-p") then
+		pass = GetNextArg(i, numargs)
+	end if
+	if (test = "-warn") OR (test = "-w") then
+		warn = GetNextArg(i, numargs)
+	end if
+	if (test = "-crit") OR (test = "-c") then
+		crit = GetNextArg(i, numargs)
+	end if
+next
+
+' Read username and password from stdin
+if  not WScript.StdIn.AtEndOfStream then
+	inpStr = WScript.StdIn.ReadLine
+end if
+if verbose then wscript.echo "stdin: " & inpStr
+
+dim cred
+cred = split(inpStr, " ")
+user = cred(0)
+pass = cred(1) 
+
+if (host = "" or (crit = "" and warn = "")) then
+	Err.Raise vbObjectError + 1, "", "Error processing arguments"
+	CheckError("")
+end if
+
+dim warning
+dim critical
+
+warning = split(warn,",")
+critical = split(crit,",")
+if verbose then wscript.echo "warn: " & ubound(warning) & "   crit: " & ubound(critical)
+
+' Connect with target via WMI
+Set objSWbemLocator = CreateObject("WbemScripting.SWbemLocator")
+CheckError("")
+
+if (user = "") or (lcase(user) = "none") then		' no authentication needed
+	Set objWMIService = GetObject("winmgmts:" & "{impersonationLevel=impersonate}!\\" & host & "\root\cimv2") 
+	CheckError("")
+else						' authenticate with user/pass
+	user = Replace(user,"\\","\")
+	Set objWMIService = objSWbemLocator.ConnectServer (host, "\root\cimv2", user, pass)
+	CheckError("")
+	objWMIService.Security_.ImpersonationLevel = 3
+end if
+
+' Execute query
+Set colItems = objWMIService.ExecQuery ("SELECT RPCRequests, RPCAveragedLatency, RPCNumofSlowPackets FROM Win32_PerfFormattedData_MSExchangeIS_MSExchangeIS",,48)
+CheckError("")
+For Each objItem in colItems
+	RCPRequests = cdbl(objitem.RPCRequests)
+	RCPAveragedLatency = cdbl(objitem.RPCAveragedLatency)
+	RCPNumofSlowPackets = cdbl(objitem.RPCNumofSlowPackets)
+Next
+CheckError("")
+
+Set colItems = objWMIService.ExecQuery ("SELECT MessagesQueuedforSubmission FROM Win32_PerfFormattedData_MSExchangeIS_MSExchangeISMailbox WHERE Name = '_Total'",,48)
+CheckError("")
+For Each objItem in colItems
+	MessagesQueuedforSubmission = cdbl(objitem.MessagesQueuedforSubmission)
+Next
+CheckError("")
+
+Set colItems = objWMIService.ExecQuery ("SELECT MessagesQueuedforSubmission, ReplicationReceiveQueueSize FROM Win32_PerfFormattedData_MSExchangeIS_MSExchangeISPublic WHERE Name = '_Total'",,48)
+CheckError("")
+For Each objItem in colItems
+	PublicMessagesQueuedforSubmission = cdbl(objitem.MessagesQueuedforSubmission)
+	PublicReplicationReceiveQueueSize = cdbl(objitem.ReplicationReceiveQueueSize)
+Next
+CheckError("")
+
+dim mb1Name()
+dim SlowFindrowRate()
+dim SearchTaskRate()
+mb1 = 0
+
+Set colItems = objWMIService.ExecQuery ("SELECT Name, SlowFindrowRate, SearchTaskRate FROM Win32_PerfFormattedData_MSExchangeIS_MSExchangeISMailbox WHERE Name <> '_Total'",,48)
+CheckError("")
+For Each objItem in colItems
+	redim preserve mb1Name(mb1+1)
+	redim preserve SlowFindrowRate(mb1+1)
+	redim preserve SearchTaskRate(mb1+1)
+
+	mb1Name(mb1) = Replace(objItem.Name,"\","\\")
+	SlowFindrowRate(mb1) = cdbl(objitem.SlowFindrowRate)
+	SearchTaskRate(mb1) = cdbl(objitem.SearchTaskRate)
+	mb1 = mb1 + 1
+Next
+CheckError("")
+
+dim mb2Name()
+dim AverageDocumentIndexingTime()
+mb2 = 0
+
+Set colItems = objWMIService.ExecQuery ("SELECT Name, AverageDocumentIndexingTime FROM Win32_PerfFormattedData_MSExchangeSearchIndices_MSExchangeSearchIndices WHERE Name <> '_Total'",,48)
+CheckError("")
+For Each objItem in colItems
+	redim preserve mb2Name(mb2+1)
+	redim preserve AverageDocumentIndexingTime(mb2+1)
+	
+	mb2Name(mb2) = Replace(objItem.Name,"\","\\")
+	AverageDocumentIndexingTime(mb2) = cdbl(objitem.AverageDocumentIndexingTime)
+	mb2 = mb2 + 1
+Next
+CheckError("")
+
+' Evaluate criteria to set returncode
+criticalreason = ""
+warningreason = ""
+returncode = 0
+
+if (verbose) then 
+	WScript.Echo "Warning: " & "|" & warning(0) & "|" & warning(1) & "|" & warning(2) & "|"
+	WScript.Echo "Critical: " & "|" & cint(critical(0)) & "|" & critical(1) & "|" & critical(2) & "|"
+end if
+
+output= "\{"
+
+if (len(critical(0)) > 0) then
+	if (RCPRequests > cint(critical(0))) then 
+		criticalreason = criticalreason & vbNewLine & "RCP Requests is above " & critical(0) & "."
+	end if
+end if
+if (len(warning(0)) > 0) then
+	if (RCPRequests > cint(warning(0))) then 
+		warningreason = warningreason & vbNewLine & "RCP Requests is above " & warning(0) & "."
+	end if
+end if
+output = output & "RCPRequests:=" & formatnumber(RCPRequests,0,vbTrue,vbFalse,vbFalse) & ","
+
+if (len(critical(1)) > 0) then 
+	if (RPCAveragedLatency > cint(critical(1))) then 
+		criticalreason = criticalreason & vbNewLine & "RCP Averaged Latency is above " & critical(1) & "msec."
+	end if
+end if
+if (len(warning(1)) > 0) then
+	if (RPCAveragedLatency > cint(warning(1))) then 
+		warningreason = warningreason & vbNewLine & "RCP Averaged Latency is above " & warning(1) & "msec."
+	end if
+end if
+output = output & "RPCAveragedLatency:=" & formatnumber(RPCAveragedLatency,0,vbTrue,vbFalse,vbFalse) & ","
+
+if (len(critical(2)) > 0) then
+	if (RPCNumofSlowPackets > cdbl(critical(2))) then 
+		criticalreason = criticalreason & vbNewLine & "RCP Num of Slow Packets is above " & critical(2) & "."
+	end if
+end if
+if (len(warning(2)) > 0) then
+	if (RPCNumofSlowPackets > cdbl(warning(2))) then 
+		warningreason = warningreason & vbNewLine & "RCP Num of Slow Packets is above " & warning(2) & "."
+	end if
+end if
+output = output & "RPCNumofSlowPackets:=" & formatnumber(RPCNumofSlowPackets,0,vbTrue,vbFalse,vbFalse) & ","
+
+if (len(critical(3)) > 0) then
+	if (MessagesQueuedforSubmission > cdbl(critical(3))) then 
+		criticalreason = criticalreason & vbNewLine & "Messages Queued for Submission is above " & critical(3) & "."
+	end if
+end if
+if (len(warning(3)) > 0) then
+	if (MessagesQueuedforSubmission > cdbl(warning(3))) then 
+		warningreason = warningreason & vbNewLine & "Messages Queued for Submission is above " & warning(3) & "."
+	end if
+end if
+output = output & "MessagesQueuedforSubmission:=" & formatnumber(MessagesQueuedforSubmission,0,vbTrue,vbFalse,vbFalse) & ","
+
+if (len(critical(4)) > 0) then
+	if (PublicMessagesQueuedforSubmission > cdbl(critical(4))) then 
+		criticalreason = criticalreason & vbNewLine & "Public\\Messages Queued for Submission is above " & critical(4) & "."
+	end if
+end if
+if (len(warning(4)) > 0) then
+	if (PublicMessagesQueuedforSubmission > cdbl(warning(4))) then 
+		warningreason = warningreason & vbNewLine & "Public\\Messages Queued for Submission is above " & warning(4) & "."
+	end if
+end if
+output = output & "PublicMessagesQueuedforSubmission:=" & formatnumber(PublicMessagesQueuedforSubmission,0,vbTrue,vbFalse,vbFalse) & ","
+
+if (len(critical(5)) > 0) then
+	if (PublicReplicationReceiveQueueSize > cdbl(critical(5))) then 
+		criticalreason = criticalreason & vbNewLine & "Public\\Replication Receive Queue Size is above " & critical(5) & "."
+	end if
+end if
+if (len(warning(5)) > 0) then
+	if (PublicReplicationReceiveQueueSize > cdbl(warning(5))) then 
+		warningreason = warningreason & vbNewLine & "Public\\Replication Receive Queue Size is above " & warning(5) & "."
+	end if
+end if
+output = output & "PublicReplicationReceiveQueueSize:=" & formatnumber(PublicReplicationReceiveQueueSize,0,vbTrue,vbFalse,vbFalse) & ","
+
+for n = 0 to mb1-1
+	if (len(critical(6)) > 0) then
+		if (SlowFindrowRate(n) > cdbl(critical(6))) then 
+			criticalreason = criticalreason & vbNewLine & mb1Name(n) & "\\Slow Findrow Rate is above " & critical(6) & "."
+		end if
+	end if
+	if (len(warning(6)) > 0) then
+		if (SlowFindrowRate(n) > cdbl(warning(6))) then 
+			warningreason = warningreason & vbNewLine & mb1Name(n) & "\\Slow Findrow Rate is above " & warning(6) & "."
+		end if
+	end if
+	output = output & "SlowFindrowRate" & n & ":=" & formatnumber(SlowFindrowRate(n),0,vbTrue,vbFalse,vbFalse) & ","
+	
+	if (len(critical(7)) > 0) then
+		if (SearchTaskRate(n) > cdbl(critical(7))) then 
+			criticalreason = criticalreason & vbNewLine & mb1Name(n) & "\\Search Task Rate is above " & critical(7) & "."
+		end if
+	end if
+	if (len(warning(7)) > 0) then
+		if (SearchTaskRate(n) > cdbl(warning(7))) then 
+			warningreason = warningreason & vbNewLine & mb1Name(n) & "\\Search Task Rate is above " & warning(7) & "."
+		end if
+	end if
+	output = output & "SearchTaskRate" & n & ":=" & formatnumber(SearchTaskRate(n),0,vbTrue,vbFalse,vbFalse) & ","
+next
+
+for n = 0 to mb2-1
+	if (len(critical(8)) > 0) then
+		if (AverageDocumentIndexingTime(n) > cdbl(critical(8))) then 
+			criticalreason = criticalreason & vbNewLine & mb2Name(n) & "\\Average Document Indexing Time is above " & critical(8) & "sec."
+		end if
+	end if
+	if (len(warning(8)) > 0) then
+		if (AverageDocumentIndexingTime(n) > cdbl(warning(8))) then 
+			warningreason = warningreason & vbNewLine & mb2Name(n) & "\\Average Document Indexing Time is above " & warning(8) & "sec."
+		end if
+	end if
+	output = output & "AverageDocumentIndexingTime" & n & ":=" & formatnumber(AverageDocumentIndexingTime(n),0,vbTrue,vbFalse,vbFalse) & ","
+next
+
+if (criticalreason <> "") then
+	reason = criticalreason
+	returncode = 2
+elseif (warningreason <> "") then
+	reason = warningreason
+	returncode = 1
+end if
+
+' Finish building output
+output = output & "reason:=""" & reason & """}"
+
+wscript.echo output & "\B5\WMI MSExchange 2007 Mailbox Server\P\"
+wscript.echo "  \4\RCP Requests:\0\                            $RCPRequests"
+wscript.echo "  \4\RCP Averaged Latency:\0\                    $RPCAveragedLatency"
+wscript.echo "  \4\RCP Num of Slow Packets:\0\                 $RPCNumofSlowPackets"
+wscript.echo "  \4\Messages Queued for Submission:\0\          $MessagesQueuedforSubmission"
+wscript.echo "  \4\Public\\Messages Queued for Submission:\0\   $PublicMessagesQueuedforSubmission"
+wscript.echo "  \4\Public\\Replication Receive Queue Size:\0\   $PublicReplicationReceiveQueueSize"
+
+for n = 0 to mb1-1
+	wscript.echo "  \4\" & mb1Name(n) & "\\Slow Findrow Rate:\0\  $SlowFindrowRate" & n
+	wscript.echo "  \4\" & mb1Name(n) & "\\Search Task Rate:\0\   $SearchTaskRate" & n
+next
+
+for n = 0 to mb2-1
+	wscript.echo "  \4\" & mb2Name(n) & "\\Average Document Indexing Time:\0\ $AverageDocumentIndexingTime" & n & " sec"
+next
+
+' Done
+wscript.quit(returncode)
+</tool:ex07_mailbox.vbs>

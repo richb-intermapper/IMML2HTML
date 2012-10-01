@@ -1,0 +1,303 @@
+<!--
+	Wireless - Tranzeo AP-5A (com.dartware.wrls.tranzeo.ap.5a)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 23 Feb 2005 tex.
+
+	This probe is known to monitor Board OS: 6.3.6A (0410) / Board Software: 1.20 (Build 19)
+-->
+
+
+<header>
+	"type"			= 	"tcp-script"
+	"package"		= 	"com.dartware"
+	"probe_name"	=	"wrls.tranzeo.ap.5a"
+	"human_name"	=	"Wireless - Tranzeo AP-5A"
+	"version"		= 	"1.3"
+	"address_type"	= 	"IP"
+	"port_number"	=	"80"
+	"equiv_class"	= 	"WRLS"
+	"display_name"	=	"Wireless/Tranzeo/Tranzeo AP-5A"
+	"url_hint"		=	"http://${ADDRESS}"
+</header>
+
+<description>
+
+\GB\Tranzeo AP-5A\P\
+
+This probe is meant to monitor a \u2=http://www.tranzeo.com\Tranzeo\p0\ TR-AP.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.3 or later.
+</description>
+
+<parameters>
+	"User"				=		""
+	"Password*"			=		""
+</parameters>
+
+<script>
+CONN #60
+FAIL @FAILED
+
+CHCK "${User}" ELSE @NO_USER
+
+WAIT #60 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+SEND "GET /get_info_config.js HTTP/1.1\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User}${Password*}" ELSE #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+SEND "\r\n"
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @UNAVAIL_GET_RESPONSE
+
+STOR "^content_length" #2048
+#Scan lines for "Content-Length" or ""
+NEXT
+MTCH "Content-Length[^0-9]*([0-9]+)"ir else goto #+4
+STOR "^content_length" "${1}"
+EXPT "^$"r
+GOTO #+2
+MTCH "^$"r else goto #-5
+
+LINE #${^content_length}
+DISC @NO_MATCH
+EXPT "data=\"(.*)\""ir
+
+#Debug
+#STOR "dd" "${1}"
+#EVAL ${len} := strlen( "${1}" )
+#STOR "dd" "captured string is ${len} chars long"
+
+EVAL ${^data} := unpack( "${1}", "#~" )
+
+#Debug
+#EVAL ${len} := strlen( "${^data}" )
+#STOR "dd" "unpacked data is ${len} chars long"
+
+#Debug
+#EVAL ${^hex} := sprintf( "%a", substr( "${^data}", 17, 20 ) )
+#STOR "dd" "${^hex}"
+
+#The sprintf handles the null-terminated string
+EVAL ${^device_name} := sprintf( "%s", substr( "${^data}", 19, 20 ) )
+
+#EVAL ${^ssid} := substr( "${^data}", 69, 33 )
+#SBNE "${^ssid}" "[^\ -~]*(.*)[^\ -~]*"r #+2
+#STOR "^ssid" "${1}"
+
+EVAL ${^ssid} := sprintf( "%s", substr( "${^data}", 71, 32 ) )
+
+EVAL ${^channel} := unpack( substr( "${^data}", 104, 1 ), "C" )
+
+# if (ConfigData.wepon )
+#	if (ConfigData.keylen)
+#		WEP = "On (128-bit)"
+#	else
+#		WEP = "On (64-bit)"
+# else if (ConfigData.wpa_enabled)
+#	if (ConfigData.wpa_cipher == 2)
+#		WEP = "WPA (AES)"
+#	else
+#		WEP = "WPA (TKIP)"
+# else
+#	WEP = "Off"
+
+# if (ConfigData.wepon )
+#	if (ConfigData.auth == 2)
+#		auth = "WEP Shared Key"
+#	else
+#		auth = "WEP Open"
+# else if (ConfigData.ieee8021x_enabled)
+#	auth = "802.1x"
+# else
+#	auth = "None"
+
+#Debug
+#EVAL ${^hex} := sprintf( "%a", substr( "${^data}", 230, 20 ) )
+#STOR "dd" "${^hex}"
+
+#ConfigData.wepon
+EVAL ${^wepon} := unpack( substr( "${^data}", 165, 1 ), "C" )
+NBNE #${^wepon} #0 @WEP_ON
+
+#ConfigData.ieee8021x_enabled
+EVAL ${^sec} := unpack( substr( "${^data}", 248, 1 ), "C" )
+NBNE #${^sec} #0 #+3
+STOR "^authentication" "None"
+GOTO #+2
+STOR "^authentication" "802.1x"
+
+#ConfigData.wpa_enabled
+EVAL ${^sec} := unpack( substr( "${^data}", 177, 1 ), "C" )
+NBNE #${^sec} #0 #+3
+STOR "^WEP" "Off"
+GOTO @GOT_WEP
+
+#ConfigData.wpa_cipher
+EVAL ${^sec} := unpack( substr( "${^data}", 166, 1 ), "C" )
+#In practice, this should be compared against #1, not #2
+# but this is the way the Tranzeo web interface does it.
+NBNE #${^sec} #2 #+3
+STOR "^WEP" "WPA (AES)"
+GOTO @GOT_WEP
+STOR "^WEP" "WPA (TKIP)"
+GOTO @GOT_WEP
+
+@WEP_ON:
+#ConfigData.keylen
+EVAL ${^sec} := unpack( substr( "${^data}", 111, 1 ), "C" )
+NBNE #${^sec} #0 #+3
+STOR "^WEP" "On (64-bit)"
+GOTO #+2
+STOR "^WEP" "On (128-bit)"
+
+#ConfigData.auth
+EVAL ${^sec} := unpack( substr( "${^data}", 110, 1 ), "C" )
+NBNE #${^sec} #2 #+3
+STOR "^authentication" "WEP Shared Key"
+GOTO #+2
+STOR "^authentication" "WEP Open"
+
+@GOT_WEP:
+
+# if (ConfigData.mac_filtering )
+#	access_control = "Enabled"
+# else
+#	access_control = "Disabled"
+
+#Debug
+#EVAL ${^hex} := sprintf( "%a", substr( "${^data}", 440, 20 ) )
+#STOR "dd" "${^hex}"
+
+#ConfigData.mac_filtering
+EVAL ${^sec} := unpack( substr( "${^data}", 456, 1 ), "C" )
+NBNE #${^sec} #0 #+3
+STOR "^access_control" "Disabled"
+GOTO #+2
+STOR "^access_control" "Enabled"
+
+#Reconnect and get data from /get_info_static.js
+STOR "RET" "@GET_STATIC_INFO"
+DISC @RECONNECT
+SKIP ".*"r ELSE @RECONNECT
+
+GOTO @RECONNECT
+
+@GET_STATIC_INFO:
+WAIT #30 @IDLE (idle timeout in secs)
+SEND "GET /get_info_static.js HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" ELSE #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User}${Password*}" ELSE #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+SEND "\r\n"
+DISC @DISCONNECT (disconnect handler)
+
+MTCH "HTTP/"i ELSE @UNEXPECTED_GREETING
+MTCH "200" ELSE @BAD_GET_RESPONSE
+
+STOR "^content_length" #2048
+#Scan lines for "Content-Length" or "" (end-of-header \r\n)
+NEXT
+MTCH "Content-Length[^0-9]*([0-9]+)"ir else goto #+4
+STOR "^content_length" "${1}"
+EXPT "^$"r
+GOTO #+2
+MTCH "^$"r else goto #-5
+
+LINE #${^content_length}
+DISC @NO_MATCH
+EXPT "data=\"(.*)\""ir
+
+EVAL ${^data} := unpack( "${1}", "#~" )
+
+#StaticData.mac
+EVAL ${^MAC} := sprintf( "%a", substr( "${^data}", 27, 6 ) )
+
+#StaticData.version
+EVAL ${^board_OS} := sprintf( "%s", substr( "${^data}", 33, 16 ) )
+
+#StaticData.sales_version + " (Build " + StaticData.build_number + ")"
+EVAL ${^board_software} := sprintf( "%s", substr( "${^data}", 90, 16 ) )
+EVAL ${^build} := unpack( substr( "${^data}", 106, 1 ), "C" )
+SCAT "^board_software" " (Build ${^build})"
+
+DONE OKAY
+
+@NO_MATCH:
+DONE WARN "Unrecognized response from device."
+
+@RECONNECT:
+RCON
+GOTO ${RET}:
+
+@IDLE:
+DONE DOWN "No data for ${_IDLETIMEOUT} seconds. [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@UNAVAIL_GET_RESPONSE:
+MTCH m"50[0-9]" else goto @BAD_GET_RESPONSE
+DONE DOWN "${_LINE:50}"
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "201 Created"
+MTCH "202" ELSE #+2
+DONE WARN "202 Accepted"
+MTCH "204" ELSE #+2
+DONE WARN "204 No Content"
+MTCH "301" ELSE #+2
+DONE WARN "301 Moved Permanently"
+MTCH "302" ELSE #+2
+DONE WARN "302 Moved Temporarily"
+MTCH "304" ELSE #+2
+DONE WARN "304 Not Modified"
+MTCH "400" ELSE #+2
+DONE WARN "400 Bad Request"
+MTCH "401" ELSE #+2
+DONE WARN "401 Unauthorized"
+MTCH "403" ELSE #+2
+DONE WARN "Invalid login."
+MTCH "404" ELSE #+2
+DONE WARN "Unrecognized response (404)."
+MTCH "500" ELSE #+2
+DONE ALRM "500 Internal Server Error"
+MTCH "501" ELSE #+2
+DONE ALRM "501 Not Implemented"
+MTCH "502" ELSE #+2
+DONE ALRM "502 Bad Gateway"
+MTCH "503" ELSE #+2
+DONE ALRM "503 Service Unavailable"
+DONE ALRM "Unknown Error Code ${_LINE:4}"
+
+@DISCONNECT:
+DONE DOWN "Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+</script>
+
+<script-output>
+\B5\Tranzeo AP-5A Statistics\P0\
+    \4\Device Name:\0\ ${^device_name}
+           \4\SSID:\0\ ${^ssid}
+        \4\Channel:\0\ ${^channel}
+    \4\AP MAC Adrs:\0\ ${^MAC}
+            \4\WEP:\0\ ${^WEP}         \4\Board OS:\0\ ${^board_OS}
+ \4\Authentication:\0\ ${^authentication}  \4\Board Software:\0\ ${^board_software}
+ \4\Access Control:\0\ ${^access_control}
+</script-output>

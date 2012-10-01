@@ -1,0 +1,228 @@
+<!-- 
+	Table Viewer (com.dartware.snmp.tableviewer.txt)
+	Custom probe for InterMapper (http://www.intermapper.com) 
+	Please feel free to use this as a base for further development.
+
+	01 Jul 2007  Created from documentation in Dev Guide -reb
+	09 Jul 2007  Additional tweaks. -reb
+	13 Feb 2008  Addition of many other tables. -reb
+	20 Feb 2008  Updated to give link to Bridge MIB. -reb
+	30 May 2008  Updated to mention ARPTable in ipNetToMediaTable link -reb
+	24 Nov 2009  Changed ifTable and ifXTable ifAdminStatus to STRING 
+					so it will be displayed nicely. -reb
+	30 Sep 2010  Added Traffic Counter on-demand Table -reb
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.tableviewer"
+	human_name		=	"SNMP - Table Viewer"
+	version			= 	"1.8"
+	address_type	= 	"IP,AT"
+	port_number		=	"161"
+	display_name	=	"SNMP/Table Viewer"
+</header>
+
+
+<description>
+
+\GB\SNMP Table Viewer Probe \P\
+
+This probe displays the contents of several useful tables from common SNMP MIBs. It retrieves its data by walking the SNMP data values in the tables.
+
+\b\ifTable\p\ 
+The "Interfaces" table gives information about the physical and logical interfaces of the device. It displays the following columns: \i\ifIndex\p\, \i\ifDescr\p\, \i\ifType\p\, \i\ifSpeed\p\, \i\ifPhysAddress\p\, \i\ifOperStatus\p\, and \i\ifAdminStatus\p\. It is defined in MIB-II (RFC-1213) and updated in the IF-MIB.
+
+\b\ifXTable\p\ 
+The Extended Interfaces table defined in IF-MIB. This is an extended version of ifTable and adds the \i\ifName\p\ and \i\ifAlias\p\ fields/columns to those shown in the ifTable above.
+
+\b\Traffic Counters\p\ 
+This table displays the traffic counters: ifInOctets and ifOutOctets from the MIB-II ifTable, and the ifHCInOctets and ifHCOutOctets from the IF-MIB. To determine the traffic rate, refresh the window and compare two separate readings. The difference divided by the time between the refreshes (in seconds) will be the number of bytes/second.
+
+\b\tcpConnTable\p\ 
+Displays information about any connections that are present: Variables include \i\tcpConnLocalAddress\p\, \i\tcpConnLocalPort\p\, \i\tcpConnRemAddress\p\, and \i\tcpConnRemPort\p\. It is defined in MIB-II.
+
+\b\udpTable\p\ 
+Displays information about any UDP listeners that are present: Variables include \i\udpLocalAddress\p\, \i\udpLocalPort\p\. It is defined in MIB-II.
+
+\b\ipAddrTable\p\ 
+This table displays the IP address/mask/broadcast address for each interface. Includes \i\ipAdEntAddr\p\, \i\ipAdEntifIndex\p\, \i\ipAdEntNetMask\p\, \i\ipAdEntBcastAddr\p\,  and \i\ipAdEntReasmMaxSize\p\. It is defined in RFC-1213, and updated in the IP-MIB. 
+
+\b\ipRouteTable\p\ 
+This table (currently deprecated) comes from RFC-1213 (MIB-II). 
+
+\b\ipCidrRouteTable\p\ and \b\ipForwardTable\p\ 
+These tables come from the IP-FORWARD-MIB, which displays information about CIDR multipath IP Routes. Note: the ipForwardTable obsoletes the ipRouteTable of MIB-II, and is in turn obsoleted by the ipCidrRouteTable.
+
+\b\ipNetToMediaTable\p\ 
+The Net Address to Media Address table (also known as the "ARP Table") displays these fields/columns: \i\ipNetToMediaIfIndex\p\, \i\ipNetToMediaNetAddress\p\, \i\ipNetToMediaPhysAddress\p\, and \i\ipNetToMediaType\p\. It is defined in RFC-1213.
+
+\b\dot1dTpFdbTable\p\ 
+The "Bridge MIB" (RFC1493) displays the forwarding database for transparent bridges. 
+
+The Status Window contains links to each of these tables. Click the link to see the contents of the table on the selected device.
+
+This probe requires that you first import these MIBs: \u4=http://www.ietf.org/rfc/rfc1213.txt\RFC1213-MIB (MIB-II)\p0\, \u4=http://www.ietf.org/rfc/rfc1493.txt\Bridge MIB (rfc1493)\p0\, \u4=http://www.ietf.org/rfc/rfc2011.txt\IP-MIB (rfc2011)\p0\, \u4=http://www.ietf.org/rfc/rfc2863.txt\IF-MIB (rfc2863)\p0\, and \u4=http://www.ietf.org/rfc/rfc2096.txt\IP-FORWARD-MIB (rfc2096).\p0\ These are all bundled together in a \u4=http://intermapper.com/support/users/probes.html#tableviewer\single zip archive.\p0\ 
+</description>
+
+<parameters>
+
+-- No parameters...
+
+</parameters>
+
+<snmp-device-variables-ondemand>
+   
+-- The Interfaces Table - ifTable 
+
+ifTable,               .1,                  TABLE,       "Information about the physical interfaces for ${deviceaddress}"
+ifTable/ifIndex,       1.3.6.1.2.1.2.2.1.1, DEFAULT,     "Index"       <!-- using column OID -->
+ifTable/ifDescr,       1.3.6.1.2.1.2.2.1.2, DEFAULT,     "Description" <!-- using column OID -->
+ifTable/ifType,        1.3.6.1.2.1.2.2.1.3, STRING,      "Link Type  " <!-- using column OID -->
+ifTable/ifSpeed,       1.3.6.1.2.1.2.2.1.5, DEFAULT,     "Link Speed"  <!-- using column OID -->
+ifTable/ifPhysAddress, ifPhysAddress,       HEXADECIMAL, "MAC Address" <!-- using column name from MIB -->
+ifTable/ifOperStatus,  ifOperStatus,        STRING,      "Opn'l"       <!-- using column name from MIB -->
+ifTable/ifAdminStatus, ifAdminStatus,       STRING,     "Admin"       <!-- using column name from MIB -->
+
+-- The Extended Interfaces Table (SNMPv2c only) 
+
+ifXTable,               .1,                    TABLE,       "Extended ifTable for ${deviceaddress}"
+ifXTable/ifIndex,       IF-MIB::ifIndex,       DEFAULT,     "Interface index" 
+ifXTable/ifDescr,       IF-MIB::ifDescr,       DEFAULT,     "Description"
+ifXTable/ifName,        IF-MIB::ifName,        DEFAULT,     "Name"     <!-- ifXTable -->
+ifXTable/ifAlias,		IF-MIB::ifAlias,       DEFAULT,     "Alias"    <!-- ifXTable -->
+ifXTable/ifType,        IF-MIB::ifType,        STRING,      "Link Type  "
+ifXTable/ifSpeed,       IF-MIB::ifSpeed,       DEFAULT,     "Link Speed"
+ifXTable/ifHighSpeed,	IF-MIB::ifHighSpeed,   DEFAULT,     "Link Mbps"
+ifXTable/ifPhysAddress, IF-MIB::ifPhysAddress, HEXADECIMAL, "MAC Address  "
+ifXTable/ifOperStatus,  IF-MIB::ifOperStatus,  STRING,      "Opn'l"
+ifXTable/ifAdminStatus, IF-MIB::ifAdminStatus, STRING,     "Admin"
+
+-- Traffic Table (SNMPv2c only) 
+
+trafficTable,               .1,                    TABLE,       "Traffic counters (octets) for ${deviceaddress}"
+trafficTable/ifIndex,       IF-MIB::ifIndex,       DEFAULT,     "Interface index" 
+trafficTable/inOctets,      ifInOctets,            DEFAULT,     "Input" 
+trafficTable/outOctets,     ifOutOctets,           DEFAULT,     "Output" 
+trafficTable/hcInOctets,    IF-MIB::ifHCInOctets,  DEFAULT,     "HS Input" 
+trafficTable/hcOutOctets,   IF-MIB::ifHCOutOctets, DEFAULT,     "HS Output" 
+
+-- The IP Address Table 
+
+ipAddrTable,                     .1,                  TABLE,   "Interface and its associated IP address/subnet for ${deviceaddress}"
+ipAddrTable/ipAdEntIfIndex,      ipAdEntIfIndex,      DEFAULT, "ifIndex"
+ipAddrTable/ipAdEntAddr,         ipAdEntAddr,         DEFAULT, "Entity"
+ipAddrTable/ipAdEntNetMask,      ipAdEntNetMask,      DEFAULT, "Mask"
+ipAddrTable/ipAdEntBcastAddr,    ipAdEntBcastAddr,    STRING,  "B'cast"
+ipAddrTable/ipAdEntReasmMaxSize, ipAdEntReasmMaxSize, STRING,  "Max Reassem"
+
+-- The IP Net-to-Media Address Table - the ARP Table
+
+ARPTable,                         .1,                      TABLE,       "Map from IP addresses to physical addresses for ${deviceaddress}"
+ARPTable/ipNetToMediaIfIndex,     ipNetToMediaType[0:1],   DEFAULT,     "Interface index"
+ARPTable/ipNetToMediaNetAddress,  ipNetToMediaType[1:4],   DEFAULT,     "IP Address"
+ARPTable/ipNetToMediaPhysAddress, ipNetToMediaPhysAddress, HEXADECIMAL, "MAC Address"
+ARPTable/ipNetToMediaType,        ipNetToMediaType,        STRING,      "Type"
+
+-- The TCP Connection Table 
+
+tcpConnTable,                     .1,                 TABLE,   "TCP Connections that are in place in ${deviceaddress}"
+tcpConnTable/tcpConnState,        tcpConnState,       DEFAULT, "Connection state"
+tcpConnTable/tcpConnLocalAddress, tcpConnState[0:4],  DEFAULT, "Local Adrs"
+tcpConnTable/tcpConnLocalPort,    tcpConnState[4:1],  DEFAULT, "Local Port"
+tcpConnTable/tcpConnRemAddress,   tcpConnState[5:4],  DEFAULT, "Remote Adrs"
+tcpConnTable/tcpConnRemPort,      tcpConnState[9:1],  DEFAULT, "Remote Port"
+
+-- The UDP Table 
+
+udpTable,                 .1,              TABLE,   "UDP Listeners in ${deviceaddress}"
+udpTable/udpLocalAddress, udpLocalAddress, DEFAULT, "Adrs"
+udpTable/udpLocalPort,    udpLocalPort,    DEFAULT, "Port"
+
+dot1dTpFdbTable,                   .1,                TABLE,       "Transparent switch forwarding table for ${deviceaddress}"
+dot1dTpFdbTable/dot1dTpFdbAddress, dot1dTpFdbAddress, DEFAULT,     "MAC Address"
+dot1dTpFdbTable/dot1dTpFdbPort,    dot1dTpFdbPort,    DEFAULT,     "Port number"
+dot1dTpFdbTable/dot1dTpFdbStatus,  dot1dTpFdbStatus,  DEFAULT,     "Status"
+
+-- The atTable Deprecated - not in a MIB now
+
+-- atTable,                         .1,     TABLE,       "Map from Network addresses to physical addresses."
+-- atTable/atIfIndex,     atIfIndex,        DEFAULT,     "Interface index"
+-- atTable/atPhysAddress, atPhysAddress,    HEXADECIMAL, "MAC Address"
+-- atTable/atNetAddress,  atNetAddress,     DEFAULT,     "IP Address"
+
+ipRouteTable,                      .1,                   TABLE,       "IP Routing Table from MIB-II for ${deviceaddress}"
+ipRouteTable/ipRouteDest,          ipRouteDest,          DEFAULT,     "Destination IP address"
+ipRouteTable/ipRouteIfIndex,       ipRouteIfIndex,       DEFAULT,     "ifIndex"
+ipRouteTable/ipRouteMetric1,       ipRouteMetric1,       DEFAULT,     ""
+ipRouteTable/ipRouteMetric2,       ipRouteMetric2,       DEFAULT,     ""
+ipRouteTable/ipRouteMetric3,       ipRouteMetric3,       DEFAULT,     ""
+ipRouteTable/ipRouteMetric4,       ipRouteMetric4,       DEFAULT,     ""
+ipRouteTable/ipRouteNextHop,       ipRouteNextHop,       DEFAULT,     "Next hop"
+ipRouteTable/ipRouteType,          ipRouteType,          DEFAULT,     "Route type"
+ipRouteTable/ipRouteProto,         ipRouteProto,         DEFAULT,     "Routing protocol"
+ipRouteTable/ipRouteAge,           ipRouteAge,           DEFAULT,     "Route age"
+ipRouteTable/ipRouteMask,          ipRouteMask,          DEFAULT,     "Route mask"
+ipRouteTable/ipRouteMetric5,       ipRouteMetric5,       DEFAULT,     ""
+ipRouteTable/ipRouteInfo,          ipRouteInfo,          DEFAULT,     "Route Info"
+
+ipCidrRouteTable,                      .1,                   TABLE,       "CIDR Route table for ${deviceaddress}"
+ipCidrRouteTable/ipCidrRouteDest,      ipCidrRouteDest,      DEFAULT,     "Destination IP address"
+ipCidrRouteTable/ipCidrRouteMask,      ipCidrRouteMask,      DEFAULT,     "Route mask"
+ipCidrRouteTable/ipCidrRouteTos,       ipCidrRouteTos,       DEFAULT,     "Type of service"
+ipCidrRouteTable/ipCidrRouteNextHop,   ipCidrRouteNextHop,   DEFAULT,     "Next hop"
+ipCidrRouteTable/ipCidrRouteIfIndex,   ipCidrRouteIfIndex,   DEFAULT,     "ifIndex"
+ipCidrRouteTable/ipCidrRouteType,      ipCidrRouteType,      DEFAULT,     "Route type"
+ipCidrRouteTable/ipCidrRouteProto,     ipCidrRouteProto,     DEFAULT,     "Routing protocol"
+ipCidrRouteTable/ipCidrRouteAge,       ipCidrRouteAge,       DEFAULT,     "Route age"
+ipCidrRouteTable/ipCidrRouteInfo,      ipCidrRouteInfo,      DEFAULT,     "Route Info"
+ipCidrRouteTable/ipCidrRouteNextHopAS, ipCidrRouteNextHopAS, DEFAULT,     "Next hop AS"
+ipCidrRouteTable/ipCidrRouteMetric1,   ipCidrRouteMetric1,   DEFAULT,     ""
+ipCidrRouteTable/ipCidrRouteMetric2,   ipCidrRouteMetric2,   DEFAULT,     ""
+ipCidrRouteTable/ipCidrRouteMetric3,   ipCidrRouteMetric3,   DEFAULT,     ""
+ipCidrRouteTable/ipCidrRouteMetric4,   ipCidrRouteMetric4,   DEFAULT,     ""
+ipCidrRouteTable/ipCidrRouteMetric5,   ipCidrRouteMetric5,   DEFAULT,     ""
+ipCidrRouteTable/ipCidrRouteStatus,    ipCidrRouteStatus,    DEFAULT,     "Route status"
+
+ipForwardTable,                      .1,                   TABLE,       "IP Forwarding Table for ${deviceaddress}"
+ipForwardTable/ipForwardDest,        ipForwardDest,        DEFAULT,     "Destination IP address"
+ipForwardTable/ipForwardMask,        ipForwardMask,        DEFAULT,     "Route mask"
+ipForwardTable/ipForwardPolicy,      ipForwardPolicy,      DEFAULT,     "Forwarding policy"
+ipForwardTable/ipForwardNextHop,     ipForwardNextHop,     DEFAULT,     "Next hop"
+ipForwardTable/ipForwardIfIndex,     ipForwardIfIndex,     DEFAULT,     "ifIndex"
+ipForwardTable/ipForwardType,        ipForwardType,        DEFAULT,     "Route type"
+ipForwardTable/ipForwardProto,       ipForwardProto,       DEFAULT,     "Routing protocol"
+ipForwardTable/ipForwardAge,         ipForwardAge,         DEFAULT,     "Route age"
+ipForwardTable/ipForwardInfo,        ipForwardInfo,        DEFAULT,     "Route info"
+ipForwardTable/ipForwardNextHopAS,   ipForwardNextHopAS,   DEFAULT,     "Next hop AS"
+ipForwardTable/ipForwardMetric1,     ipForwardMetric1,     DEFAULT,     ""
+ipForwardTable/ipForwardMetric2,     ipForwardMetric2,     DEFAULT,     ""
+ipForwardTable/ipForwardMetric3,     ipForwardMetric3,     DEFAULT,     ""
+ipForwardTable/ipForwardMetric4,     ipForwardMetric4,     DEFAULT,     ""
+ipForwardTable/ipForwardMetric5,     ipForwardMetric5,     DEFAULT,     ""
+
+</snmp-device-variables-ondemand>
+
+<snmp-device-display>
+
+\B5\Interface Tables:\p0\
+  ${ifTable:View the ifTable}   
+  ${ifXTable:View the Extended ifTable}
+  ${trafficTable:View Traffic Counters}
+  
+\B5\TCP & UDP Tables:\p0\
+  ${tcpConnTable:View the tcpConnTable}   
+  ${udpTable:View the udpTable}
+
+\B5\Layer 3 Tables:\p0\
+  ${ipAddrTable:View the ipAddrTable}   
+  ${ipRouteTable:View the ipRouteTable}
+  ${ipForwardTable:View the IP Forwarding Table}  
+  ${ipCidrRouteTable: View the CIDR Route Table}  
+
+\B5\Layer 2 Tables:\p0\
+  ${ARPTable:View the ipNetToMediaTable (ARPTable)}
+  ${dot1dTpFdbTable:View the Bridge-MIB Table}   
+  
+</snmp-device-display>

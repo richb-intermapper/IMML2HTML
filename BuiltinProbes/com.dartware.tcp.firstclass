@@ -1,0 +1,39 @@
+<!-- 
+	FirstClass mail server (com.dartware.tcp.firstclass)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.firstclass"
+	human_name		=	"FirstClass Server"
+	version			= 	"1.6"
+	address_type	= 	"IP"
+	port_number		=	"510"
+	display_name	=	"Servers-Proprietary/FirstClass Server"
+</header>
+
+<description>
+
+\GB\FirstClass Email Server\P\
+
+This probe connects to a FirstClass mail server that defaults to listening on port 510. It sends two carriage returns, and expects to receive a banner; the default contains "FirstClass System".
+
+</description>
+
+<parameters>
+
+"banner"							=		"FirstClass System"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+SEND "\r\r"
+EXPT "${banner}"i #+2
+DONE OKAY
+DONE ALRM "[FirstClass Server] Did not find '${banner}' in the banner."
+
+</script>

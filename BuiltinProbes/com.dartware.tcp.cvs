@@ -1,0 +1,64 @@
+<!-- 
+	CVS Server Probe (com.dartware.tcp.cvs)
+	Copyright © 2001 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.cvs"
+	human_name		=	"CVS Server"
+	version			= 	"1.6"
+	address_type	= 	"IP"
+	port_number		=	"2401"
+	display_name	=	"Servers-Standard/CVS Server"
+
+</header>
+
+<description>
+
+\GB\CVS Server\P\
+
+This probe tests a CVS server by connecting to its port (default port is 2401) and issuing the proper authentication strings. These are:
+
+BEGIN AUTH REQUEST<lf>
+CVSROOT_Path<lf>
+Username<lf>
+Scrambled_password<lf>
+END AUTH REQUEST<lf>
+
+If the response is "I LOVE YOU", then the authentication succeeded.
+If the response is "I HATE YOU", then either the authentication failed or the path to CVSROOT is incorrect.
+
+</description>
+
+<parameters>
+
+"CVSROOT_path"				= "/usr/local/newrepos"
+"Username"					= "anonymous"
+"Password*"					= "anonymous"
+
+</parameters>
+
+<script>
+
+CONN #60 (idle timeout in seconds)
+WAIT #30 @IDLE (idle timeout in seconds)
+DISC @DISCONNECT
+
+SEND "BEGIN AUTH REQUEST\n"
+SEND "${CVSROOT_path}\n${Username}\n${_CVSPASSWORD:${Password*}}\n"
+SEND "END AUTH REQUEST\n"
+MTCH "I LOVE YOU" #+2
+DONE OKAY
+MTCH "I HATE YOU" #+2
+DONE ALRM "[CVS Server] Authentication Failure."
+DONE DOWN "[CVS Server] Unknown error response from CVS Server. (${_LINE:50})"
+
+@IDLE:
+DONE DOWN "[CVS Server] No connection."
+
+@DISCONNECT:
+DONE DOWN "[CVS Server] Unexpectedly disconnected."
+
+</script>

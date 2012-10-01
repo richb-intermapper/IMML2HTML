@@ -1,0 +1,39 @@
+<!-- 
+	SIP (com.dartware.ntp)
+	Copyright © 2009 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"sip"
+	human_name		=	"SIP over UDP"
+	version			= 	"1.0"
+	address_type	= 	"IP"
+	port_number		= 	"5060"
+	
+	display_name	=	"Servers-Standard/SIP over UDP"
+
+</header>
+
+<description>
+
+\GB\Session Initiation Protocol (SIP) over UDP\P\
+
+The protocol used to set up voice communications for Voice over IP (VOIP), as described in \u2=http://www.ietf.org/rfc/rfc3261.txt\RFC 3261\p0\. This probe sends a SIP request in a single UDP packet and checks for a valid SIP response.
+
+By default, this probe sends an OPTIONS command to the target device. However, some VOIP systems will not answer un-authenticated OPTIONS requests. For these devices, change the command to REGISTER.
+
+\i\URI\p\ is the SIP uniform resource identifier in the request.
+
+\i\Command\p\ is the SIP command to send in the request.
+
+</description>
+
+<parameters>
+
+"URI" = "sip:nobody@example.com"
+"Command[OPTIONS,REGISTER]" = "OPTIONS"
+
+</parameters>
+

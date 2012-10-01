@@ -1,0 +1,39 @@
+<!--
+	SNMP - Netscreen VPN (com.dartware.snmp.netscreen)
+	Copyright (c) 2008 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.netscreen"
+	human_name		=	"SNMP - Netscreen VPN"
+	version			= 	"1.1"
+	address_type	= 	"IP,AT"
+	port_number		=	"161"
+	display_name	=	"Network Devices/Juniper/Netscreen VPN"
+</header>
+
+
+<description>
+
+\GB\SNMP - Netscreen VPN\P\
+
+This probe monitors the status of VPN Tunnels in a Netscreen Firewall. It uses the nsVpnMonTable to monitor the Netscreen's active tunnels, which are treated and mapped as separate interfaces.
+
+Some statistics may only be available if the monitoring status for the tunnel as reported by nsVpnMonMonState is on.
+
+</description>
+
+<parameters>
+
+</parameters>
+
+<snmp-device-variables>
+
+</snmp-device-variables>
+
+<snmp-device-display>
+
+</snmp-device-display>
+

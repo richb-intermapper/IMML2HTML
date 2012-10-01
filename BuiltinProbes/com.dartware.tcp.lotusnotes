@@ -1,0 +1,38 @@
+<!-- 
+	Lotus Notes (com.dartware.tcp.lotusnotes)
+	Copyright © 2003 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.lotusnotes"
+	human_name		=	"Lotus Notes"
+	version			= 	"1.4"
+	address_type	= 	"IP"
+	port_number		=	"1352"
+	display_name	=	"Servers-Proprietary/Lotus Notes"
+</header>
+
+<description>
+
+\GB\Lotus Notes Probe\P\
+
+Lotus Notes uses Port 1352 for its Remote Procedure Call and Notes Replication. 
+
+This probe simply establishes a connection to the indicated port, which presumably is a Lotus Notes server. If the connection is successful, the device's status is set to OK; otherwise, its status is DOWN.
+
+</description>
+
+<parameters>
+
+-- No parameters.
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+DONE OKAY
+
+</script>

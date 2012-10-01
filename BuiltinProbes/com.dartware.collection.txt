@@ -1,0 +1,17 @@
+<header>
+	type			= "collection"
+	package			= "com.dartware"
+	probe_name		= "collection"
+	human_name		= "Collection"
+	display_name	= "Collections/Collection"
+	version			= "0.3"
+	flags			= "INVISIBLE"
+</header>
+
+<description>
+
+\GB\Empty Collection\P\
+
+This probe will create an empty collection device.	
+	
+</description>

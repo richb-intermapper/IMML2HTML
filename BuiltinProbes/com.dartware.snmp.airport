@@ -1,0 +1,38 @@
+<!-- 
+	SNMP - Apple AirPort (Graphite) (com.dartware.snmp.airport)
+	Copyright (c) 2002-2003 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.airport"
+	human_name		=	"SNMP - Apple AirPort (Graphite)"
+	version			= 	"1.7"
+	address_type	= 	"IP,AT"
+	equiv_class		= 	"SNMP"
+	port_number		=	"161"
+
+	display_name	=	"Network Devices/Apple/Apple AirPort (Graphite)"
+
+</header>
+
+
+<description>
+
+\GB\SNMP - Apple AirPort (Graphite)\P\
+
+This probe monitors the custom MIB in an Apple AirPort Base Station (v1 = Graphite) using SNMPv1. This probe can monitor the number of clients using the base station and list each one with its signal strength.
+
+You must specify the AirPort Base Stations's password as the "read/write community" parameter.
+
+This probe uses a SNMP set-request to tell the AirPort Base Station to periodically discover its clients and test their signal strengths. 
+
+</description>
+
+<parameters>
+
+"Read/Write Community*"   	= "private"
+
+</parameters>
+

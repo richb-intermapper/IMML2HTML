@@ -1,0 +1,47 @@
+<!-- 
+	Ping/Echo (com.dartware.ping)
+	Copyright © 2000-2007 Dartware, LLC. All rights reserved.
+	
+	5 Apr 2007 - Moved to Basic category
+	20 Mar 2009 - Merged with Basic Ping probe. -wwf
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"ping"
+	human_name		=	"Ping/Echo"
+	version			= 	"2.0"
+	address_type	= 	"IP,AT"		# Both IP and AppleTalk
+	equiv_class		= 	"CORE"		# Core packet equivalency
+	
+	display_name	=	"Basic/Ping\/Echo"
+
+</header>
+
+<description>
+
+\gb\Ping/Echo\p\
+
+The \b\Ping/Echo\p\ probe sends an ICMP echo request packet to the target device to determine if it is active and responding. The parameters are:
+
+\i\Number of Data Bytes\p\ specifies the number of bytes of ICMP data to send. The default setting is 20 bytes. The mimimum value permitted is 16 bytes; the maximum is 2000 bytes.
+
+\i\Data Pattern\p\ specifies the hexadecimal pattern that is repeated throughout the payload contents.
+
+Tip: To send a 1500 byte IP packet to an IPv4 target, set the number of data bytes to 1472. To send the same IP packet size to an IPv6 target, set the number of data bytes to 1452.
+
+InterMapper sends the ping packet, then waits for a response. The time it waits is determined by the device's Timeout. If no response is received after that time, InterMapper re-sends the echo request, waiting again the device's Timeout. Each device has a limit of the number of pings to send (determined by the device's limit or the map's limit). If InterMapper reaches that limit without receiving a response, InterMapper declares the device to be down.
+
+The default setting for the number of echo requests is three, and the default timeout is three seconds. Thus it can take up to nine seconds to declare a device to be down.
+
+</description>
+
+
+<parameters>
+
+"Number of Data Bytes" = "20"
+"Data Pattern (Hexadecimal)" = "24"
+
+</parameters>
+

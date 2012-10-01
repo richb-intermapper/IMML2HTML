@@ -1,0 +1,190 @@
+<!--
+    APC UPS - AP961x (com.dartware.ups.apc-961x)
+    Custom Probe for InterMapper (http://www.intermapper.com)
+    Please feel free to use this as a base for further development.
+    Part of the UPS Probe Bundle -- Current Version: 2.4 / 31 August 2005.
+    Bugs or Requests? Please contact us: upsbundle@intermapper.com.
+    Thanks to Stewart Harris, Michael Richardson, and Dartware for their earlier APC Probes.
+
+    Revisions: (Probe Version reflects version of UPS Probe Bundle)
+    Created from shef.ac.uk.snmp.upsandenv.apc & com.dartware.ups.apc - 19 July 2005 by jkj.
+    Updated for "display_name" change (IM 4.4) - 31 August 2005 by jkj.
+    Version Changes:
+        [2.51] fixed typo in description - 10 October 2005 by jkj.
+        [2.52] Changed description to mention internal thresholds; placed warning: after alarm: 12Oct2005 -reb
+        [2.53] Correct input volts display to display input volts, rather than output: 13Oct2005 - csw.
+		[2.6 ] add autorecord section for use with InterMapper 5.0 - 5 May 2008
+		[2.8 ] fixed to work correctly with corrected defined function, etc. 04 June 2009 - csw 
+		[3.1 ] Added parseable units for Reports - 4 Mar 2011 by jpd
+-->
+ 
+<header>
+    "type"          =  "custom-snmp"
+    "package"       =  "com.dartware"
+    "probe_name"    =  "ups.apc-ap961x"
+    "human_name"    =  "APC UPS - AP961x"
+    "version"       =  "3.4"
+    "address_type"  =  "IP,AT"
+    "port_number"   =  "161"
+    "display_name"  =  "Network Devices/UPS/APC UPS - AP961x"
+</header>
+ 
+<snmp-device-properties>
+    "apcups"        =  "false"
+</snmp-device-properties>
+
+<description>
+\g0i++\For APC UPS devices that have the AP961x Network Management Card.\p--\
+\b++\A. Probed MIB(s)\p--\
+\i\This probe works best with devices which have implemented the listed MIB(s).\p\
+(1 of 2) \b\APC UPS MIB\p\ [... enterprises.apc.products.hardware.ups / ... 1.3.6.1.4.1.318.1.1.1]
+(2 of 2) \b\APC Environmental Monitoring MIB\p\ [... enterprises.apc.products.hardware.environmentalMonitor / ... 1.3.6.1.4.1.318.1.1.10]
+
+\b++\B. Displayed Values\p--\
+UPS: model, firmware, status, (\i\battery\p\: capacity, time remaining, temperature, replacement status), (\i\output\p\: load percent, volts, amps, frequency), (\i\input\p\: volts, voltage range over last minute, frequency, last input failure).
+Enviromental Monitor: probe name, number of probes, current temperature & humidity, high & low threshold configurations.
+
+\b++\C. Alarms\p--\
+(1 of 3) If unit goes onto battery or goes off-line.
+(2 of 3) If battery needs replacement.
+(3 of 3) If the UPS' internal temperature/humidity threshold is exceeded (must also be enabled).
+
+\b++\D. Warnings\p--\
+(1 of 1) If unit goes onto "Smart Trim" or "Smart Boost"
+
+\bG3\Bugs or Requests? \p\\iU=mailto:upsbundle@intermapper.com\Please contact us.\p\
+</description>
+
+<snmp-device-variables>
+model,        1.3.6.1.4.1.318.1.1.1.1.1.1.0,  DEFAULT, "" <!-- upsBasicIdentModel -->
+firmware,     1.3.6.1.4.1.318.1.1.1.1.2.1.0,  DEFAULT, "" <!-- upsAdvIdentFirmwareRevision -->
+
+<!-- battery status -->
+secs,         1.3.6.1.4.1.318.1.1.1.2.1.2.0,  DEFAULT,  "" <!-- upsBasicBatteryTimeOnBattery -->
+batTimeOn,    ($outCode = 3) ? $secs : 0,     CALCULATION
+batTempC,     1.3.6.1.4.1.318.1.1.1.2.2.2.0,  DEFAULT,  "Battery Temperature (°C)" <!-- upsAdvBatteryTemperature -->
+batTempF,     $batTempC*9/5+32,               Calculation,  "Battery Temperature (°F)"
+leftCharge,   1.3.6.1.4.1.318.1.1.1.2.2.1.0,  DEFAULT,  "Battery Capacity (%)" <!-- upsAdvBatteryCapacity -->
+batMin,       1.3.6.1.4.1.318.1.1.1.2.2.3.0,  DEFAULT,  "Battery Minutes Left" <!-- upsAdvBatteryRunTimeRemaining -->
+timeLeft,     substr("$batMin",0,-11),        CALCULATION
+replaceDate,  1.3.6.1.4.1.318.1.1.1.2.1.3.0,  DEFAULT,  "" <!-- upsBasicBatteryLastReplaceDate -->
+replaceCode,  1.3.6.1.4.1.318.1.1.1.2.2.4.0,  DEFAULT,  "{noBatteryNeedsReplacing(1),batteryNeedsReplacing(2)}" <!-- upsAdvBatteryReplaceIndicator -->
+replaceStatus,  ($replaceCode=1)?"still functioning":"\\1b\\needs to be replaced\\3p\\", CALCULATION
+
+<!-- input status -->
+inVolt,   1.3.6.1.4.1.318.1.1.1.3.2.1.0,  DEFAULT,      "Input Voltage (Volts)" <!-- upsAdvInputLineVoltage -->
+inVMax,   1.3.6.1.4.1.318.1.1.1.3.2.2.0,  DEFAULT,      "" <!-- upsAdvInputMaxLineVoltage -->
+inVMin,   1.3.6.1.4.1.318.1.1.1.3.2.3.0,  DEFAULT,      "" <!-- upsAdvInputMinLineVoltage -->
+inRange,  "$inVMin-${inVMax}V",       CALCULATION,  ""
+inFreq,   1.3.6.1.4.1.318.1.1.1.3.2.4.0,  DEFAULT,      "Input Frequency (Hz)" <!-- upsAdvInputFrequency -->
+
+<!-- output status -->
+ouLoad,  1.3.6.1.4.1.318.1.1.1.4.2.3.0,  DEFAULT, "Output Load (%)" <!-- upsAdvOutputLoad -->
+ouFreq,  1.3.6.1.4.1.318.1.1.1.4.2.2.0,  DEFAULT, "Output Frequency (Hz)" <!-- upsAdvOutputFrequency -->
+ouVolt,  1.3.6.1.4.1.318.1.1.1.4.2.1.0,  DEFAULT, "Output Voltage (Volts)" <!-- upsAdvOutputVoltage -->
+ouAmps,  1.3.6.1.4.1.318.1.1.1.4.2.4.0,  DEFAULT, "Output Current (Amps)" <!-- upsAdvOutputCurrent -->
+
+<!-- Code-to-Text Conversions -->
+batCode,       1.3.6.1.4.1.318.1.1.1.2.1.1.0,  DEFAULT, "upsBasicBatteryStatus" 
+<!-- unknown(1),batteryNormal(2),batteryLow(3) -->
+batStatus,     ($batCode=1)?"Unknown":($batCode=2)?"Normal":($batCode=3)?"Low":"Unknown Battery Status Code", CALCULATION
+outCode,       1.3.6.1.4.1.318.1.1.1.4.1.1.0,  DEFAULT, "upsBasicOutputStatus" 
+<!-- {unknown(1),onLine(2),onBattery(3),onSmartBoost(4),timedSleeping(5),softwareBypass(6),off(7),rebooting(8),switchedBypass(9),hardwareFailureBypass(10),sleepingUntilPowerReturn(11),onSmartTrim(12)} -->
+out1,          ($outCode=1)?"Unknown":($outCode=2)?"On Line (Not On Battery)":($outCode=3)?"On Battery":($outCode=4)?"On Smart Boost":($outCode=5)?"Timed Sleeping":($outCode=6)?"Software Bypass":"(!)Unknown Output Status Code", CALCULATION
+out2,          ($outCode=7)?"Off":($outCode=8)?"Rebooting":($outCode=9)?"Switched Bypass":($outCode=10)?"Hardware Failure Bypass":($outCode=11)?"Sleeping Until Power Return":($outCode=12)?"On Smart Trim":"(!)Unknown Output Status Code", CALCULATION
+outputStatus,  ($outCode<7)?"$out1":"$out2", CALCULATION
+failCode,	   1.3.6.1.4.1.318.1.1.1.3.2.5.0,  DEFAULT,  "inputLineFailCause" <!-- code describing last input failure -->
+<!-- {noTransfer(1),highLineVoltage(2),brownout(3),blackout(4),smallMomentarySag(5),deepMomentarySag(6),smallMomentarySpike(7),largeMomentarySpike(8),selfTest(9),rateOfVoltageChnage(10)} -->
+fail1,         ($failCode=1)?"No Transfer":($failCode=2)?"High Line Voltage":($failCode=3)?"Brown Out":($failCode=4)?"Black Out":($failCode=5)?"Small Brief Sag":($failCode=6)?"Deep Brief Sag":"(!)Unknown Input Failure Code",  CALCULATION
+fail2,         ($failCode=7)?"Small Brief Spike":($failCode=8)?"Large Brief Spike":($failCode=9)?"Self Test":($failCode=10)?"Rate of Voltage Change":"(!)Unknown Input Failure Code",  CALCULATION
+failCause,     ($failCode<7)?"$fail1":"$fail2", CALCULATION
+
+<!-- enviro-monitor status -->
+iemStatusProbeName,             1.3.6.1.4.1.318.1.1.10.2.3.2.1.2.1, Default, "User Defined Description"
+iemStatusProbesNumProbes,       1.3.6.1.4.1.318.1.1.10.2.3.1.0,     Default, "Number of Environmental Probes" 
+iemStatusProbeTempUnits,        1.3.6.1.4.1.318.1.1.10.2.3.2.1.5.1, Default, "Status Temp Units: C(1), F(2)"
+iemStatusProbeCurrentTemp,      1.3.6.1.4.1.318.1.1.10.2.3.2.1.4.1, Default, "Probe1 Temperature"
+iemStatusProbeCurrentHumidity,  1.3.6.1.4.1.318.1.1.10.2.3.2.1.6.1, Default, "Probe1 Humidity"
+ 
+iemStatusProbeHighTempViolation,   1.3.6.1.4.1.318.1.1.10.2.3.2.1.7.1,  Default, "Probe1 High Temp Violation"
+iemStatusProbeLowTempViolation,    1.3.6.1.4.1.318.1.1.10.2.3.2.1.8.1,  Default, "Probe1 Low Temp Violation"
+iemStatusProbeHighHumidViolation,  1.3.6.1.4.1.318.1.1.10.2.3.2.1.9.1,  Default, "Probe1 High Humidity Violation"
+iemStatusProbeLowHumidViolation,   1.3.6.1.4.1.318.1.1.10.2.3.2.1.10.1, Default, "Probe1 Low Humidity Violation"
+
+<!-- enviro-monitor configurations -->
+iemConfigProbeTempUnits,       1.3.6.1.4.1.318.1.1.10.2.2.2.1.5.1, Default, "Configuration Temp Units: C(1), F(2)"
+
+iemConfigProbeHighTempThreshold,   1.3.6.1.4.1.318.1.1.10.2.2.2.1.3.1, Default, "Probe1 High Temp Threshold"
+iemConfigProbeLowTempThreshold,    1.3.6.1.4.1.318.1.1.10.2.2.2.1.4.1, Default, "Probe1 Low Temp Threshold"
+iemConfigProbeHighHumidThreshold,  1.3.6.1.4.1.318.1.1.10.2.2.2.1.6.1, Default, "Probe1 High Humidity Threshold"
+iemConfigProbeLowHumidThreshold,   1.3.6.1.4.1.318.1.1.10.2.2.2.1.7.1, Default, "Probe1 Low Humidity Threshold"
+
+iemConfigProbeHighTempEnable,   1.3.6.1.4.1.318.1.1.10.2.2.2.1.8.1,  Default, "Probe1 High Temp Enable"
+iemConfigProbeLowTempEnable,    1.3.6.1.4.1.318.1.1.10.2.2.2.1.9.1,  Default, "Probe1 Low Temp Enable"
+iemConfigProbeHighHumidEnable,  1.3.6.1.4.1.318.1.1.10.2.2.2.1.10.1, Default, "Probe1 High Humidity Enable"
+iemConfigProbeLowHumidEnable,   1.3.6.1.4.1.318.1.1.10.2.2.2.1.11.1, Default, "Probe1 Low Humidity Enable"
+
+<!-- aliases -->
+tmpStatus,    $iemStatusProbeCurrentTemp, Calculation, "Temperature ($statusUnits)"
+humStatus,    ($iemStatusProbeCurrentHumidity>0)?$iemStatusProbeCurrentHumidity:0, Calculation, "Humidity"
+tmpCalcUnits, ($iemStatusProbeTempUnits=1)?"°F":"°C", Calculation 
+tmpCalc,      ($iemStatusProbeTempUnits=1)?($tmpStatus*9/5+32):(($tmpStatus-32)/9*5), Calculation, "Temperature ($tmpCalcUnits)"
+probes,       ($iemStatusProbesNumProbes>0)?"(Probe 1 of $iemStatusProbesNumProbes)":"", Calculation
+probeName,    ($iemStatusProbesNumProbes>0)?"$iemStatusProbeName":"No environmental probes.", Calculation
+
+<!-- Code-to-Text conversions -->
+tmpEnableHigh,   ($iemConfigProbeHighTempEnable=1)?"Disabled":"Enabled ",   CALCULATION
+tmpEnableLow,    ($iemConfigProbeLowTempEnable=1)?"Disabled":"Enabled ",    CALCULATION
+humEnableHigh,   ($iemConfigProbeHighHumidEnable=1)?"Disabled":"Enabled ",  CALCULATION
+humEnableLow,    ($iemConfigProbeLowHumidEnable=1)?"Disabled":"Enabled ",   CALCULATION
+statusUnits,     ($iemStatusProbeTempUnits=1)?"°C":"°F",                    CALCULATION
+configUnits,     ($iemConfigProbeTempUnits=1)?"°C":"°F",                    CALCULATION
+
+<!-- Threshold & Enabled/Disabled Text Compilation -->
+tmpConfigHigh,   "$iemConfigProbeHighTempThreshold $configUnits, $tmpEnableHigh",    CALCULATION
+tmpConfigLow,    "$iemConfigProbeLowTempThreshold $configUnits, $tmpEnableLow",      CALCULATION
+humConfigHigh,   "$iemConfigProbeHighHumidThreshold %, $humEnableHigh",              CALCULATION
+humConfigLow,    "$iemConfigProbeLowHumidThreshold %, $humEnableLow",                CALCULATION
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+alarm:    $batTimeOn > 0                                      "UPS has been running on battery for $batTimeOn seconds."
+alarm:    $replaceCode = 2                                    "Battery needs to be replaced."
+alarm:    ($outCode <> 2)&&($outCode <> 4)&&($outCode <> 12)  "$outputStatus"
+alarm:    ${iemStatusProbeLowTempViolation} = 2               "Low Temperature Threshold Exceeded"
+alarm:    ${iemStatusProbeHighTempViolation} = 2              "High Temperature Threshold Exceeded"
+alarm:    ${iemStatusProbeHighHumidViolation} = 2             "High Humidity Threshold Exceeded"
+alarm:    ${iemStatusProbeLowHumidViolation} = 2              "Low Humidity Threshold Exceeded"
+warning:  ($outCode = 4)||($outCode = 12)                     "Abnormal Input, Status = $outputStatus"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\bM5\APC UPS (Single Phase) Information\p\
+\pM4\   Model: \p\\pG0\$model\p\
+\pM4\Firmware: \p\\pG0\$firmware\p\
+\pM4\  Status: \p\\bG0\$outputStatus\p\
+\pM4\ Battery: \p\\bG4\${chartable: #.: $leftCharge}\p\\bG4\ %\p\\iG3\ Charge,  \p\\bG3\$timeLeft\p\\iG3\ left.\p\
+\pM4\          \p\\iG3\Battery temperature is  \p\\pG4\$batTempC\p\\iG3\ °C  /  \p\\pG4\$batTempF\p\\iG3\ °F.\p\
+\pM4\          \p\\iG3\Last replaced on  \p\\bG3\$replaceDate\p\\iG3\ and $replaceStatus.\p\
+\pM4\  Output: \p\\bG4\$ouLoad\p\\bG4\ %\p\\iG3\ Load;  \p\\pG4\${chartable: #.: $ouVolt}\p\\iG3\ Volts;  \p\\pG4\${chartable: #.: $ouFreq}\p\\iG3\ Hz;  \p\\pG4\${chartable: #.#: $ouAmps}\p\\iG3\ Amps.\p\
+\pM4\   Input: \p\\pG4\${chartable: #.: $inVolt}\p\\iG3\ Volts (\p\\bG3\$inRange\p\\iG3\ over last minute); \p\\pG4\${chartable: #.: $inFreq}\p\\iG3\ Hz.\p\
+\pM4\          \p\\iG3\Last input failure was a  \p\\bG3\$failCause\p\\pG0\.\p\
+
+\bM5\AP961x Environmental Monitor Information\p\
+\pM4\         Probe Name:  \p\\bG0\$probeName \p\\iG3\$probes\p\
+\pM4\Current Temperature:  \p\\bG4\$tmpStatus\p\\iG3\ $statusUnits  /  \p\\bG0\$tmpCalc \p\\iG3\$tmpCalcUnits\p\
+\pM4\   Current Humidity:  \p\\bG4\$humStatus${eval: (($humStatus>0)?"\p\\bG4\ %\p\":"\p\\iG3\(Not Implemented)\p\")}\p\
+\pM4\                         \p\\iG3\Temperature\p\\pM0\ : \p\\iG3\Humidity\p\
+\pM4\    High Thresholds:  \p\\iG3\$tmpConfigHigh\p\\pM0\ : \p\\iG3\$humConfigHigh\p\
+\pM4\     Low Thresholds:   \p\\iG3\$tmpConfigLow\p\\pM0\ : \p\\iG3\$humConfigLow\p\
+
+\bG3\Bugs or Requests? \p\\iG3\\U=mailto:upsbundle@intermapper.com\Please contact us.\p\
+</snmp-device-display>
+
+
+<datasets>
+	$leftCharge,	'pctcharge',	"percent",		"true",		"Percent Charge"
+	$batMin,		'batttimeleft',	"min",			"true",		"Time left on battery"
+	$inVolt,		'involts',		"volts",		"true",		"Input Voltage"
+	$batTempC,		'temperature',	"degrees C",	"true",		"Battery Temperature (°C)"
+</datasets>

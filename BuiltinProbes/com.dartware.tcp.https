@@ -1,0 +1,132 @@
+<!-- 
+	HTTPS (com.dartware.tcp.https)
+	Copyright © 2001-2003 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.https"
+	human_name		=	"HTTPS"
+	version			= 	"2.7"
+	address_type	= 	"IP"
+	port_number		=	"443"
+	display_name	=	"Servers-Standard/HTTP & HTTPS/HTTPS"
+	url_hint		=	"https://${ADDRESS}:${PORT}/"
+</header>
+
+<description>
+
+\GB\Hypertext Transfer Protocol over SSL/TLS (HTTPS)\P\
+
+The protocol used for secure transfer of web pages on the World Wide Web. The default TCP port number for HTTP connections is port 443.
+
+This probe lets you establish a secure connection to a web server, download a specific web page, and scan it for a specific string of HTML.
+
+\i\Host Name\p\ is the domain name of the web server (e.g. "www.dartware.org"). This can be derived from the host name part of the URL that you want to test. You must enter a valid "Host Name" to test web servers which implement virtual hosts.
+
+\i\URL Path\p\ is the full path of the desired file on the web server (e.g. "/index.html"). The first character must be a '/'.
+
+\i\String to verify\p\ is a string to verify in the data returned by the HTTP server.  For example, if you are retrieving a web page, you might search for "<HTML" or "<P>" to verify that the data is HTML. If this string is not found, the device will go into alarm.
+
+\i3\Note: The implementation of this probe uses OpenSSL on MacOSX.\p0\
+
+</description>
+
+<parameters>
+
+"Host Name"			=		""
+"URL Path"			=		"/"
+"String to verify"	=		"<HTML"
+"User ID"			=		""
+"Password*"			=		""
+
+</parameters>
+
+<script>
+
+CONN #60 "SECURE"
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT (disconnect handler)
+
+STOR "fullURL" "https://"
+CHCK "${Host Name}" else goto #+3
+SCAT "fullURL" "${Host Name}"
+GOTO #+2
+SCAT "fullURL" "${_REMOTEADDRESS}"
+SCAT "fullURL" ":${_REMOTEPORT}${URL Path}"
+
+SEND "GET ${URL Path} HTTP/1.0\r\n"
+CHCK "${Host Name}" else goto #+2
+SEND "Host: ${Host Name}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User ID}${Password*}" else goto #+2
+SEND "Authorization: Basic ${_BASE64:${User ID}:${Password*}}\r\n"
+SEND "\r\n"
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @BAD_GET_RESPONSE
+EXPT "^$"r
+LINE OFF
+DISC if disconnected goto @NO_MATCH   (added line in 2.1.1b1)
+EXPT "${String to verify}"i else goto @NO_MATCH
+DONE OKAY
+
+@IDLE:
+DONE DOWN "[HTTPS] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". (${fullURL})"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[HTTPS] Unexpected greeting from port ${_REMOTEPORT}. (${fullURL})"
+
+@NO_MATCH:
+DONE WARN "[HTTPS] \"${String to verify}\" not found in ${fullURL}"
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "[HTTPS] 201 Created (${fullURL})"
+MTCH "202" ELSE #+2
+DONE WARN "[HTTPS] 202 Accepted (${fullURL})"
+MTCH "204" ELSE #+2
+DONE WARN "[HTTPS] 204 No Content (${fullURL})"
+MTCH "301" ELSE #+2
+DONE WARN "[HTTPS] 301 Moved Permanently (${fullURL})"
+MTCH "302" ELSE #+2
+DONE WARN "[HTTPS] 302 Moved Temporarily (${fullURL})"
+MTCH "303" ELSE #+2
+DONE WARN "[HTTPS] 303 See Other (${fullURL})"
+MTCH "304" ELSE #+2
+DONE WARN "[HTTPS] 304 Not Modified (${fullURL})"
+MTCH "400" ELSE #+2
+DONE WARN "[HTTPS] 400 Bad Request (${fullURL})"
+MTCH "401" ELSE #+2
+DONE WARN "[HTTPS] 401 Unauthorized (${fullURL})"
+MTCH "403" ELSE #+2
+DONE WARN "[HTTPS] 403 Forbidden (${fullURL})"
+MTCH "404" ELSE #+2
+DONE WARN "[HTTPS] 404 Not Found (${fullURL})"
+MTCH "500" ELSE #+2
+DONE ALRM "[HTTPS] 500 Internal Server Error (${fullURL})"
+MTCH "501" ELSE #+2
+DONE ALRM "[HTTPS] 501 Not Implemented (${fullURL})"
+MTCH "502" ELSE #+2
+DONE ALRM "[HTTPS] 502 Bad Gateway (${fullURL})"
+MTCH "503" ELSE #+2
+DONE ALRM "[HTTPS] 503 Service Unavailable (${fullURL})"
+DONE ALRM "[HTTPS] Unknown Error Code '${_LINE:32}' (${fullURL})"
+
+@DISCONNECT:
+DONE DOWN "[HTTPS] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds. (${fullURL})"
+
+</script>
+
+<script-output>
+
+\B5\HTTP Information\0P\
+  \4\Time to establish connection:\0\ ${_connect} msecs
+  \4\Time spent connected to host:\0\ ${_active} msecs
+
+</script-output>
+
+<datasets>
+  $_connect,	'conntime',   "msec",   "true",   "Time to establish connection"
+  $_active,   'connactive', "msec",   "true",   "Time spent connected to host"
+</datasets>

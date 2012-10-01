@@ -1,0 +1,82 @@
+ <!--
+	Wireless - Canopy Backhaul (Slave) (com.dartware.wrls.canopybhs)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 24 November 2003 by reb,
+	Latest revision 9 July 2004 by ics.
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.canopybhs"
+	"human_name"	=	"Wireless - Canopy Backhaul (Slave)"
+	"display_name" 	=	"Wireless/Canopy/Canopy Backhaul (Slave)"
+	"version"		=	"1.3"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"flags"			= 	"SNMPv2c"
+	"equiv_class"	= 	"WRLS"
+	poll_interval	=	"300"
+</header>
+
+<description>
+\GB\Canopy Backhaul (Slave)\P\
+
+This probe monitors a Canopy wireless backhaul slave unit. It retrieves and displays a number of variables. It will place the device in alarm or warning states based on user-defined thresholds for low RSSI, high Jitter, long Round Trip delay, and low Power Level, and give an alarm if the unit is not registered.
+
+The default poll interval for this probe is 5 minutes. The default poll interval is an automatic safeguard; polling more frequently has been shown to adversely affect the device.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+	"RSSI too low alarm"		=	"500"
+	"RSSI low warning"		=	"600"
+	"Jitter too high alarm"		=	"13"
+	"Jitter high warning"		=	"11"
+	"Round Trip too long alarm"	=	"2000"
+	"Round Trip long warning"	=	"1500"
+	"Power Level too low alarm"	=	"-90"
+	"Power Level low warning"	=	"-85"
+</parameters>
+
+<snmp-device-variables>
+	sessionStatus,		1.3.6.1.4.1.161.19.3.2.2.1.0 ,		DEFAULT,	"Registered or Not"
+	RSSI, 			1.3.6.1.4.1.161.19.3.2.2.2.0 , 		DEFAULT,	"RSSI"
+	Jitter, 		1.3.6.1.4.1.161.19.3.2.2.3.0 , 		DEFAULT,	"Jitter"
+	airDelay, 		1.3.6.1.4.1.161.19.3.2.2.4.0 , 		DEFAULT,	"Round Trip Delay x100ns"
+	radioDbm, 		1.3.6.1.4.1.161.19.3.2.2.8.0 , 		DEFAULT,	"Power Level"
+	registeredToAp,		1.3.6.1.4.1.161.19.3.2.2.9.0 , 		DEFAULT,	"Master MAC Address"
+	colorCode,		1.3.6.1.4.1.161.19.3.3.2.2.0 ,		DEFAULT,	"Color Code"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm: 		$RSSI == 0 					"No Registration"
+	alarm: 		$RSSI < ${RSSI too low alarm} 			"RSSI too low"
+	alarm:		$Jitter > ${Jitter too high alarm} 		"Jitter too high"
+	alarm:		$airDelay > ${Round Trip too long alarm}	"Round trip too long"
+	alarm:		$radioDbm < ${Power Level too low alarm}	"Power level too low"
+	warning:	$RSSI < ${RSSI low warning} 			"Low RSSI"
+	warning: 	$Jitter > ${Jitter high warning} 		"High jitter"
+	warning:	$airDelay > ${Round Trip long warning}		"Round trip long"
+	warning:	$radioDbm < ${Power Level low warning}		"Power level low"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Canopy Backhaul Slave Information\0P\
+  \4\            RSSI:\0\  $RSSI 
+  \4\          Jitter:\0\  $Jitter \3IG\(1-15)\P0M\
+  \4\Round Trip Delay:\0\  $airDelay \3IG\x 100ns\P0M\
+  \4\     Power Level:\0\  $radioDbm
+  \4\  Session Status:\0\  $sessionStatus
+  \4\Master MAC Addr.:\0\  $registeredToAp
+  \4\      Color Code:\0\  $colorCode
+</snmp-device-display>
+
+<snmp-device-properties>
+
+</snmp-device-properties>

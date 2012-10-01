@@ -1,0 +1,42 @@
+<!-- 
+	DNS NS (com.dartware.dns.ns)
+	Copyright © 2006 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"dns.ns"
+	human_name		=	"DNS -- (NS) Name Server"
+	version			= 	"1.1"
+	address_type	= 	"IP"
+	port_number		=	"53"
+	display_name	=	"Servers-Standard/Domain Name (DNS)/DNS: (NS) Name Server"
+
+</header>
+
+
+<description>
+
+\GB\Domain Name Service (DNS): (NS) Name Server\P\
+
+The protocol used by TCP/IP network clients to translate Internet names into name servers, as defined in \U2=http://www.ietf.org/rfc/rfc1034.txt\RFC 1034\p0\ and \u2=http://www.ietf.org/rfc/rfc1035.txt\RFC 1035\p0\. This probe sends a DNS request to look up the name server for a specified domain name. CNAME records are accepted if no NS records are present in the response.
+
+\i\Domain Name\p\ is the fully qualified domain name you are attempting to resolve.
+
+\i\Name Server\p\ allows you to optionally specify a name server the domain name should resolve to. If this parameter is non-empty, InterMapper will report a status from the specified \i\Failure Status\p\ parameter if one of the returned name servers doesn't match the one given here.
+
+\i\Recursion Desired\p\ tells the target DNS server whether it can ask another DNS server for help in answering the request. If the target DNS server does not know how to resolve the given domain name, and "Recursion-Desired" is true, the target DNS server may query an authoritative DNS server. To prevent other servers from becoming involved, set "Recursion Desired" to false.
+
+\i\Failure Status\p\ is the device status InterMapper should report when the name server in a DNS response doesn't match the specified \i\Name Server\p\ parameter. You can choose to have InterMapper set the device status to Down, Alarm or Warning. The default is to report name server mismatches as an Alarm condition, so that Down is reserved for when the DNS server fails to respond at all.
+
+</description>
+
+<parameters>
+
+"Domain Name"						=	"example.com"
+"Name Server"						=	""
+"Recursion Desired[True,False]"		=	"False"
+"Failure Status[DOWN,ALRM,WARN]"	=	"ALRM"
+
+</parameters>

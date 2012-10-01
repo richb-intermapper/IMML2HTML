@@ -1,0 +1,40 @@
+<!-- 
+	SNMP (com.dartware.snmp)
+	Copyright © 2000-2007 Dartware, LLC. All rights reserved.
+	
+	 5 Apr 2007 - Changed to SNMP category
+	 8 May 2007 - Changed name to "SNMP Traffic" probe; updated description
+    13 Jun 2007 - Changed category (back to) Basic
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp"
+	human_name		=	"SNMP Traffic"
+	version			= 	"1.7"
+	address_type	= 	"IP,AT"		# Can use both IP and AppleTalk
+	equiv_class		= 	"CORE"		# Core packet equivalency
+
+	# SNMP probe type supports discovery.
+	
+	flags			= 	"DISCOVERY"
+	
+	old_protocol	= 	"2"			# Backward compat. with old scheme.
+	old_script		= 	"0"
+
+	display_name	=	"Basic/SNMP Traffic"
+	port_number		=	"161"
+</header>
+
+<description>
+\GB\SNMP Traffic\P\
+
+The SNMP Traffic probe retrieves system and traffic information from a device. This information comes from the system and interfaces groups of SNMP MIB-II. 
+
+It displays traffic (bytes/second, packets/second, errors/minute) for each of the interfaces by right-clicking on a link to open the Status Window. 
+
+This also displays sysLocation, sysContact, and sysUptime from the system group in the device's Status Window.
+
+\i\Note:\p\ This "SNMP Traffic" is exactly the same as the "SNMP MIB-II" probe of earlier versions. It was renamed to reflect its purpose more accurately. 
+</description>

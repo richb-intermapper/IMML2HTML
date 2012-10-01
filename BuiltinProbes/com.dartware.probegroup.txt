@@ -1,0 +1,16 @@
+<header>
+	type			= "probe-group"
+	package			= "com.dartware"
+	probe_name		= "probegroup"
+	human_name		= "Probe Group"
+	display_name	= "Probe Groups/Probe Group"
+	version			= "0.3"
+</header>
+
+<description>
+
+\GB\Probe Group\P\
+
+This probe creates an empty probe group. Once you have created a device using this probe, you can select the new probe group device and other devices and choose Insert->Group to place those devices into the single probe group. Find out more about probe groups in the User Guide at \2U\http://intermapper.com/go.php?to=intermapper.probegroups\P0\.
+	
+</description>

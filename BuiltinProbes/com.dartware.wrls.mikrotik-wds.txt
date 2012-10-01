@@ -1,0 +1,85 @@
+ <!--
+	Wireless - MikroTik in WDS bridge mode (com.dartware.wrls.mikrotik-wds.txt)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004-2006, Dartware, LLC.
+ 	This probe is part of Dartware's InterMapper Wireless Add-on package and 
+ 	should not be be distributed or used without license.
+
+	Original version modified from com.dartware.wrls.mikrotik-wds.txt 8 Aug 2006 -reb
+	
+	In WDS Bridge mode, the probe must look in the MtxrWlRtabTable for its entries. 
+	The WDS link is indexed by the MAC address of the associated AP 
+	and the ifIndex of the wireless interface.
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.mt-wds"
+	"human_name"	=	"Wireless-MikroTik WDS Bridge"
+	"display_name" 	=	"Wireless/MikroTik/WDS Bridge"
+	"version"		=	"1.2"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"equiv_class"	= 	"WRLS"
+</header>
+
+<description>
+\GB\MikroTik WDS Bridge\P\
+
+This probe monitors a MikroTik router in WDS Bridge mode. The probe monitors the Ethernet traffic information, as well as device utilization (CPU, Disk, Memory loads). The probe also displays the signal strength and tx/rx rates of the wireless link.
+
+You must specify both the MAC address of the other AP, as well as the ifIndex of the wireless interface. The MAC address must be entered as six decimal numbers separated by "."
+
+To determine the ifIndex of the wireless interface, Telnet to the radio, then: 
+1) Log into the router
+2) Enter \3m\interface wireless print oid\0g\
+3) The interface index is the last digit of the OIDs
+4) Type this number into the "Wireless Interface" field below.
+
+This probe will raise an alarm if the CPU, Disk, or Memory loads exceeds the High Use Threshold.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+"Associated AP MAC Adrs"	= "0.128.72.65.88.152"
+"Wireless Interface"		= "10"
+"High Use Threshold (%)"    = "90"
+</parameters>
+
+<snmp-device-variables>
+High_Use,			${High Use Threshold (%)},		CALCULATION
+totalHDD_KB,		1.3.6.1.2.1.25.2.3.1.5.1,		DEFAULT,	"AP Total Drive (KB)"
+usedHDD_KB,			1.3.6.1.2.1.25.2.3.1.6.1,		DEFAULT,	"AP Used Drive (KB)"
+totalMem_MB,		1.3.6.1.2.1.25.2.3.1.5.2,		DEFAULT,	"AP Total Memory (MB)"
+usedMem_MB,			1.3.6.1.2.1.25.2.3.1.6.2,		DEFAULT,	"AP Used Memory (MB)"
+Percent_cpuLoad,	1.3.6.1.2.1.25.3.3.1.2.1, 		DEFAULT,	"AP CPU Load (%)"
+Percent_DiskUse,	${usedHDD_KB}/${totalHDD_KB}*100,	CALCULATION,	"AP Drive Load (%)"
+Percent_MmryUse,	${usedMem_MB}/${totalMem_MB}*100,	CALCULATION,	"AP Memory Load (%)"
+
+strength1,		1.3.6.1.4.1.14988.1.1.1.2.1.3.${Associated AP MAC Adrs}.${Wireless Interface},	DEFAULT,	"Interface Signal Strength (dBm)"
+txrate_oid1,	1.3.6.1.4.1.14988.1.1.1.2.1.8.${Associated AP MAC Adrs}.${Wireless Interface},	DEFAULT,	""
+rxrate_oid1,	1.3.6.1.4.1.14988.1.1.1.2.1.9.${Associated AP MAC Adrs}.${Wireless Interface},	DEFAULT,	""
+txrate1,		${txrate_oid1}/1000000,									CALCULATION,	"Interface Tx Rate (mbps)"
+rxrate1,		${rxrate_oid1}/1000000,									CALCULATION,	"Interface Rx Rate (mbps)"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+   alarm: (${Percent_cpuload} > ${High_Use})	"High Use: CPU Load over 90%"
+   alarm: (${Percent_DiskUse} > ${High_Use})	"High Use: Low Disk Space (under 10% left)"
+   alarm: (${Percent_MmryUse} > ${High_Use}) 	"High Use: Low Memory (under 10% left)"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\MikroTik Information\p\
+\MB4\AP Utilization:  \p\${chartable: #. : ${Percent_DiskUse}}\GI3\ % of Disk (\p\${usedHDD_KB}\I3\ of \p\${totalHDD_KB}\I3\ KB)\p\
+\M4\                 ${chartable: #. : ${Percent_MmryUse}}\GI3\ % of Memory (\p\${usedMem_MB}\I3\ of \p\${totalMem_MB}\I3\ MB)\p\
+\M4\                 ${chartable: #. : ${Percent_cpuLoad}}\GI3\ % of CPU\p\
+
+\M4\WDS Info:  \p0\ Interface ${Associated AP MAC Adrs}.${Wireless Interface}
+\M4\Strength:  ${chartable: #.# : $strength1}\3IG\ dBm\p\
+\M4\ Rx Rate:  ${chartable: #.## : $rxrate1}\3IG\ mbps\p\
+\M4\ Tx Rate:  ${chartable: #.## : $txrate1}\3IG\ mbps\p\
+</snmp-device-display>

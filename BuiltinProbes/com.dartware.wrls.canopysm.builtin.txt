@@ -1,0 +1,65 @@
+ <!--
+	Wireless - Canopy (SM) (com.dartware.wrls.canopysm)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 24 November 2003 by reb,
+	Latest revision 9 July 2004 by ics.
+
+	Converted into built-in probes that will also pull info from its AP - Jan 21 2005 by RK.
+	Requires InterMapper 4.3 or later.
+-->
+
+<header>
+	"type"			=	"built-in"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.canopysm"
+	"human_name"	=	"Wireless - Canopy (SM)"
+	"display_name"	=	"Wireless/Canopy/Canopy (SM)"
+	"version"		=	"1.5"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"flags"			= 	"SNMPv2c"
+	"equiv_class"	= 	"WRLS"
+	url_hint		=	"http://${ADDRESS}/"
+	poll_interval	=	"300"
+</header>
+
+<description>
+\GB\Canopy Service Module\P\
+
+This probe monitors a Canopy wireless service module (SM).
+
+This probe retrieves and displays a number of variables. It will place the device in alarm or warning states based on user-defined thresholds for high re-registration count, low RSSI, high Jitter, long Round Trip delay, and low Power Level, and give an alarm if the unit is not registered.
+
+Note that the 2x jitter thresholds will only be used when the SM is operating in 2x/2x mode.
+
+To disable any of the thresholds, set their values to 0. 
+
+The default poll interval for this probe is 5 minutes. The default poll interval is an automatic safeguard; polling more frequently has been shown to adversely affect the device.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.3 or later.
+</description>
+
+<parameters>
+	"RSSI too low alarm"		=	"500"
+	"RSSI low warning"		=	"600"
+	"Jitter too high alarm"		=	"10"
+	"Jitter high warning"		=	"8"
+	"Jitter (2x) too high alarm"	=	"15"
+	"Jitter (2x) high warning"	=	"10"
+	"Round Trip too long alarm"	=	"2000"
+	"Round Trip long warning"	=	"1500"
+	"Power Level too low alarm"	=	"-90"
+	"Power Level low warning"	=	"-85"
+	"Session count alarm"		=	"10"
+	"Session count warning"		=	"5"
+	"Reg count alarm"		=	"10"
+	"Reg count warning"		=	"5"
+	"Re-reg count alarm"		=	"10"
+	"Re-reg count warning"		=	"5"
+</parameters>
+
+

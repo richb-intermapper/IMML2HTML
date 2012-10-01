@@ -1,0 +1,42 @@
+<!-- 
+	Demo (com.dartware.demo)
+	Copyright © 2001-2008 Dartware, LLC. All rights reserved.
+	Tweaked default parameters to be 0; updated description 30May2008 -reb
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"demo"
+	human_name		=	"Demo Probe"
+	version			= 	"1.6"
+	address_type	= 	"IP,AT"
+	equiv_class		= 	"DEMO"
+	port_number		= 	"23"
+	
+	display_name	=	"Miscellaneous/Demo Probe"
+
+</header>
+
+<description>
+
+\GB\Demo Probe\P\
+
+The Demo probe type is useful for building demo maps. It generates random data for the traffic on all its links, so that there is something to look at. These traffic data are chartable, as well, and can be used for demonstrating strip charts.
+
+The device also toggles between the UP/OK and Down state when manually reprobed. Consequently, it's also easy to show what happens when a device goes down, especially for manual dependencies.
+
+For simple maps, the parameters below can be set to zero. To create complicated, heavily-interconnected demonstration maps, try setting the parameters to 10 and 50, respectively. 
+
+\i\Link Count\p\ is the number of interfaces to create when first adding the device to the map. 
+
+\i\Loop %\p\ is the percentage of links that should connect themselves to subnets that are already present on the map. 
+
+</description>
+
+<parameters>
+
+"Link Count"						=	"0"
+"Loop %"							= 	"0"
+
+</parameters>

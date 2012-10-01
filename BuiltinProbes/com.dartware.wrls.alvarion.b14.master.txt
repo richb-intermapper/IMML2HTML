@@ -1,0 +1,56 @@
+ <!--
+	Wireless - Alvarion B-14 & B-28 (BU) (wrls.alvarion.b14.master)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Based on "Wireless - Alvarion BreezeACCESS VL (AU)"
+	Latest revision 13 July 2005 by ics.
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.alvarion.b14.master"
+	"human_name"	=	"Wireless - Alvarion B-14 & B-28 (BU)"
+	"display_name" 	=	"Wireless/Alvarion/Alvarion B-14 & B-28 (BU)"
+	"version"		=	"0.4"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"equiv_class"	= 	"WRLS"
+</header>
+
+<description>
+\GB\Alvarion B-14 & B-28 (BU)\P\
+
+This probe monitors an \u2=http://www.alvarion.com\Alvarion\p0\ B-14 or B-28 base unit (BU). It retrieves and displays the radio band, operating frequency, and slave association. It will go into an alarm when no slave is associated, and when the operating frequency doesn't match the configured frequency. Traffic information is available for the ethernet and radio interfaces. (To show the ethernet interface, we recommend using the "Display unnumbered interfaces" behavior.)
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+
+</parameters>
+
+<snmp-device-variables>
+	brzaccVLRadioBand,		 	1.3.6.1.4.1.12394.1.1.1.15.0 ,	 	DEFAULT, 	"Radio Band"
+	brzaccVLCurrentNumofAssociations, 	1.3.6.1.4.1.12394.1.1.1.13.0 , 		DEFAULT, 	"Current SU Count"
+	brzaccVLCurrentAUOperatingFrequency,	1.3.6.1.4.1.12394.1.1.6.12.7.0 ,	DEFAULT,	"AU Operating Frequency"
+	brzaccVLAUDefinedFrequency,		1.3.6.1.4.1.12394.1.1.6.12.8.0 ,	DEFAULT,	"AU Defined Frequency"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm:		$brzaccVLCurrentNumofAssociations > 1				 	"More than one association"
+	alarm:		$brzaccVLCurrentNumofAssociations < 1				 	"No RB associated"
+	alarm:		$brzaccVLCurrentAUOperatingFrequency <> $brzaccVLAUDefinedFrequency	"Operating Frequency Incorrect"
+</snmp-device-thresholds>
+
+
+<snmp-device-display>
+\B5\B-14 or B-28 BU Information\0P\
+ \4\          Radio Band:\0\ $brzaccVLRadioBand
+ \4\ Operating Frequency:\0\ $brzaccVLCurrentAUOperatingFrequency \3IG\MHz\P0M\
+ \4\       RB Associated:\0\ ${eval: $brzaccVLCurrentNumofAssociations == 1 ? "Yes" : $brzaccVLCurrentNumofAssociations == 0 ? "No" : $brzaccVLCurrentNumofAssociations}
+
+</snmp-device-display>

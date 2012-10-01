@@ -1,0 +1,274 @@
+<!-- 
+Command Line WMI Probe to check Disk Defragmentation (com.dartware.wmi.defrag_analysis) 
+Copyright (c) 2010 Dartware, LLC. All rights reserved. 
+--> 
+
+<header> 
+	type			=	"cmd-line" 
+	package			=	"com.dartware" 
+	probe_name		=	"wmi.defrag_analysis" 
+	human_name		=	"WMI Disk Fragmentation Analysis" 
+	version			=	"1.9" 
+	address_type	=	"IP"
+	display_name	=	"WMI/WMI Disk Fragmentation Analysis"
+	visible_in 		=	"Windows"
+	flags			=	"NTCREDENTIALS"	
+</header> 
+
+<description> 
+\GB\WMI Disk Fragmentation Analysis\p\ 
+
+This probe uses WMI to analyze disk fragmentation on a drive on the target host.  Specifically, it calls the DefragAnalysis method of the Win32_Volume class and reports pertinent statistics from the anaylsis.  If the drive needs tobe defragmented, warning status is set for the device.  The target host must be running Windows Vista, Windows Server 2003 or later.
+
+The Drive parameter is the drive letter assigned to the local disk to be anaylyzed, including the colon but without backslashes.
+
+The User parameter may be a local user on the target host, or may take the form of "domain\\user" for a domain login.  Leave it blank if authentication is not required, such as when the target is the localhost.
+
+InterMapper invokes the defrag_analysis.vbs companion script which was placed in the Tools folder of the InterMapper Settings folder when this probe was loaded.  It uses the exit value to set the condition of the device and the performance data returned by the script to create a nice display of chartable data.
+
+</description> 
+
+<parameters>
+	Drive="C:"
+	User=""
+	"Password*" = ""
+	"Timeout (sec)"="60"
+</parameters> 
+
+
+<command-line> 
+	-- Empty path forces the InterMapper Settings:Tools directory
+	path="" 
+	cmd="${CSCRIPT} defrag_analysis.vbs"
+	arg="-h ${address} -i ${Drive}"
+	input = "${User} ${Password*}"
+	timeout = ${Timeout (sec)}
+</command-line> 
+
+<command-exit>
+	down:${EXIT_CODE}=3 
+	critical:${EXIT_CODE}=2 
+	alarm:${EXIT_CODE}=1 
+	okay:${EXIT_CODE}=0 
+</command-exit> 
+
+<command-display>
+${^stdout}
+</command-display> 
+
+<tool:defrag_analysis.vbs>
+'Command Line WMI Probe to check Disk Fragmentation (com.dartware.wmi.defrag_analysis) 
+'Copyright (c) 2009 Dartware, LLC. All rights reserved. 
+
+' get args up to next switch in case there are spaces in list
+FUNCTION GetNextArg(j, nargs)
+	arg = ""
+	do until (j = nargs-1)
+		if (instr(wscript.arguments(j+1), "-") = 1) then
+			exit do
+		else
+			arg = arg & wscript.arguments(j+1)
+			j = j + 1
+		end if
+	loop
+	GetNextArg = arg
+END FUNCTION
+
+FUNCTION CheckError(reasonStr)
+	if (err.number <> 0) then
+		reasonStr = vbNewLine & reasonStr & "Error #" & CStr(Err.Number) & " " & Err.Description
+		wscript.echo "\{reason:=""" & reasonStr & """}"
+		wscript.quit(3)
+	end if
+END FUNCTION
+
+On Error Resume Next
+
+' Collect our arguments
+host = ""
+user = ""
+pass = ""
+inst = ""
+warn = ""
+crit = ""
+verbose = False
+
+numargs = wscript.arguments.count
+for i=0 to numargs-1
+	test = wscript.arguments(i)
+	if (test = "-v") then verbose = True
+	if (test = "-host") OR (test = "-h") then
+		host = GetNextArg(i, numargs)
+	end if
+	if (test = "-user") OR (test = "-u") then
+		user = GetNextArg(i, numargs)
+	end if
+	if (test = "-pass") OR (test = "-p") then
+		pass = GetNextArg(i, numargs)
+	end if
+	if (test = "-inst") OR (test = "-i") then
+		inst = GetNextArg(i, numargs)
+	end if
+next
+
+' Read username and password from stdin
+if  not WScript.StdIn.AtEndOfStream then
+	inpStr = WScript.StdIn.ReadLine
+end if
+if verbose then wscript.echo "stdin: " & inpStr
+
+dim cred
+cred = split(inpStr, " ")
+user = cred(0)
+pass = cred(1) 
+
+if (host = "" or inst = "") then
+	Err.Raise vbObjectError + 1, "", "Error processing arguments"
+	CheckError("")
+end if
+
+' Connect with target via WMI
+strComputer = host
+Set objSWbemLocator = CreateObject("WbemScripting.SWbemLocator")
+CheckError("")
+
+if (user = "") or (lcase(user) = "none") then		' no authentication needed
+	Set objWMIService = GetObject("winmgmts:" & "{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2") 
+	CheckError("")
+else						' authenticate with user/pass
+	user = Replace(user,"\\","\")
+	Set objWMIService = objSWbemLocator.ConnectServer (strComputer, "\root\cimv2", user, pass)
+	CheckError("")
+	objWMIService.Security_.ImpersonationLevel = 3
+end if
+
+' Get Windows build number
+Set colOS = objWMIService.ExecQuery("Select BuildNumber from Win32_OperatingSystem",,48)
+CheckError("")
+for each objOS in colOS
+	BuildNumber = objOS.BuildNumber
+next
+CheckError("")
+
+' Execute query
+query = "Select * from Win32_Volume Where DriveType = 3 and DriveLetter = '" & inst & "'"
+Set colVols = objWMIService.ExecQuery(query,,48)
+CheckError("")
+
+' Build data output
+output = "\{"
+for each objVol in colVols
+	if (err.number <> 0) then	'why must we wait until here to get the error?
+		reason = vbNewLine & "Error executing query"
+		if (err.number = -2147217392) then 'this usually means the target OS is XP or earlier.
+			reason = reason & vbNewLine & "Error #" & hex(Err.Number) & ": The specified class is not valid."
+		else
+			reason = reason & vbNewLine & "Error #" & hex(Err.Number) & " " & Err.Description
+		end if
+		wscript.echo "\{reason:=""" & reason & """}"
+		wscript.quit(3)
+	end if
+	intRC = objVol.DefragAnalysis(boolDefrag, objRpt)
+	if intRC = 0 then
+		output = output & "VolumeSize:=" & objRpt.VolumeSize & ","
+		output = output & "ClusterSize:=" & objRpt.ClusterSize & ","
+		output = output & "UsedSpace:=" & objRpt.UsedSpace & ","
+		output = output & "FreeSpace:=" & objRpt.FreeSpace & ","
+		output = output & "FreeSpacePercent:=" & objRpt.FreeSpacePercent & ","
+		if (cint(BuildNumber)) > 3790 then	' newer than Win2K3
+			output = output & "TotalFreeSpaceExtents:=" & objRpt.TotalFreeSpaceExtents & ","
+			output = output & "LargestFreeSpaceExtent:=" & objRpt.LargestFreeSpaceExtent & ","
+			output = output & "AverageFreeSpacePerExtent:=" & objRpt.AverageFreeSpacePerExtent & ","
+		end if
+		output = output & "FilePercentFragmentation:=" & objRpt.FilePercentFragmentation & ","
+		output = output & "TotalFiles:=" & objRpt.TotalFiles & ","
+		' According to Microsoft this should work for Vista, but it does not.
+		'if (cint(BuildNumber)) > 3790 then	' newer than Win2K3
+		'	output = output & "TotalUnmoveableFiles:=" & objRpt.TotalUnmoveableFiles & ","
+		'end if
+		output = output & "AverageFileSize:=" & objRpt.AverageFileSize & ","
+		output = output & "TotalFragmentedFiles:=" & objRpt.TotalFragmentedFiles & ","
+		output = output & "TotalExcessFragments:=" & objRpt.TotalExcessFragments & ","
+		output = output & "AverageFragmentsPerFile:=" & objRpt.AverageFragmentsPerFile & ","
+		output = output & "TotalFolders:=" & objRpt.TotalFolders & ","
+		output = output & "FragmentedFolders:=" & objRpt.FragmentedFolders & ","
+		output = output & "ExcessFolderFragments:=" & objRpt.ExcessFolderFragments & ","
+		output = output & "TotalMFTSize:=" & objRpt.TotalMFTSize & ","
+		output = output & "MFTRecordCount:=" & objRpt.MFTRecordCount & ","
+		output = output & "MFTPercentInUse:=" & objRpt.MFTPercentInUse & ","
+		output = output & "TotalMFTFragments:=" & objRpt.TotalMFTFragments & ","
+		output = output & "reason:=""Volume " & objVol.DriveLetter
+		if boolDefrag = True Then
+			output = output & " requires defragmentation."
+			returncode = 1
+		else
+			output = output & " does not require defragmentation."
+			returncode = 0
+		end if
+    else
+    	output = output & "reason:="""
+    	select case intRC
+			case 1: 
+				output = output & "Access Denied"
+			case 2: 
+				output = output & "Not Supported"
+			case 3: 
+				output = output & "Volume Dirty Bit Is Set"
+			case 4: 
+				output = output & "Not Enough Free Space"
+			case 5: 
+				output = output & "Corrupt Master File Table Detected"
+			case 6: 
+				output = output & "Call Canceled"
+			case 7: 
+				output = output & "Call Cancellation Request Too Late"
+			case 8: 
+				output = output & "Defrag Engine Is Already Running"
+			case 9: 
+				output = output & "Unable To Connect To Defrag Engine"
+			case 10: 
+				output = output & "Defrag Engine Error"
+			case 11: 
+				output = output & "Unknown Error"
+		end select
+		returncode = 2
+    end if
+	output = output & """}"
+next
+CheckError("")
+
+wscript.echo output & "\B5\WMI Disk Fragmentation Analysis for " & inst & "\P0\"
+
+if returncode < 2 then
+	wscript.echo "  \4\Volume size:\0\                    $VolumeSize bytes"
+	wscript.echo "  \4\Cluster size:\0\                   $ClusterSize bytes"
+	wscript.echo "  \4\Used space:\0\                     $UsedSpace bytes"
+	wscript.echo "  \4\Free space:\0\                     $FreeSpace bytes"
+	wscript.echo "  \4\Percent free space:\0\             $FreeSpacePercent %"
+	if (cint(BuildNumber)) > 3790 then	' newer than Win2K3
+		wscript.echo "  \4\Total Free Space Extents:\0\       $TotalFreeSpaceExtents"
+		wscript.echo "  \4\Largest Free Space Extent:\0\      $LargestFreeSpaceExtent bytes"
+		wscript.echo "  \4\Average Free Space Per Extent:\0\  $AverageFreeSpacePerExtent bytes"
+	end if
+	wscript.echo "  \4\File fragmentation:\0\             $FilePercentFragmentation %"
+	wscript.echo "  \4\Total files:\0\                    $TotalFiles"
+	' See note above.
+	'if (cint(BuildNumber)) > 3790 then	' newer than Win2K3
+	'	wscript.echo "  \4\Total Unmoveable Files:\0\         $TotalUnmoveableFiles"
+	'end if
+	wscript.echo "  \4\Average file size:\0\              $AverageFileSize bytes"
+	wscript.echo "  \4\Total fragmented files:\0\         $TotalFragmentedFiles"
+	wscript.echo "  \4\Total excess fragments:\0\         $TotalExcessFragments"
+	wscript.echo "  \4\Avg fragments per file:\0\         $AverageFragmentsPerFile"
+	wscript.echo "  \4\Total folders:\0\                  $TotalFolders"
+	wscript.echo "  \4\Fragmented folders:\0\             $FragmentedFolders"
+	wscript.echo "  \4\Excess folder fragments:\0\        $ExcessFolderFragments"
+	wscript.echo "  \4\Total MFT size:\0\                 $TotalMFTSize bytes"
+	wscript.echo "  \4\MFT record count:\0\               $MFTRecordCount"
+	wscript.echo "  \4\MFT percent in use:\0\             $MFTPercentInUse %"
+	wscript.echo "  \4\Total MFT fragments:\0\            $TotalMFTFragments"
+end if
+
+' Done
+wscript.quit(returncode)
+</tool:defrag_analysis.vbs>

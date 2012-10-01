@@ -1,0 +1,42 @@
+<!-- 
+	DNS TXT (com.dartware.dns.txt)
+	Copyright © 2006 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"dns.txt"
+	human_name		=	"DNS -- (TXT) Text Record"
+	version			= 	"1.1"
+	address_type	= 	"IP"
+	port_number		=	"53"
+	display_name	=	"Servers-Standard/Domain Name (DNS)/DNS: (TXT) Text Record"
+
+</header>
+
+
+<description>
+
+\GB\Domain Name Service (DNS): (TXT) Text Record\P\
+
+The protocol used by TCP/IP network clients to translate Internet names into Text records, as defined in \U2=http://www.ietf.org/rfc/rfc1034.txt\RFC 1034\p0\ and \u2=http://www.ietf.org/rfc/rfc1035.txt\RFC 1035\p0\. This probe sends a DNS request to look up the text record for a specified domain name.
+
+\i\Domain Name\p\ is the fully qualified domain name you are attempting to resolve.
+
+\i\Text Substring\p\ allows you to optionally specify a substring of a text record the domain name should resolve to. If this parameter is non-empty, InterMapper will report a status from the specified \i\Failure Status\p\ parameter if one of the returned text records doesn't contain the substring given here.
+
+\i\Recursion Desired\p\ tells the target DNS server whether it can ask another DNS server for help in answering the request. If the target DNS server does not know how to resolve the given domain name, and "Recursion-Desired" is true, the target DNS server may query an authoritative DNS server. To prevent other servers from becoming involved, set "Recursion Desired" to false.
+
+\i\Failure Status\p\ is the device status InterMapper should report when the text record in a DNS response doesn't contain the specified \i\Text Substring\p\ parameter. You can choose to have InterMapper set the device status to Down, Alarm or Warning. The default is to report substring absences as an Alarm condition, so that Down is reserved for when the DNS server fails to respond at all.
+
+</description>
+
+<parameters>
+
+"Domain Name"						=	"example.com"
+"Text Substring"				=	""
+"Recursion Desired[True,False]"		=	"False"
+"Failure Status[DOWN,ALRM,WARN]"	=	"ALRM"
+
+</parameters>

@@ -1,0 +1,107 @@
+ <!--
+	Prototype Custom SNMP Probe (com.dartware.snmp.prototype)
+    Custom Probe for InterMapper (http://www.intermapper.com)
+    Please feel free to use this as a base for further development.
+
+	Original version 24 November 2003 by reb.
+	Updated 29 July 2005 -
+	Updated 28 Oct 2005 - include display_name so it displays properly in InterMapper 4.4 -reb
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"snmp.prototype"
+	"human_name"	=	"Prototype SNMP probe"
+	"version"		=	"1.2"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	display_name	=	"Miscellaneous/Prototype SNMP Probe"
+</header>
+
+<snmp-device-properties>
+	-- none required
+</snmp-device-properties>
+
+-- The <description> contains text that will be displayed in the probe configuration window. 
+-- Describe the probe as much as necessary so that people will understand what it does and how it works.
+
+<description>
+\GB\Prototype SNMP Probe\P\
+
+This probe demonstrates an InterMapper Custom SNMP probe, and many of the features that are described in the Custom Probes section of the \u2=http://www.intermapper.com/docs/developer/index.html\Developer Guide\P0\. If you have questions about this probe, \u2=mailto:support@intermapper.com\please contact us.\p0\
+
+This probe probably isn't really useful for production work. However, it provides an example of various techniques available in custom SNMP probes.
+
+It shows how to retrieve SNMP values from a device by specifying their OIDs and how to display those values in the device's Status Window. 
+
+The probe also has thresholds for setting the device into alarm or warning. 
+
+In this example, the device has will go into alarm or warning if it has been rebooted recently (controlled by the \i\RebootAlarm\p\ and \i\RebootWarn\p\ parameters - two and three minutes, by default) or if there aren't as many interfaces as expected in the ifTable (controlled by the \i\ExpectedInterfaces\p\ parameter.)
+
+The parameters are:
+
+\b\RebootAlarm\p\ Put the device into alarm if the sysUptime is less than this many minutes.
+
+\b\RebootWarn\p\ Put the device into warning if the sysUptime is less than this many minutes.
+
+\b\ExpectedInterfaces\p\ Put the device into warning if the the ifNumber is greater or equal to this value.
+
+In addition, this probe shows:
+
+- CALCULATION variables, the conversion from centi-seconds (hundredths of a second) to seconds
+
+- Formatting of the Status Window, in the <snmp-device-display> section
+
+- Marking up text in the \i\description\p\ and \i\snmp-device-display\p\ sections using IMML (InterMapper Markup Language) to get bold, italic, colored text, etc. 
+
+- IMML also allows you to create a link to a URL, using the \\U2=http://xxxx\\ notation shown in the \i\snmp-device-display\p\ section.
+</description>
+
+-- Parameters are user-settable values that the probe uses for its comparisons.
+-- Specify the default values here. The customer can change them and they will be retained for each device.
+
+<parameters>
+	"RebootAlarm"		=	"2" 	-- 2 min = 120 seconds = 12,000 centi-seconds
+	"RebootWarn"		=	"3" 	-- 3 min = 180 seconds = 18,000 centi-seconds
+	"ExpectedInterfaces" =	"3" 	-- expected number of interfaces
+</parameters>
+
+-- SNMP values to be retrieved from the device, and 
+-- Specify the variable name, its OID, a format (usually DEFAULT) and a short description.
+-- CALCULATION variables are computed from other values already retrieved from the device.
+ 
+<snmp-device-variables>
+
+	sysDescr, 	1.3.6.1.2.1.1.1.0 ,	DEFAULT, 	"System's Description"
+	sysUptime, 	1.3.6.1.2.1.1.3.0 ,	INTEGER, 	"Uptime - in centi-seconds"
+	sysContact, 1.3.6.1.2.1.1.4.0 ,	DEFAULT, 	"Name of person to contact"
+	sysName, 	1.3.6.1.2.1.1.5.0 ,	DEFAULT, 	"Name assigned to this system"
+	sysLocation,1.3.6.1.2.1.1.6.0 ,	DEFAULT, 	"Location of the system"
+	ifNumber, 	1.3.6.1.2.1.2.1.0 ,	DEFAULT, 	"Number of rows in the ifTable"
+
+	sysUptimeMinutes, ($sysUpTime / (100 * 60)), CALCULATION, "Uptime in minutes"
+
+</snmp-device-variables>
+
+-- Specify rules for setting the device into Alarm or Warning state
+
+<snmp-device-thresholds>
+	alarm:		$sysUptimeMinutes < $RebootAlarm "Rebooted less than $RebootAlarm minutes ago"
+	warning:	$sysUptimeMinutes < $RebootWarn  "Rebooted less than $RebootWarn minutes ago"
+</snmp-device-thresholds>
+
+-- The <snmp-device-display> section specifies the text that will be appended 
+-- to the device's Staus Window. 
+
+<snmp-device-display>
+\B5\Prototype SNMP Probe\0P\             \U2=http://${deviceaddress}\Go to the device's web page\P0\
+  \4\    sysDescr:\0\  $sysDescr
+  \4\  sysContact:\0\  $sysContact
+  \4\     sysName:\0\  $sysName
+  \4\ sysLocation:\0\  $sysLocation
+  \4\   sysUpTime:\0\  $sysUptimeMinutes \3\minutes (\0\$sysUptime \3\ hundredths of seconds)\p\
+  \4\Num. of Intf:\0\  $ifNumber \3\(expected $ExpectedInterfaces)\0\
+
+</snmp-device-display>
+

@@ -1,0 +1,46 @@
+<!-- 
+	RADIUS (com.dartware.radius)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"radius"
+	human_name		=	"RADIUS"
+	version			= 	"1.8"
+	address_type	= 	"IP"
+	port_number		= 	"1812"
+	
+	old_protocol	= 	"11"		# Backward compat. with old numbering scheme.
+	old_script		= 	"0"
+	
+	display_name	=	"Servers-Standard/RADIUS"
+	
+</header>
+
+
+<description>
+
+\GB\Remote Authentication Dial-in User Service (RADIUS)\P\
+
+The protocol used by remote access servers to authenticate dial-in users, as defined in \U2=http://www.ietf.org/rfc/rfc2138.txt\RFC 2138\P0\. This probe tests a RADIUS server by sending an Access-Request packet to authenticate a specific user name and password. Before you can use this probe with a particular RADIUS server, you must add the InterMapper computer's IP address to the RADIUS server and choose a "shared secret" for it. The "shared secret" is used by the RADIUS protocol to encrypt passwords in RADIUS requests. A RADIUS server will not answer access-requests from a client it doesn't recognize.
+
+The officially assigned port number for RADIUS is 1812. However, some RADIUS servers use port number 1645 for historical reasons.
+
+\i\Shared Secret\p\ is InterMapper's unique password into the RADIUS server. The same value needs to be configured into the RADIUS server as well, as it is used for authentication.
+
+\i\User Name\p\ is the user you are trying to authenticate.
+
+\i\Password\p\ is the user's password. This password is encrypted using the shared secret; it is not sent in the clear.
+
+</description>
+
+<parameters>
+
+"Shared Secret*"		=	"secret"
+"User Name"			=	"intermapper"
+"Password*"			=	""
+
+</parameters>
+

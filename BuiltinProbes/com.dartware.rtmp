@@ -1,0 +1,25 @@
+<!-- 
+	RTMP (com.dartware.rtmp)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"rtmp"
+	human_name		=	"RTMP"
+	version			= 	"1.5"
+	address_type	= 	"AT"
+	
+	old_protocol	= 	"3"			# Backward compat. with old numbering scheme.
+	old_script		= 	"0"
+
+	display_name	=	"Servers-Proprietary/Apple/RTMP"
+
+</header>
+
+<description>
+\GB\RTMP\P\
+
+The RTMP probe sends an AppleTalk RTMP RDR Request query of type 3, and waits for a RTMP response.
+</description>

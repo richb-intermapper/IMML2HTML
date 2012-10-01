@@ -1,0 +1,191 @@
+<!--
+    Liebert UPS - OpenComms (com.dartware.ups.liebert-opencomms)
+    Custom Probe for InterMapper (http://www.intermapper.com)
+    Please feel free to use this as a base for further development.
+    Part of the UPS Probe Bundle -- Current Version: 2.4 / 31 August 2005.
+    Bugs or Requests? Please contact us: upsbundle@intermapper.com.
+
+    Revisions: (Probe Version reflects version of UPS Probe Bundle)
+    Created from com.dartware.ups.standard - 28 June 2005 by jkj.
+    Updated for Category (IM 4.4) - 8 July 2005 by jkj.
+    Updated for "display_name" change (IM 4.4) - 31 August 2005 by jkj.
+    Added autorecord section for IM 5.0 - 05 May 2008 by cls.
+    Added experimental on-demand upsAlarmTable - 07 June 2010 by cls.
+    Added parseable units for Reports - 4 Mar 2011 by jpd.
+-->
+ 
+<header>
+    "type"          =  "custom-snmp"
+    "package"       =  "com.dartware"
+    "probe_name"    =  "ups.liebert-opencomms"
+    "human_name"    =  "Liebert UPS - OpenComms"
+    "version"       =  "2.12"
+    "address_type"  =  "IP,AT"
+    "port_number"   =  "161"
+    "display_name"  =  "Network Devices/UPS/Liebert UPS - OpenComms"
+</header>
+
+<snmp-device-properties>
+    maxvars = "10" -- Solves a slight bug between the Open Comms Web Card and InterMapper
+</snmp-device-properties>
+
+<description>
+\g0i++\For Liebert UPS devices that have the OpenComms Network Management Card.\p--\
+\b++\A. Probed MIB(s)\p--\
+\i\This probe works best with devices which have implemented the listed MIB(s).\p\
+(1 of 2) \b\UPS MIB (RFC 1628)\p\ [... mib-2.upsMIB / ... 1.33]
+(2 of 2) \b\Liebert Global Products MIB\p\ [... enterprises.emerson.liebertCorp.liebertGlobalProducts / ... 1.476.1.42]
+
+\b++\B. Displayed Values\p--\
+vendor, model, software version, firmware version, output source, battery status, battery voltage, battery current, (\i\three input lines:\p\ Hz, volts, amps, kWatts), (\i\three output lines:\p\ Hz, volts, amps, kWatts, output load percent); (\i\temperatures:\p\ battery, ambient)
+
+\b++\C. Alarms\p--\
+(1 of 1) If the device is reporting any alarms. (The UPS MIB includes a comprehensive list of alarms).
+
+\bG3\Bugs or Requests? \p\\iU=mailto:upsbundle@intermapper.com\Please contact us.\p\
+</description>
+
+<snmp-device-variables>
+<!-- normal oids (ie. instance "0" oids) -->
+upsIdentManufacturer,		 1.3.6.1.2.1.33.1.1.1.0,   DEFAULT, "UPS Ident"
+upsIdentModel, 			 1.3.6.1.2.1.33.1.1.2.0,   DEFAULT, "UPS Model"
+upsIdentUPSSoftwareVersion,    1.3.6.1.2.1.33.1.1.3.0,   DEFAULT,  "The UPS firmware/software version(s). This variable may or may not have the same value as upsIdentAgentSoftwareVersion in some implementations."
+upsIdentAgentSoftwareVersion,  1.3.6.1.2.1.33.1.1.4.0,   DEFAULT,  "The UPS agent software version. This variable may or may not have the same value as upsIdentUPSSoftwareVersion in some implementations."
+upsBatteryStatus,              1.3.6.1.2.1.33.1.2.1.0,   DEFAULT
+upsSecondsOnBattery,           1.3.6.1.2.1.33.1.2.2.0,   DEFAULT,  "[NonNegativeInteger] Zero if not on battery power; else the minimum of (the time since the UPS switched to battery) & (since the network management subsystem was restarted)."
+upsEstimatedMinutesRemaining,  1.3.6.1.2.1.33.1.2.3.0,   DEFAULT,  "[PositiveInteger] An estimate of the time to battery charge depletion under the present load conditions if the utility power is off and remains off, or if it were to be lost and remain off."
+upsEstimatedChargeRemaining,   1.3.6.1.2.1.33.1.2.4.0,   DEFAULT,  "An estimate of the battery charge remaining expressed as a percent of full charge."
+upsBatteryVoltage,             1.3.6.1.2.1.33.1.2.5.0,   DEFAULT,  "[NonNegativeInteger] The magnitude of the present battery voltage."
+upsBatteryCurrent,             1.3.6.1.2.1.33.1.2.6.0,   DEFAULT,  "The present battery current."
+upsOutputSource,               1.3.6.1.2.1.33.1.4.1.0,   DEFAULT,  "The present source of output power. The enumeration none(2) indicates that there is no source of output power (and therefore no output power), for example, the system has opened the output breaker."
+upsOutputFrequency,            1.3.6.1.2.1.33.1.4.2.0,   DEFAULT,  "[NonNegativeInteger] The present output frequency."
+upsAlarmsPresent,              1.3.6.1.2.1.33.1.6.1.0,   DEFAULT,  "[Gauge32] The present number of active alarm conditions."
+upsOutputNumLines,             1.3.6.1.2.1.33.1.4.3.0,   DEFAULT,  "[NonNegativeInteger] The number of output lines utilized in this device. This variable indicates the number of rows in the output table."
+upsInputNumLines,              1.3.6.1.2.1.33.1.3.2.0,   DEFAULT,  "[NonNegativeInteger] The number of input lines utilized in this device. This variable indicates the number of rows in the input table."
+
+<!-- variables for normal oids -->
+vendor,      "$upsIdentManufacturer",          CALCULATION
+model,       "$upsIdentModel",                 CALCULATION
+version1,    "$upsIdentUPSSoftwareVersion",    CALCULATION
+version2,    "$upsIdentAgentSoftwareVersion",  CALCULATION
+stat,        $upsBatteryStatus,                CALCULATION,  "-battery status code"
+secs,        $upsSecondsOnBattery,            CALCULATION,  "-seconds on battery code"
+source,      $upsOutputSource,                 CALCULATION,  "-output source code"
+alarms,      $upsAlarmsPresent,                CALCULATION,  "-alarms reported code"
+LeftMin,     $upsEstimatedMinutesRemaining,    CALCULATION,  "Time Left on Battery (min)"
+LeftCharge,  $upsEstimatedChargeRemaining,     CALCULATION,  "Battery Charge Left (%)"
+batVolt,     $upsBatteryVoltage/10,            CALCULATION,  "Battery Voltage (Volt)"
+batCurrent,  $upsBatteryCurrent/10,            CALCULATION,  "Battery Current (Amp)"
+inNum,        "$upsInputNumLines",              CALCULATION,  "Number of Input Lines"
+ouFreq,       $upsOutputFrequency/10,           CALCULATION
+ouNum,        "$upsOutputNumLines",             CALCULATION,  "Number of Output Lines"
+
+<!-- OIDs needed for input/output line variables -->
+in1OidF,    1.3.6.1.2.1.33.1.3.3.1.2.1,  DEFAULT
+in2OidF,    1.3.6.1.2.1.33.1.3.3.1.2.2,  DEFAULT
+in3OidF,    1.3.6.1.2.1.33.1.3.3.1.2.3,  DEFAULT
+in1OidA,    1.3.6.1.2.1.33.1.3.3.1.4.1,  DEFAULT
+in2OidA,    1.3.6.1.2.1.33.1.3.3.1.4.2,  DEFAULT
+in3OidA,    1.3.6.1.2.1.33.1.3.3.1.4.3,  DEFAULT
+in1OidW,    1.3.6.1.2.1.33.1.3.3.1.5.1,  DEFAULT
+in2OidW,    1.3.6.1.2.1.33.1.3.3.1.5.2,  DEFAULT
+in3OidW,    1.3.6.1.2.1.33.1.3.3.1.5.3,  DEFAULT
+ou1OidA,    1.3.6.1.2.1.33.1.4.4.1.3.1,  DEFAULT
+ou2OidA,    1.3.6.1.2.1.33.1.4.4.1.3.2,  DEFAULT
+ou3OidA,    1.3.6.1.2.1.33.1.4.4.1.3.3,  DEFAULT
+ou1OidW,    1.3.6.1.2.1.33.1.4.4.1.4.1,  DEFAULT
+ou2OidW,    1.3.6.1.2.1.33.1.4.4.1.4.2,  DEFAULT
+ou3OidW,    1.3.6.1.2.1.33.1.4.4.1.4.3,  DEFAULT
+
+<!-- input line variables -->
+in1Freq,    $in1OidF/10,                 CALCULATION,  "Input 1 Freq (Hz)"
+in2Freq,    $in2OidF/10,                 CALCULATION,  "Input 2 Freq (Hz)"
+in3Freq,    $in3OidF/10,                 CALCULATION,  "Input 3 Freq (Hz)"
+in1Volt,    1.3.6.1.2.1.33.1.3.3.1.3.1,  DEFAULT,      "Input 1 Voltage (Volts)"
+in2Volt,    1.3.6.1.2.1.33.1.3.3.1.3.2,  DEFAULT,      "Input 2 Voltage (Volts)"
+in3Volt,    1.3.6.1.2.1.33.1.3.3.1.3.3,  DEFAULT,      "Input 3 Voltage (Volts)"
+in1Amps,    $in1OidA/10,                 CALCULATION,  "Input 1 Current (Amps)"
+in2Amps,    $in2OidA/10,                 CALCULATION,  "Input 2 Current (Amps)"
+in3Amps,    $in3OidA/10,                 CALCULATION,  "Input 3 Current (Amps)"
+in1Watt,    $in1OidW/1000,               CALCULATION,  "Input 1 Power (KWatts)"
+in2Watt,    $in2OidW/1000,               CALCULATION,  "Input 2 Power (KWatts)"
+in3Watt,    $in3OidW/1000,               CALCULATION,  "Input 3 Power (KWatts)"
+
+<!-- output line variables -->
+ou1Volt,    1.3.6.1.2.1.33.1.4.4.1.2.1,  DEFAULT,      "Output 1 Voltage (Volts)"
+ou2Volt,    1.3.6.1.2.1.33.1.4.4.1.2.2,  DEFAULT,      "Output 2 Voltage (Volts)"
+ou3Volt,    1.3.6.1.2.1.33.1.4.4.1.2.3,  DEFAULT,      "Output 3 Voltage (Volts)"
+ou1Amps,    $ou1OidA/10,                 CALCULATION,  "Output 1 Current (Amps)"
+ou2Amps,    $ou2OidA/10,                 CALCULATION,  "Output 2 Current (Amps)"
+ou3Amps,    $ou3OidA/10,                 CALCULATION,  "Output 3 Current (Amps)"
+ou1Watt,    $ou1OidW/1000,               CALCULATION,  "Output 1 Power (KWatts)"
+ou2Watt,    $ou2OidW/1000,               CALCULATION,  "Output 2 Power (KWatts)"
+ou3Watt,    $ou3OidW/1000,               CALCULATION,  "Output 3 Power (KWatts)"
+ou1Load,    1.3.6.1.2.1.33.1.4.4.1.5.1,  DEFAULT,      "Output 1 Load (%)"
+ou2Load,    1.3.6.1.2.1.33.1.4.4.1.5.2,  DEFAULT,      "Output 2 Load (%)"
+ou3Load,    1.3.6.1.2.1.33.1.4.4.1.5.3,  DEFAULT,      "output 3 Load (%)"
+
+<!-- status variable (code conversion calculations) -->
+statusAlarm,    ($alarms = 0)?"No Alarms Reported":"Device is Reporting $alarms Alarm(s).",                                                              CALCULATION,  ""
+statusBattery,  ($stat = 1)?"Unknown":(($LeftCharge < 100) and not($source = 5))?"Charging":($stat = 2)?"Normal":($stat = 3)?"Low Charge":"Depleted",    CALCULATION,  ""
+statusSource,   ($source = 3)?"Normal":($source = 4)?"Bypass":($source = 5)?"Battery":($source = 6)?"Booster":($source = 7)?"Reducer":($source = 1)?"None":"Other",  CALCULATION,  ""
+
+
+<!-- enviromental monitoring from Liebert Global Products MIB -->
+ambientTempC, 1.3.6.1.4.1.476.1.42.3.4.1.3.3.1.3.1, DEFAULT, "Ambient Temperature (°C)"
+ambientTempF, 1.3.6.1.4.1.476.1.42.3.4.1.2.3.1.3.1, DEFAULT, "Ambient Temperature (°F)"
+batteryTempC, 1.3.6.1.4.1.476.1.42.3.4.1.3.3.1.3.2, DEFAULT, "Battery Temperature (°C)"
+batteryTempF, 1.3.6.1.4.1.476.1.42.3.4.1.2.3.1.3.2, DEFAULT, "Battery Temperature (°F)"
+</snmp-device-variables>
+
+<snmp-device-variables-ondemand>
+upsAlarmTable,					.1,						TABLE,		"Information about alarms present"
+upsAlarmTable/upsAlarmId,		1.3.6.1.2.1.33.1.6.2.1.1,	DEFAULT,	"Unique ID"
+upsAlarmTable/upsAlarmDescr,	1.3.6.1.2.1.33.1.6.2.1.2,	DEFAULT,	"Alarm Description"
+upsAlarmTable/upsAlarmTime,		1.3.6.1.2.1.33.1.6.2.1.3,	DEFAULT,	"Alarm Time"
+</snmp-device-variables-ondemand>
+
+<snmp-device-thresholds>
+     ALARM:    $alarms > 0  "Alarms Reported"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\MB5\Liebert UPS / OpenComms Web Card Information\p\
+\M4\  Vendor: \0\$vendor\p\
+\M4\   Model: \0\$model\p\
+\M4\Software: \0\$version2\p\
+\M4\Firmware: \0\$version1\p\
+
+\M4\  Alarm Status: \Gb0\$statusAlarm\p\
+\M4\ Output Source: \Gb0\$statusSource\p\
+\M4\Battery Status: \Gb0\$statusBattery\p\${eval: ($source = 5)?", Time on battery: $secs seconds.":""}\p\
+\M4\               \3\(\p\${chartable: #.: $LeftCharge}\GI3\ % Charge,  \p\${chartable: #.#:$LeftMin}\GI3\ Minutes Left.\p\\M\)\p\
+\M4\               \3\(\p\${chartable: #.#: $batVolt}\GI3\ Volts;  \p\\M4\${chartable: #.#: $batCurrent}\GI3\ Amps.\p\\M\)\p\
+
+\MB5\Input Status\p\
+\Mb4\   Line 1:  \p\${chartable: #.#: $in1Freq}\GI3\ Hz;  \p\$in1Volt\GI3\ Volts;  \p\${chartable: #.#: $in1Amps}\GI3\ Amps;  \p\${chartable: #.###: $in1Watt}\GI3\ KWatts.\p\
+\Mb4\   Line 2:  \p\${chartable: #.#: $in2Freq}\GI3\ Hz;  \p\$in2Volt\GI3\ Volts;  \p\${chartable: #.#: $in2Amps}\GI3\ Amps;  \p\${chartable: #.###: $in2Watt}\GI3\ KWatts.\p\
+\Mb4\   Line 3:  \p\${chartable: #.#: $in3Freq}\GI3\ Hz;  \p\$in3Volt\GI3\ Volts;  \p\${chartable: #.#: $in3Amps}\GI3\ Amps;  \p\${chartable: #.###: $in3Watt}\GI3\ KWatts.\p\
+\Mi4\   ($inNum lines, 3 displayed)\p\
+\MB5\Output Status \p\
+\Mb4\   Line 1:  \p\${chartable: #.#: $ouFreq}\GI3\ Hz;  \p\$ou1Volt\GI3\ Volts;  \p\${chartable: #.#: $ou1Amps}\GI3\ Amps;  \p\${chartable: #.###: $ou1Watt}\GI3\ KWatts;  \p\$ou1Load\GI3\ % Load.\p\
+\Mb4\   Line 2:  \p\${chartable: #.#: $ouFreq}\GI3\ Hz;  \p\$ou2Volt\GI3\ Volts;  \p\${chartable: #.#: $ou2Amps}\GI3\ Amps;  \p\${chartable: #.###: $ou2Watt}\GI3\ KWatts;  \p\$ou2Load\GI3\ % Load.\p\
+\Mb4\   Line 3:  \p\${chartable: #.#: $ouFreq}\GI3\ Hz;  \p\$ou3Volt\GI3\ Volts;  \p\${chartable: #.#: $ou3Amps}\GI3\ Amps;  \p\${chartable: #.###: $ou3Watt}\GI3\ KWatts;  \p\$ou3Load\GI3\ % Load.\p\
+\Mi4\   ($ouNum lines, 3 displayed)\p\
+
+\MB5\Temperature Monitoring \p\
+\Mb4\   Battery: \p\${chartable: #.#: $batteryTempC}\GI3\ °C, \p\${chartable: #.#: $batteryTempF}\GI3\ °F,\p\
+\Mb4\   Ambient: \p\${chartable: #.#: $ambientTempC}\GI3\ °C, \p\${chartable: #.#: $ambientTempF}\GI3\ °F,\p\
+
+\MB5\UPS Alarm Table:\p0\
+   ${upsAlarmTable:View the UPS Alarm Table}   
+
+\p\\bG3\Bugs or Requests? \p\\iG3\\U=mailto:upsbundle@intermapper.com\Please contact us.\p\\pM0\
+</snmp-device-display>
+
+<datasets>
+	$LeftCharge,	'pctcharge',	"percent",		"true",		"Percent Charge"
+	$LeftMin,		'batttimeleft',	"min",			"true",		"Time Left on Battery"
+	$in1Volt,		'involts',		"volts",		"true",		"Input 1 Voltage"
+	$batteryTempC,	'temperature',	"degrees C",	"true",		"Battery Temperature (°C)"
+</datasets>

@@ -1,0 +1,50 @@
+<!-- 
+	Basic TCP (Blocked) (com.dartware.tcp.blocked)
+	Copyright © 2004 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.blocked"
+	human_name		=	"Basic TCP (Blocked)"
+	version			= 	"1.5"
+	address_type	= 	"IP"
+	port_number		=	"23"
+	display_name	=	"Servers-Standard/Basic TCP (Blocked)"
+
+</header>
+
+<description>
+
+\GB\Basic TCP (Blocked)\P\
+
+This basic TCP probe tests that a TCP port is \b\not\p\ accepting connections. This probe may be used to test that a firewall is working properly, or that a particular TCP service is never operating on an important machine.
+
+If the specified port accepts the TCP connection, the device is reported with the desired failure status. If the specified port fails to accept the TCP connection within 120 seconds, the device status is "OK".
+
+\i\Failure Status\p\ is the device status that InterMapper should report when a TCP connection is made. The default is DOWN.
+
+</description>
+
+<parameters>
+
+"Failure Status[DOWN,ALRM,WARN]"	=	"DOWN"
+
+</parameters>
+
+<script>
+
+CONN #120 (connect timeout in secs)
+FAIL @NO_CONN (goto NO_CONN if connect attempt fails)
+SBNE "${Failure Status[DOWN,ALRM,WARN]}" "ALRM" #+2
+DONE ALRM "TCP port ${_REMOTEPORT} accepted a connection that should have been blocked."
+SBNE "${Failure Status[DOWN,ALRM,WARN]}" "WARN" #+2
+DONE WARN "TCP port ${_REMOTEPORT} accepted a connection that should have been blocked."
+DONE DOWN "TCP port ${_REMOTEPORT} accepted a connection that should have been blocked."
+
+@NO_CONN:
+DONE OKAY "TCP port ${_REMOTEPORT} is blocked."
+
+</script>
+

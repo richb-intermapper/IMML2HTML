@@ -1,0 +1,67 @@
+<!-- 
+	High Traffic (com.dartware.snmp.traffic)
+	Custom Probe for InterMapper (http://www.intermapper.com)
+	Please feel free to use this as a base for further development.
+	Converted to IMML 26Sep2003 -reb
+	Added ifOperStatus flag; added display_name; bumped version. 28 Nov 2005 -reb
+	Moved to SNMP folder; bumped version. 23 Nov 2009 -cls
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.traffic"
+	human_name		=	"SNMP - High Traffic"
+	version			= 	"0.3"
+	address_type	= 	"IP,AT"
+	port_number		=	"161"
+	flags			=   "NOLINKS"
+	display_name	=	"SNMP/SNMP - High Traffic"
+</header>
+
+<snmp-device-properties>
+   nomib2="true"
+</snmp-device-properties>
+
+
+<description>
+
+\GB\High Traffic Probe\P\
+
+This probe monitors the ifInOctets and ifOutOctets traffic statistics of a particular interface on the device, and sets the device into alarm or warning when the traffic exceeds certain thresholds. It also gives a DOWN alarm if the interface's ifOperStatus is not equal to 1 (up).
+
+The \i\Port Number\p\ parameter is the ifIndex of the port to monitor. 
+
+The \i\Warn Threshold\p\ and \i\Alarm Threshold\p\ parameters are in bytes per second.
+</description>
+
+<parameters>
+
+"Port Number" 	  = "1"
+"Alarm Threshold" = "5000"
+"Warn Threshold"  = "1000"
+
+</parameters>
+
+<snmp-device-variables>
+	ifInOctets, 	1.3.6.1.2.1.2.2.1.10.${Port Number}, PER-SECOND, ""
+	ifOutOctets,	1.3.6.1.2.1.2.2.1.16.${Port Number}, PER-SECOND, ""	
+	ifOperStatus,	1.3.6.1.2.1.2.2.1.8.${Port Number}, DEFAULT, ""	
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	down:		${ifOperStatus} != 1 
+	alarm: 		${ifInOctets}  > ${Alarm Threshold}
+	alarm: 		${ifOutOctets} > ${Alarm Threshold}
+	warning: 	${ifInOctets}  > ${Warn Threshold}
+	warning: 	${ifOutOctets} > ${Warn Threshold}
+
+</snmp-device-thresholds>
+
+<snmp-device-display>
+
+\B5\High Traffic Probe\0P\ on interface ifIndex=${Port Number}
+  \4\   Received Traffic:\0\ ${ifInOctets} bytes/second
+  \4\Transmitted Traffic:\0\ ${ifOutOctets} bytes/second
+              \4\Link is:\0\ ${ifOperStatus} 1=up; 2=down; 3=testing
+</snmp-device-display>

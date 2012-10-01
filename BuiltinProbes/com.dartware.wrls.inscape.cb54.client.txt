@@ -1,0 +1,284 @@
+<!-- 
+	Inscape Client (com.dartware.wrls.inscape.cb54.client)
+	Copyright (c) 2007 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"wrls.inscape.cb54.client"
+	human_name		=	"AirEther CB54 Series Client"
+	version			= 	"1.0"
+	address_type		= 	"IP"
+	port_number		=	"80"
+	equiv_class		= 	"WRLS"
+	display_name		=	"Wireless/Inscape Data/AirEther CB54 Series Client"
+	url_hint		=	"http://${ADDRESS}:${PORT}/"
+</header>
+
+<description>
+
+\GB\AirEther CB54 Series Client\P0\
+
+This probe monitors \U2=http://www.inscapedata.com//\Inscape Data\P0\'s CB54, CB54E, and CB5418 wireless client device.
+
+\i\User\p\ is the name of the administrator.
+
+\i\Password\p\ is the password for the administrator.
+
+\i\Signal Strength Warning\p\ is the warning threshold for low signal strength %.
+
+\i\Signal Strength Alarm\p\ is the alarm threshold for low signal strength %.
+
+\i\Link Quality Warning\p\ is the warning threshold for low link quality %.
+
+\i\Link Quality Alarm\p\ is the alarm threshold for low link quality %.
+
+\i\Expected BSSID\p\ is the expected BSSID.  This value will be ignored if blank.
+
+\i\Port\p\ is the Web interface's HTTP port.
+
+</description>
+
+<parameters>
+	"User"				=		""
+	"Password*"			=		""
+	"Signal Strength Warning <"	=		"30"
+	"Signal Strength Alarm <"	=		"20"
+	"Link Quality Warning <"	=		"20"
+	"Link Quality Alarm <"		=		"10"
+	"Expected BSSID"		=		""
+</parameters>
+
+<script>
+CONN #60
+FAIL @FAILED
+
+WAIT #60 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+SEND "GET /C_ConnectionStatus.htm HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User}${Password*}" ELSE #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @UNAVAIL_GET_RESPONSE
+
+STOR "key" ""
+STOR "value" ""
+EXPT "<th[^>]*>\\s*([^<>]+)\\s*</th>"ir else @NO_MATCH
+
+DISC @GET_SYSTEMSUMMARY
+
+@LOOP:
+STOR "key" "${1}"
+NEXT
+MTCH "<td[^>]*>\\s*([^<>]*)\\s*</td>"ir ELSE #+2
+GOTO #+2
+#"Current Channel" value may not have trailing </td> on the same line
+MTCH "<td[^>]*>\\s*([^<>]*)\\s*"ir ELSE @LOOP_NEXT
+STOR "value" "${1}"
+
+#remove trailing spaces
+EVAL ${1} =~ "^(.*)\\s$"
+EVAL ${1} =~ "^(.*)\&nbsp;$"
+EVAL ${foo} := ("${value}" == "${1}")
+NBNE #${foo} #1 #-4
+
+SBNE "${key}" "Network Type"i #+3
+STOR "^type" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "BSSID"i #+3
+STOR "^bssid" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "\\s*SSID"ir #+3
+STOR "^ssid" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "Connection Status"i #+3
+STOR "^status" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "Wireless Mode"i #+3
+STOR "^mode" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "Current Channel"i #+3
+STOR "^channel" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "Security"i #+3
+STOR "^security" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "Rx Data Rate(Mbps)"i #+3
+STOR "rx_rate" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "Tx Data Rate(Mbps)"i #+3
+STOR "tx_rate" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "Link Quality"i #+3
+STOR "quality" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "Signal Strength"i #+3
+STOR "signal" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "Activity (Packets Rx)"i #+3
+STOR "pkts_rx" "${value}"
+GOTO @LOOP_NEXT
+SBNE "${key}" "Activity (Packets Tx)"i #+3
+STOR "pkts_tx" "${value}"
+GOTO @LOOP_NEXT
+
+@LOOP_NEXT:
+NEXT
+EXPT "<th[^>]*>\\s*([^<>]+)\\s*</th>"ir else goto @GET_SYSTEMSUMMARY
+GOTO @LOOP
+
+@GET_SYSTEMSUMMARY:
+STOR "^mac" "<unknown>"
+STOR "^name" "<unknown>"
+
+DISC @DISCONNECT
+RCON
+SEND "GET /B_SystemSummary.htm HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User}${Password*}" ELSE #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @DONE
+
+#parse out Wireless MAC and System Name here
+STOR "key" ""
+STOR "value" ""
+EXPT "<th[^>]*>\\s*([^<>]+)\\s*</th>"ir else @NO_MATCH
+
+DISC @DONE
+
+@SUMMARY_LOOP:
+STOR "key" "${1}"
+NEXT
+MTCH "<td[^>]*>\\s*([^<>]*)\\s*</td>"ir ELSE @SUMMARY_LOOP_NEXT
+GOTO #+2
+#Some values may not have trailing </td> on the same line
+MTCH "<td[^>]*>\\s*([^<>]*)\\s*"ir ELSE @LOOP_NEXT
+STOR "value" "${1}"
+
+#remove trailing spaces
+EVAL ${1} =~ "^(.*)\\s$"
+EVAL ${1} =~ "^(.*)\&nbsp;$"
+EVAL ${foo} := ("${value}" == "${1}")
+NBNE #${foo} #1 #-4
+
+SBNE "${key}" "Wireless MAC Address"i #+3
+STOR "^mac" "${value}"
+GOTO @SUMMARY_LOOP_NEXT
+SBNE "${key}" "System Name"i #+3
+STOR "^name" "${value}"
+GOTO @SUMMARY_LOOP_NEXT
+
+@SUMMARY_LOOP_NEXT:
+NEXT
+EXPT "<th[^>]*>\\s*([^<>]+)\\s*</th>"ir else goto @DONE
+GOTO @SUMMARY_LOOP
+
+@DONE:
+#check expected BSSID
+CHCK "${Expected BSSID}" ELSE #+2
+SBNE "${Expected BSSID}" "${^bssid}" #+2
+GOTO #+2
+DONE WARN "BSSID does not match expected value: ${^bssid}"
+
+#check signal strength
+# If "N/A" should trigger an ALARM, then remove the SBNE and GOTO here
+SBNE "${signal}" "N/A"i #+2
+GOTO #+5
+NBGT #${signal} #${Signal Strength Warning <} #+4
+NBGT #${signal} #${Signal Strength Alarm <} #+2
+DONE ALRM "Poor signal strength: ${signal}"
+DONE WARN "Low signal strength: ${signal}"
+
+#check link quality
+# If "N/A" should trigger an ALARM, then remove the SBNE and GOTO here
+SBNE "${quality}" "N/A"i #+2
+GOTO #+5
+NBGT #${quality} #${Link Quality Warning <} #+4
+NBGT #${quality} #${Link Quality Alarm <} #+2
+DONE ALRM "Poor link quality: ${quality}"
+DONE WARN "Low link quality: ${quality}"
+
+DONE OKAY
+
+@NO_MATCH:
+DONE WARN "Unrecognized response from device."
+
+@IDLE:
+DONE DOWN "No data for ${_IDLETIMEOUT} seconds. [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@UNAVAIL_GET_RESPONSE:
+MTCH m"50[0-9]" else goto @BAD_GET_RESPONSE
+DONE DOWN "${_LINE:50}"
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "201 Created"
+MTCH "202" ELSE #+2
+DONE WARN "202 Accepted"
+MTCH "204" ELSE #+2
+DONE WARN "204 No Content"
+MTCH "301" ELSE #+2
+DONE WARN "301 Moved Permanently"
+MTCH "302" ELSE #+2
+DONE WARN "302 Moved Temporarily"
+MTCH "304" ELSE #+2
+DONE WARN "304 Not Modified"
+MTCH "400" ELSE #+2
+DONE WARN "400 Bad Request"
+MTCH "401" ELSE #+2
+DONE WARN "401 Unauthorized"
+MTCH "403" ELSE #+2
+DONE WARN "Invalid login."
+MTCH "404" ELSE #+2
+DONE WARN "Unrecognized response (404)."
+MTCH "500" ELSE #+2
+DONE ALRM "500 Internal Server Error"
+MTCH "501" ELSE #+2
+DONE ALRM "501 Not Implemented"
+MTCH "502" ELSE #+2
+DONE ALRM "502 Bad Gateway"
+MTCH "503" ELSE #+2
+DONE ALRM "503 Service Unavailable"
+DONE ALRM "Unknown Error Code ${_LINE:4}"
+
+@DISCONNECT:
+DONE DOWN "Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+</script>
+
+<script-output>
+\B5\AirEther CB54 Series Client Statistics\P0\
+         \4\System Name:\0\ ${^name}
+        \4\Network Type:\0\ ${^type}
+                \4\SSID:\0\ ${^ssid}
+               \4\BSSID:\0\ ${^bssid}
+\4\Wireless MAC Address:\0\ ${^mac}
+   \4\Connection Status:\0\ ${^status}
+       \4\Wireless Mode:\0\ ${^mode}
+     \4\Current Channel:\0\ ${^channel}
+            \4\Security:\0\ ${^security}
+        \4\Rx Data Rate:\3\ ${rx_rate} Mbps
+        \4\Tx Data Rate:\3\ ${tx_rate} Mbps
+        \4\Link Quality:\0\ ${chartable:+0:+100:$quality}%
+     \4\Signal Strength:\0\ ${chartable:+0:+100:$signal}%
+          \4\Packets Rx:\3\ ${pkts_rx}
+          \4\Packets Tx:\3\ ${pkts_tx}
+</script-output>

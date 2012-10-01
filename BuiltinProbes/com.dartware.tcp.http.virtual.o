@@ -1,0 +1,31 @@
+<!-- 
+	HTTP (Virtual Server) (com.dartware.tcp.http.virtual)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.http.virtual"
+	human_name		=	"HTTP (Virtual Server)"
+	version			= 	"1.8"
+	address_type	= 	"IP"
+	port_number		=	"80"
+
+	flags			= 	"INVISIBLE"	# Not visible in probe type menu
+
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8014"
+
+	# Refer lookups for "com.dartware.tcp.http.virtual" to "com.dartware.tcp.http"...
+	
+	referto			= 	"com.dartware.tcp.http"
+
+	display_name	=	"Servers-Standard/HTTP & HTTPS/HTTP (Virtual Server)"
+	url_hint		=	"http://${ADDRESS}:${PORT}/"
+</header>
+
+<datasets>
+  $_connect,	'conntime',   "msec",   "true",   "Time to establish connection"
+  $_active,   'connactive', "msec",   "true",   "Time spent connected to host"
+</datasets>

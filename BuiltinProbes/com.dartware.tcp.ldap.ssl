@@ -1,0 +1,149 @@
+<!-- 
+	LDAP-SSL (com.dartware.tcp.ldap.ssl)
+	Copyright © 2002-2004 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.ldap.ssl"
+	human_name		=	"LDAP-SSL"
+	version			= 	"1.9"
+	address_type	= 	"IP"
+	port_number		=	"636"
+	display_name	=	"Servers-Standard/LDAP/LDAP-SSL"
+
+</header>
+
+<description>
+
+\GB\Lightweight Directory Access Protocol (LDAP)\P\
+
+The protocol used to access directories supporting the X.500 models, as described in \u2=http://www.ietf.org/rfc/rfc2251.txt\RFC 2251\p0\.
+
+This probe connects to the LDAP server and binds using the designated \i\Bind Name\p\. If a \i\Bind Password\p\ is provided, this password is sent as clear text to authenticate the probe.
+
+Once logged in, the probe sends a SearchRequest for \i\Field to Match\p\ searching for an equality match of \i\Name to Lookup\p\, and counts the number of LDAP records returned.
+
+If the \i\Search Base\p\ field is specified, this value is used as the base of the search. Otherwise, the \i\Bind Name\p\ is used for the Base DN.
+
+</description>
+
+<parameters>
+
+"Bind Name"				= "cn=Bill Fisher,ou=people,dc=dartware,dc=com"
+"Bind Password*"        = ""
+"Name to Lookup"		= "Bill Fisher"
+"Search Base"           = "ou=people,dc=dartware,dc=com"
+"Field to Match[cn,sn,uid]" = "cn"
+"Minimum No. of Results" = "0"
+
+</parameters>
+
+<script>
+
+CONN #60 "SECURE"
+WAIT #30 @IDLE (idle timeout in seconds)
+DISC @DISCONNECT (disconnect handler)
+LINE BER
+
+-- All LDAP messages have the following structure envelope:
+--
+--	LDAPMessage ::= SEQUENCE {
+--		messageID       INTEGER( 0..2^31-1),
+--		protocolOp      CHOICE {
+--			bindRequest     BindRequest,
+--			bindResponse    BindResponse,
+--			unbindRequest   UnbindRequest,
+--			searchRequest   SearchRequest,
+--			searchResEntry  SearchResultEntry,
+--			searchResDone   SearchResultDone,
+--			searchResRef    SearchResultReference,
+--			...
+--		}
+--		controls       [0] Controls OPTIONAL
+--	}
+--
+-- This script never includes the optional controls field in its LDAP messages.
+
+
+-- Send bindRequest PDU and expect a bindResponse PDU answer:
+--
+--	BindRequest ::= [APPLICATION 0] SEQUENCE {
+--		version        INTEGER (1 .. 127),
+--		name           OCTET STRING,
+--		authentication [PRIVATE 0] OCTET STRING
+--	}
+--
+
+BSND { #1, [60]{ #3, "${Bind Name}", [80]"${Bind Password*}"} }
+BRCV { #1, [61]{ [0A]#ENUM, "", "" } } else @PARSE_ERROR
+NBNE #${ENUM} #0 @CHECK_VERSION
+
+-- Send a searchRequest
+@SEND_SEARCH:
+CHCK "${Search Base}" #+3
+STOR "Base" "${Search Base}"
+GOTO #+2
+STOR "Base" "${Bind Name}"
+
+BSND { #2, [63]{ "${Base}", [0A]#2, [0A]#3, #0, #60, [01]#0, [A3]{ "${Field to Match[cn,sn,uid]}", "${Name to Lookup}"}, {}  }}
+
+STOR "COUNT" "0"
+@PARSE_REPLY:
+BRCV { #2, ["TAG"]{ ... } } else @PARSE_ERROR
+NBNE #${TAG} #115 else #+2
+GOTO @NEXT_REPLY
+NBNE #${TAG} #100 else @NOT_RES_ENTRY
+BRCV { #2, [64]{ "C", { {"X",[31]{ "Y" }},... } } } else @PARSE_ERROR
+NADD "COUNT" #1
+@NEXT_REPLY:
+NEXT
+GOTO @PARSE_REPLY
+
+@NOT_RES_ENTRY:
+NBNE #${TAG} #101 @NOT_RES_END
+NBNE #${COUNT} #${Minimum No. of Results} #+2
+GOTO @SUCCESS
+NBGT #${COUNT} #${Minimum No. of Results} @SUCCESS
+DONE ALRM "[LDAP] ${COUNT} matches for \"${Name to Lookup}\"; expected at least ${Minimum No. of Results} records."
+
+@SUCCESS:
+DONE OKAY "[LDAP] Found ${COUNT} matches for \"${Name to Lookup}\""
+
+@NOT_RES_END:
+DONE ALRM "[LDAP] Unexpected response: ${TAG}"
+
+
+-- Error Handlers --
+
+@CHECK_VERSION:
+NBNE #${ENUM} #2 else @BAD_BIND_RESPONSE
+BSND { #1, [60]{ #2, "${Bind Name}", [80]""} }
+BRCV { #1, [61]{ [0A]#ENUM, "", "" } } else @PARSE_ERROR
+NBNE #${ENUM} #0 @BAD_BIND_RESPONSE
+GOTO @SEND_SEARCH
+
+@BAD_BIND_RESPONSE:
+NBNE #${ENUM} #1 else @+2
+DONE WARN "[LDAP] Response to Bind Request = operationsError (1)"
+NBNE #${ENUM} #2 else @+2
+DONE WARN "[LDAP] Response to Bind Request = protocolError (2)"
+NBNE #${ENUM} #48 else @+2
+DONE WARN "[LDAP] Response to Bind Request = inappropriateAuthentication (48)"
+NBNE #${ENUM} #49 else @+2
+DONE WARN "[LDAP] Response to Bind Request = invalidCredentials (49)"
+NBNE #${ENUM} #53 else @+2     -- ignore 'unwillingToPerform' response
+GOTO @SEND_SEARCH
+DONE WARN "[LDAP] Response to Bind Request = ${ENUM}"
+
+@PARSE_ERROR:
+DONE ALRM "[LDAP] Error parsing response from the server. [Line ${_IDLELINE}]"
+
+@IDLE:
+DONE ALRM "[LDAP] No data for ${_IDLETIMEOUT} seconds. [Line ${_IDLELINE}]"
+
+@DISCONNECT:
+DONE DOWN "[LDAP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+</script>

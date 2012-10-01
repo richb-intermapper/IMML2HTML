@@ -1,0 +1,57 @@
+<!-- 
+	DHCPv4 (com.dartware.dhcp)
+	Copyright © 2000-2008 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"dhcp"
+	human_name		=	"DHCPv4/BOOTP"
+	version			= 	"2.0"
+	address_type	= 	"IP"
+	port_number		=	"67"
+	
+	old_protocol	= 	"14"		# Backward compat. with old numbering scheme.
+	old_script		= 	"0"
+	
+	display_name	=	"Servers-Standard/DHCPv4\/BOOTP"
+	
+</header>
+
+<description>
+
+\GB\DHCPv4\P\
+
+The protocol used by IP clients to obtain an IPv4 address and other parameters for using TCP/IP. Depending on your setup, this probe may only work if your computer is already using an IP address acquired using BOOTP or DHCP.
+
+Note: On Mac OS X, this probe will only work if there are no enabled DHCP, Bootp, or PPP interfaces.
+
+This probe sends DHCP-INFORM requests to test the DHCP mechanism for an IP subnet.
+
+\i\BOOTP Relay Address\p\ is the IP address to which all DHCP requests are addressed. Normal BOOTP/DHCP requests are broadcast to the local subnet (255.255.255.255), where they are picked up by the BOOTP agent in a router and relayed to the BOOTP/DHCP server. If this parameter is empty, InterMapper sends the DHCP requests directly to the target IP address specified for the device.
+
+\i\DHCP Client ID\p\ is an optional parameter included with InterMapper's request that can be used to identify the DHCP client as InterMapper. If you leave this parameter blank, InterMapper does not include the DHCP Client ID option in its DHCP probe.
+
+\i\DHCP Subnet Mask\p\ is an optional parameter specifying the expected value of the subnet mask returned by the DHCP server. If you leave this parameter blank, InterMapper will accept any subnet mask value.
+
+\i\DHCP Router Address\p\ is an optional parameter specifying the expected value of the router address returned by the DHCP server. If you leave this parameter blank, InterMapper will accept any router address value.
+
+\i\DHCP Message Type\p\ is the type of DHCP message to send. Typically, you should prefer DHCP-INFORM, since this message type will not cause an IP address to be allocated by the DHCP server. A DHCP server may respond to a DHCP-DISCOVER request by wastefully leasing out an IP address which will never be used.
+
+\i\Hardware Address\p\ is an optional parameter specifying the MAC address of the network interface that should be used to send the DHCP request.
+
+\i\Request Seconds\p\ is an optional parameter specifying the number of seconds to claim we have been trying for; certain DHCP servers (such as the one supplied with OS X 10.5 with the default settings) will not respond at all until the client claims to have been trying for at least 10 seconds.
+</description>
+
+<parameters>
+
+"BOOTP Relay Address"							=		"255.255.255.255"
+"DHCP Client ID"								=		""
+"DHCP Subnet Mask"								=		""
+"DHCP Router Address"							=		""
+"DHCP Message Type[DHCP-INFORM,DHCP-DISCOVER]"	=		"DHCP-INFORM"
+"Hardware Address"								=		""
+"Request Seconds"								=		""
+</parameters>
+

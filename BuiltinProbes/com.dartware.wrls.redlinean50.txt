@@ -1,0 +1,119 @@
+<!--
+	Wireless - Redline AN50 (com.dartware.wrls.redlinean50)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 6 November 2003 - reb
+	Latest revision 1 April 2005 - ics
+		Some changes based on our draft Alvarion LinkBlaster probe. Devices have parallel MIBs.
+	Latest revision 16-24 March 2006 - aap & rebs
+		Additional thresholds added to provide for Alarm and Warning states for "Signaling Burst Rate",
+      	"RF Status", and "Signal-to-Noise Ratio" (SNR).  "RF Signal Strength" was modified to utilize
+      	values of "-48" for "Low Warning" and "-83" for "Too Low Alarm". 
+      	Added threshold for UBR as well
+-->
+
+<header>
+	"type"		=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.redlinean50"
+	"human_name"	=	"Wireless - Redline AN50"
+	"display_name" 	=	"Wireless/Redline/AN50"
+	"version"		=	"1.2"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"equiv_class"	= 	"WRLS"
+</header>
+
+<description>
+\GB\Redline AN50\P\
+
+This probe is meant to probe a \u2=http://www.redlinecommunications.com\Redline\p0\ AN50 point-to-point radio, acting as either a master or slave. It retrieves and displays a number of critical statistics for the radio, and gives alarms if it goes out of user-specified thresholds.  The probe retrieves:
+
+\b\Average RF Rx signal strength\p\ and compares it to the Rx Signal alarm and warning thresholds specified below.
+
+\b\Average RF SNR\p\ and compares it to the signal to noise ratio alarm and warning thresholds specified below.
+
+\b\Signaling Burst Rate\p\ The device goes into alarm when the Uncoded Burst Rate is less than the specified code. (Codes are 0=6Mb/s,1=9Mb/s,2=12Mb/s,3=18Mb/s,4=24Mb/s,5=36Mb/s,6=48Mb/s,7=54Mbs)
+
+\b\Operating frequency\p\ The device goes into alarm if it's different from the value specified below.
+
+\b\Radio Link Status\p\ The device goes into alarm if it's not connected.
+
+This probe is part of the InterMapper Wireless Add-on pack, and requires InterMapper 4.2.4 or later.
+
+</description>
+
+<parameters>
+	"Avg. Rx Signal strength too low alarm"	=	"-83"
+	"Avg. Rx Signal strength low warning"	=	"-48"
+	"Avg. SNR too low alarm"			=	"20"
+	"Avg. SNR low warning"				=	"30"
+	"Expected Uncoded Burst Rate"       =   "7"
+	"Expected Operating Frequency"		=	"Please enter expected frequency..."
+	"Active Links too high alarm"			=	"100"
+	"Active Links high warning"			=	"75"
+	"Active Links too low alarm"			=	"-1"
+	"Active Links low warning"			=	"0"
+</parameters>
+
+<snmp-device-variables>
+	GenRFLink,	 		1.3.6.1.4.1.10728.2.16.1.2.0, 	DEFAULT, 	"Radio Link Status"
+	GenFrequency,	 	1.3.6.1.4.1.10728.2.16.1.3.0, 	DEFAULT, 	"Operating Frequency"
+	GenFault,	 		1.3.6.1.4.1.10728.2.16.1.12.0, 	INTEGER, 	"Fault LED Status"
+	an50WrlsUBR,		1.3.6.1.4.1.10728.2.16.2.2.5.0,	INTEGER,	"Signaling Burst Rate"
+	an50WrlsRfStatErrCode,	1.3.6.1.4.1.10728.2.16.2.2.14.0,	INTEGER,	"RF Status"
+	EtherRxPacketsErr, 	1.3.6.1.4.1.10728.2.16.3.2.2.0, 	PER-MINUTE, "Ethernet Rx Error packets"
+	EtherRxPackets, 		1.3.6.1.4.1.10728.2.16.3.2.1.0, 	PER-SECOND, "Ethernet Rx packets"
+	EtherTxPackets, 		1.3.6.1.4.1.10728.2.16.3.2.3.0, 	PER-SECOND, "Ethernet Tx packets"
+	WrlsRxSigMin,	 	1.3.6.1.4.1.10728.2.16.3.3.1.0, 	DEFAULT, 	"Min RF Rx Sig Str"
+	WrlsRxSigMean,	 	1.3.6.1.4.1.10728.2.16.3.3.2.0, 	DEFAULT, 	"Avg RF Rx Sig Str"
+	WrlsRxSigMax,	 	1.3.6.1.4.1.10728.2.16.3.3.3.0, 	DEFAULT, 	"Max RF Rx Sig Str"
+	WrlsAvgSinAdr,	 	1.3.6.1.4.1.10728.2.16.3.3.4.0, 	DEFAULT, 	"Average SNR Ratio"
+	WrlsRxPackets,	 	1.3.6.1.4.1.10728.2.16.3.3.5.0, 	PER-SECOND, "RF Rx Packets"
+	WrlsRxPacketsRetx,	1.3.6.1.4.1.10728.2.16.3.3.6.0, 	PER-MINUTE, "RF Rx Retransmitted Packets"
+	WrlsRxPacketsDisc,	1.3.6.1.4.1.10728.2.16.3.3.7.0, 	PER-MINUTE, "RF Rx Discarded Packets"
+	WrlsTxPackets,	 	1.3.6.1.4.1.10728.2.16.3.3.8.0, 	PER-SECOND, "RF Tx Packets"
+	WrlsTxPacketsRetx,	1.3.6.1.4.1.10728.2.16.3.3.9.0, 	PER-MINUTE, "RF Tx Retransmitted Packets"
+	WrlsTxPacketsDisc,	1.3.6.1.4.1.10728.2.16.3.3.10.0, 	PER-MINUTE, "RF Tx Discarded Packets"
+	WrlsCalcDist,		1.3.6.1.4.1.10728.2.16.3.3.11.0, 	DEFAULT, 	"Calculated Link Distance"
+	GenActiveWirelessLinks, 1.3.6.1.4.1.10728.2.16.1.16.0, 	DEFAULT, 	"Active Wireless Links"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	  alarm: $GenRFLink = 1								 "Link not connected"
+	  alarm: $GenFault = 2 								 "Fault LED On"
+	  alarm: $WrlsRxSigMean < ${Avg. Rx Signal strength too low alarm} "Avg. Rx Signal strength too low"
+	  alarm: $WrlsAvgSinAdr < ${Avg. SNR too low alarm}			 "Avg. SNR Ratio too low"
+	  alarm: $an50WrlsUBR < ${Expected Uncoded Burst Rate}	     "Burst Rate too low"
+	  alarm: $an50WrlsRfStatErrCode != 0					 	 "RF Status Alarm"
+	  alarm: $GenActiveWirelessLinks > ${Active Links too high alarm}	 "Too many active links"
+	  alarm: $GenActiveWirelessLinks < ${Active Links too low alarm}	 "Too few active links"
+	  alarm: $GenFrequency == "Please enter expected frequency..."	 "Please enter expected frequency..."
+	  alarm: $GenFrequency <> ${Expected Operating Frequency}		 "Operating frequency does not match" 
+	warning: $GenFault = 3 								 "Fault LED Unknown"
+	warning: $WrlsRxSigMean < ${Avg. Rx Signal strength low warning}	 "Avg. Rx Signal strength low"
+	warning: $WrlsAvgSinAdr < ${Avg. SNR low warning}			 "Avg. SNR Ratio low"
+	warning: $GenActiveWirelessLinks > ${Active Links high warning}	 "Active links high"
+	warning: $GenActiveWirelessLinks < ${Active Links low warning}	 "Active links low"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Redline AN50 Information\0P\
+  \4\Traffic Stats:\0\ Wireless Ethernet
+  \4\   Rx Traffic:\0\ $WrlsRxPackets  $EtherRxPackets \3IG\packets/sec\P0M\
+  \4\   Tx Traffic:\0\ $WrlsTxPackets  $EtherTxPackets \3IG\packets/sec\P0M\
+  \4\    Rx Errors:\0\	        $EtherRxPacketsErr \3IG\packets/min\P0M\ 
+  \4\Rx Retransmit:\0\ $WrlsRxPacketsRetx \3IG\packets/min\P0M\
+  \4\Tx Retransmit:\0\ $WrlsTxPacketsRetx \3IG\packets/min\P0M\
+  \4\  Rx Discards:\0\ $WrlsRxPacketsDisc \3IG\packets/min\P0M\
+  \4\  Tx Discards:\0\ $WrlsTxPacketsDisc \3IG\packets/min\P0M\
+  \4\   Operating Frequency:\0\ $GenFrequency \3IG\MHz\P0M\
+  \4\    Min/Avg/Max Signal:\0\ $WrlsRxSigMin / $WrlsRxSigMean / $WrlsRxSigMax \3IG\dBm\P0M\
+  \4\         Link Distance:\0\ $WrlsCalcDist \3IG\km\P0M\
+  \4\           Average SNR:\0\ $WrlsAvgSinAdr
+  \4\           Link Status:\0\ ${eval: $GenRFLink == 1 ? "Not Connected" : $GenRFLink == 2 ? "Connected" : $GenRFLink}
+  \4\      Fault LED Status:\0\ ${eval: $GenFault == 1 ? "Off" : $GenFault == 2 ? "On" : $GenFault == 3 ? "Unknown" : $GenFault}
+</snmp-device-display>

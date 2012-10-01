@@ -1,0 +1,97 @@
+ <!--
+	Wireless - proxim AP-600 probe 
+	based on the base probe for Proxim Access Point (com.dartware.wrls.proximap).
+
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version March 2005 by rk
+	Requires InterMapper 4.3a5 or later.
+-->
+
+<header>
+	"type"				=	"built-in"
+	"package"			=	"com.dartware"
+	"probe_name"		=	"wrls.proximap600"
+	"human_name"		=	"Wireless - Proxim AP-600"
+	"display_name" 		=	"Wireless/Proxim/Proxim AP-600"
+	"version"			=	"1.3"
+	"address_type"		=	"IP,AT"
+	"port_number"		=	"161"
+	"equiv_class"		= 	"WRLS"
+</header>
+
+<description>
+\GB\Proxim Access Point\P\
+
+This probe monitors \u2=http://www.proxim.com\Proxim\p0\ AP-600 access points.
+
+The probe will display the device's general settings, wireless interface RF parameters, security information, and wireless clients. To show the wireless client list, the device's station statistics monitoring has to be enabled
+
+Some of the alarms/warnings of this probe will not function unless the Proxim device is set to send traps to the InterMapper server. To get the full functionality of this probe, you will need to set your proxim device to send traps to the InterMapper server.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.3 or later.
+</description>
+
+<parameters>
+	"Many clients warning"			=	"240"
+	"Too many clients alarm"		=	"250"
+	"FCS errors/sec high warning"		=	"50"
+	"FCS errors/sec too high alarm"		=	"100"
+	"Failures/sec high warning"		=	"50"
+	"Failures/sec too high alarm"		=	"100"
+	"Retries/sec high warning"		=	"50"
+	"Retries/sec too high alarm"		=	"100"
+	"Show wireless if settings[true,false]"		=		"true"
+	"Show security settings[true,false]"		=		"true"
+	"Show station statistics[true,false]"		=		"true"
+</parameters>
+
+<snmp-device-variables>
+
+rogueScan,		1.3.6.1.4.1.11898.2.1.18.3.0.6 :: 1.3.6.1.4.1.11898.2.1.18.1.1, TRAPVARIABLE, "Rogue Scan Msg, display str"
+
+authFailureClientMAC,	1.3.6.1.4.1.11898.2.1.18.3.0.2 :: 1.3.6.1.4.1.11898.2.1.18.1.17, TRAPVARIABLE, "Auth failure MAC addr, octet str"
+authFailureAuthType,	1.3.6.1.4.1.11898.2.1.18.3.0.2 :: 1.3.6.1.4.1.11898.2.1.18.1.7, TRAPVARIABLE, "Auth failure auth type, display str"
+
+unAuthManIP,		1.3.6.1.4.1.11898.2.1.18.3.0.3 :: 1.3.6.1.4.1.11898.2.1.18.1.6, TRAPVARIABLE, "Unauthorized manager IP address, octet str(4)"
+
+-- Counter32, we need to specify the type for this variable or we will get rate/sec by default
+unAuthManCount,		1.3.6.1.4.1.11898.2.1.18.3.0.3 :: 1.3.6.1.4.1.11898.2.1.18.1.8, TRAPVARIABLE-TOTAL-VALUE, "Unauthorized manager count, counter32"
+
+failedWrlsCard,		1.3.6.1.4.1.11898.2.1.18.4.0.2 :: 1.3.6.1.4.1.11898.2.1.18.1.18, TRAPVARIABLE, "Failed wireless card, integer 1 or 2"
+
+tempAlertC,		1.3.6.1.4.1.11898.2.1.18.5.0.18 :: 1.3.6.1.4.1.11898.2.1.1.23.1, TRAPVARIABLE, "Unit temp in C, integer 32"
+tempAlertMsg,		1.3.6.1.4.1.11898.2.1.18.5.0.18 :: 1.3.6.1.4.1.11898.2.1.18.1.1, TRAPVARIABLE, "Temp alert mesg, display str"
+
+invalidKeyMACAddr,	1.3.6.1.4.1.11898.2.1.18.3.0.1 :: 1.3.6.1.4.1.11898.2.1.18.1.17, TRAPVARIABLE, "Invalid Encryption key, octet str"
+
+</snmp-device-variables>
+
+<snmp-device-alarmpoints> 
+
+-- minor/informational traps
+
+rgeScan: minor ($rogueScan != "") "Rogue scan station detected"
+
+-- major traps
+
+manAuth: major ($unAuthManCount != 0 || $unAuthManIP != "") "Unauthorized manager failure" 
+cliAuth: major ($authFailureClientMAC != "" || $authFailureAuthType != "") "Client Authentication Failure" 
+
+tmpAlrt: major ($tempAlertMsg != 0 || $tempAlertC != 0) "Temperature Alert"
+
+-- critical traps
+
+wscFail: critical ($failedWrlsCard != 0) "Wireless card failure"
+
+keyFail: critical ($invalidKeyMACAddr != 0) "Invalid encryption key"
+
+</snmp-device-alarmpoints> 
+
+<snmp-device-display>
+$alarmpointlist
+</snmp-device-display>
+

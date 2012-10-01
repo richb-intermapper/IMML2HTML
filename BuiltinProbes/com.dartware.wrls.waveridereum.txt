@@ -1,0 +1,124 @@
+ <!--
+	Wireless - WaveRider (EUM) (com.dartware.wrls.waveridereum)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 30 August 2004 ics,
+	Updates:
+	 12/17/2004 ics
+     10/21/2005 rk  Added interface_visible/interface_numbered directive (tested on S/W ver 10.4 build 1)
+     12/12/2005 csw Added "chartable" clause to RSSI so that it will show negative numbers at chart creation time.
+
+Note 
+As of software ver 10.4, build1, we have the following situation:
+  - the ip addrs for the loopback and the ethernet (esmc0) interfaces are swapped (this is fixed using interface_numbered/interface_visible directives)
+  - the net masks in the ip addr table are reversed (this will cause a discontiguous subnet mask warning) 
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.waveridereum"
+	"human_name"	=	"Wireless - WaveRider EUM"
+	"display_name" 	=	"Wireless/WaveRider/EUM"
+	"version"		=	"1.1"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"equiv_class"	= 	"WRLS"
+</header>
+
+<snmp-device-properties>
+   pdutype="get-request"
+   maxvars="4"
+   interface_numbered=("$ifDescr" =~ "esmc0")
+   interface_visible=("$ifDescr" =~ "rdr1" or "$ifDescr" =~ "esmc0")
+</snmp-device-properties>
+
+<description>
+\GB\WaveRider EUM Probe\P\ - Beta
+
+This probe monitors a WaveRider EUM (subscriber unit). It retrieves and displays a number of variables for basic, traffic, and wireless information. It will go into alarm and warning states based on user-defined parameters for radio frequency, percentage of payloads not needing a retry, percentage of payloads discarded, RSSI value, signal strength rating, and high traffic incoming on the wireless interface. It will also go into an alarm based on the global status indicator.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper X.X or later. (Minor error present in this demonstration version. Full functionality expected with IM 4.3.)
+</description>
+
+<parameters>
+	"RSSI too low alarm"				=	"-80"
+	"RSSI low warning"				=	"-78"
+	"Signal rating too high alarm"			=	"10"
+	"Signal rating high warning"			=	"8"
+	"SNR too low alarm"				=	"20"
+	"SNR low warning"				=	"22"
+	"No Retry percentage too low alarm"		=	"90"
+	"No Retry percentage low warning"		=	"95"
+	"Tx Discard percentage too high alarm"		=	"1"
+	"Tx Discard percentage high warning"		=	"1"
+	"High Traffic Bytes alarm"			=	"100000000"
+	"High Traffic Bytes warning"			=	"90000000"
+</parameters>
+
+<snmp-device-variables>
+	eumGlobalSoftwareVersion,	1.3.6.1.4.1.2979.12.1.2.0 ,		DEFAULT,	"Software Version"
+	ifInOctets,			1.3.6.1.2.1.2.2.1.10.2 , 		DEFAULT, 	"RF In Octets"
+	eumGlobalSerialNumber,		1.3.6.1.4.1.2979.12.1.1.0 ,		DEFAULT,	"Serial Number"
+	eumGlobalStatus,		1.3.6.1.4.1.2979.12.1.5.0 , 		INTEGER, 	"Unit Status"
+	eumRadioUnitMacAddress,		1.3.6.1.4.1.2979.12.2.2.0 , 		DEFAULT, 	"MAC Address"
+	eumRadioUnitConfigFrequency,	1.3.6.1.4.1.2979.12.2.3.0 , 		INTEGER, 	"Radio Frequency x10"
+	eumRadioGenRSSI,		1.3.6.1.4.1.2979.12.3.1.1.0 , 		INTEGER, 	"RSSI"
+	eumRadioGenSQ,			1.3.6.1.4.1.2979.12.3.1.2.0 , 		INTEGER, 	"Signal Quality"
+	eumRadioGenRNA,			1.3.6.1.4.1.2979.12.3.1.3.0 , 		INTEGER, 	"SNR Antenna A"
+	eumRadioGenRNB,			1.3.6.1.4.1.2979.12.3.1.4.0 , 		INTEGER, 	"SNR Antenna B"
+	txPayloads,			1.3.6.1.4.1.2979.12.3.3.36.0 , 		PER-MINUTE, 	"A Tx Payloads"
+	txDataPayloads,			1.3.6.1.4.1.2979.12.3.3.7.0 , 		PER-MINUTE, 	"B Tx Data Payloads"
+	TxControlPayloads,		1.3.6.1.4.1.2979.12.3.3.9.0 , 		PER-MINUTE, 	"C Tx Control Payloads"
+	TxPayloads1OK,			1.3.6.1.4.1.2979.12.3.3.38.0 , 		PER-MINUTE, 	"D Tx Payloads 1 ok"
+	txPayloadsFailRetry,		1.3.6.1.4.1.2979.12.3.3.42.0 , 		PER-MINUTE, 	"H Tx Payloads Fail Retry"
+	A,				($txPayloads) ,				CALCULATION,	"Tx Payloads"
+	B,				($txDataPayloads) ,			CALCULATION,	"Tx Data Payloads"
+	C,				($TxControlPayloads) ,			CALCULATION,	"Tx Control Payloads"
+	D,				($TxPayloads1OK) ,			CALCULATION,	"Tx Payloads 1 OK"
+	H,				($txPayloadsFailRetry) ,		CALCULATION,	"Tx Payloads Fail Retry"
+	realFrequency,			($eumRadioUnitConfigFrequency/10) ,	CALCULATION,	"Radio Frequency"
+	Retries,			(($B+$C) == 0 ? "0" : (100-(100*$D/($B+$C)))) , CALCULATION,	"Retry Percentage"
+	NoRetry,			(($B+$C) == 0 ? "100" : (100*$D/($B+$C))) , CALCULATION,	"No Retry Percentage"
+	DiscardRate,			(($B+$C) == 0 ? "0" : (100*$H/($B+$C))) , CALCULATION,		"Discard Rate"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm:		$eumGlobalStatus = 2						"Global Status: Dead"
+	alarm:		$ifInOctets > ${High Traffic Bytes alarm}	 		"RF In Traffic Too High"
+	alarm:		$eumRadioGenRSSI < ${RSSI too low alarm}			"RSSI too low"
+	alarm:		$eumRadioGenSQ > ${Signal rating too high alarm}		"Signal rating too high"
+	alarm:		$NoRetry < ${No Retry percentage too low alarm}			"No Retry percentage too low"
+	alarm:		$DiscardRate > ${Tx Discard percentage too high alarm}		"Discard percentage too high"
+	alarm:		$eumRadioGenRNA < ${SNR too low alarm}				"SNR Antenna A too low"
+	alarm:		$eumRadioGenRNB < ${SNR too low alarm}				"SNR Antenna B too low"
+	warning:	$eumRadioGenRNA < ${SNR low warning}				"SNR Antenna A low"
+	warning:	$eumRadioGenRNB < ${SNR low warning}				"SNR Antenna B low"
+	warning:	$ifInOctets > ${High Traffic Bytes warning} 			"RF In Traffic High"
+	warning:	$eumGlobalStatus = 4						"Global Status: Suspect"
+	warning:	$eumRadioGenRSSI < ${RSSI low warning}				"RSSI low"
+	warning:	$eumRadioGenSQ > ${Signal rating high warning}			"Signal rating high"
+	warning:	$NoRetry < ${No Retry percentage low warning}			"No Retry percentage low"
+	warning:	$DiscardRate > ${Tx Discard percentage high warning}		"Discard percentage high"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\WaveRider EUM Information\0P\
+    \4\Software Version:\0\     $eumGlobalSoftwareVersion
+    \4\   Global Status:\0\     ${eval: $eumGlobalStatus == 1 ? "Startup" : $eumGlobalStatus == 2 ? "Dead" : $eumGlobalStatus == 3 ? "Okay" : $eumGlobalStatus == 4 ? "Suspect" : $eumGlobalStatus}
+    \4\      Tx Traffic:\0\$txPayloads \3IG\Payloads/min.\P0M\
+    \4\   Data Transmit:\0\$txDataPayloads \3IG\Payloads/min.\P0M\
+    \4\Control Transmit:\0\$TxControlPayloads \3IG\Payloads/min.\P0M\
+    \4\   Transmit 1 Ok:\0\$TxPayloads1OK \3IG\Payloads/min.\P0M\
+    \4\  Tx Fail Retry.:\0\$txPayloadsFailRetry \3IG\Payloads/min.\P0M\
+    \4\      No Retries:\0\     $NoRetry\3IG\%\P0M\  \3IG\(\P0M\${Retries}% \3IG\Retries)\P0M\
+    \4\        Discards:\0\     $DiscardRate %
+    \4\ Radio Frequency:\0\     ${chartable: #.# : $realFrequency} \3IG\MHz\P0M\
+    \4\            RSSI:\0\     ${chartable:-100:+0:$eumRadioGenRSSI}  \3IG\dBm\P0M\
+    \4\  Signal Quality:\0\     $eumRadioGenSQ
+    \4\ SNR Antenna A/B:\0\     $eumRadioGenRNA / $eumRadioGenRNB
+    \4\   Serial Number:\0\     $eumGlobalSerialNumber
+</snmp-device-display>

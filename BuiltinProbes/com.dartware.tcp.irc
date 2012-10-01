@@ -1,0 +1,68 @@
+<!-- 
+	IRC (com.dartware.tcp.irc)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.irc"
+	human_name		=	"IRC"
+	version			= 	"1.6"
+	address_type	= 	"IP"
+	port_number		=	"6667"
+	
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8101"
+
+	display_name	=	"Servers-Standard/IRC"
+</header>
+
+<description>
+
+\GB\Internet Relay Chat (IRC)\P\
+
+This probe tests whether InterMapper can register a connection with an IRC server. This probe establishes a connection to the IRC server and issues the "PASS", "NICK", and "USER" commands. It verifies that the IRC server returns a particular string, in its welcome message, for example.
+
+\i\Password\p\ is the connection password. This parameter is passed using the "PASS" command.
+
+\i\Nickname\p\ gives the connection a nickname. This parameter is passed using the "NICK" command.
+
+\i\Username\p\ specifies the username, hostname, servername and realname of the new user. Typically, the hostname and servername are ignored for client connections. The realname must be prefixed with a ':'.
+
+\i\String to verify\p\ is a string to verify in the data returned by the IRC server.  For example, you might check for a string returned in the IRC server's welcome message.
+ 
+</description>
+
+<parameters>
+
+"Password*"			=	"password"
+"Nickname"			=	"Intermapper"
+"Username"			= 	"InterMapper 0 . :Monitoring Stability"
+"String to verify"	=	"Welcome"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+SEND "PASS ${Password*}\r\n"
+SEND "NICK ${Nickname}\r\n"
+SEND "USER ${Username}\r\n"
+EXPT "${String to verify}"i else goto @NO_MATCH
+SEND "QUIT\r\n"
+//// You might want to put an EXPT line here if you want to wait for the IRC server's response before disconnecting.
+DONE OKAY
+
+@IDLE:
+DONE DOWN "[IRC] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@NO_MATCH:
+DONE DOWN "[IRC] \"${String to verify}\" not found in returned IRC data."
+
+@DISCONNECT:
+DONE DOWN "[IRC] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+</script>

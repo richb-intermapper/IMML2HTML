@@ -1,0 +1,107 @@
+<!-- 
+	SMTP-TLS (com.dartware.tcp.smtp.tls)
+	Copyright © 2002 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.smtp.tls"
+	human_name		=	"SMTP-TLS"
+	version			= 	"1.8"
+	address_type	= 	"IP"
+	port_number		=	"25"
+	display_name	=	"Servers-Standard/Mail/SMTP-TLS"
+
+</header>
+
+<description>
+
+\GB\Simple Mail Transfer Protocol over TLS (SMTP-TLS)\P\
+
+The standard protocol used to transfer electronic mail on the Internet, as defined in \U2=http://www.ietf.org/rfc/rfc0821.txt\RFC 821\P0\. This probe tests a secure connection to the SMTP server. The default TCP port number for secure SMTP connections is port 25.
+
+This probe tries to verify that a specified email address exists on the SMTP server, using the VRFY command.  It connects to the SMTP server, introduces itself using the HELO command, then issues a VRFY command for the specified email address.  When it has received a response, the script sends the QUIT command before closing its connection to the server.
+
+\i\Email Address\p\ is the name or email address that we are attempting to verify.
+
+</description>
+
+<parameters>
+
+"Email Address"		=	"postmaster"
+
+</parameters>
+
+<script>
+
+CONN #60 "SECURE"
+WAIT #30 @IDLE (idle timeout in secs)
+MTCH "220" else goto @UNEXPECTED_GREETING
+EXPT "220 " else goto @DISCONNECT
+SBNE "${_LOCALADDRESS}" m"^[.+]$" #+3
+SEND "HELO [IPv6:${_LOCALADDRESS6}]\r\n"
+GOTO #+2
+SEND "HELO [${_LOCALADDRESS}]\r\n"
+MTCH "250" else goto @BAD_HELO_RESPONSE
+EXPT "250 " else goto @DISCONNECT
+SEND "VRFY ${Email Address}\r\n"
+MTCH m"^25[0-9]" else goto @BAD_VRFY_RESPONSE
+EXPT m"^25[0-9] " else goto @DISCONNECT
+SEND "RSET\r\n"
+MTCH "250" else goto @BAD_RSET_RESPONSE
+EXPT "250 " else goto @DISCONNECT
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+DONE OKAY
+
+@UNEXPECTED_GREETING:
+STAT DOWN "[SMTP] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+EXIT
+
+@BAD_HELO_RESPONSE:
+STAT ALRM "[SMTP] Unexpected response to HELO command. (${_LINE:50})"
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+EXIT
+
+@BAD_VRFY_RESPONSE:
+MTCH "550" else goto @VRFY_NOT_IMPLEMENTED
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+DONE OKAY
+
+@VRFY_NOT_IMPLEMENTED:
+MTCH "502" else goto @UNEXPECTED_VRFY_RESPONSE
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+DONE OKAY
+
+@UNEXPECTED_VRFY_RESPONSE:
+STAT ALRM "[SMTP] Unexpected response to VRFY command. (${_LINE:50})"
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+EXIT
+
+@BAD_RSET_RESPONSE:
+STAT ALRM "[SMTP] Unexpected response to RSET command. (${_LINE:50})"
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+EXIT
+
+@IDLE:
+DONE DOWN "[SMTP] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@DISCONNECT:
+DONE DOWN "[SMTP] Connection disconnected while expecting \"${_STRINGTOMATCH}\"."
+
+</script>

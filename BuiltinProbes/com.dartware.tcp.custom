@@ -1,0 +1,95 @@
+<!-- 
+	Custom TCP (com.dartware.tcp.custom)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.custom"
+	human_name		=	"Custom TCP"
+	version			= 	"1.9"
+	address_type	= 	"IP"
+	port_number		=	"23"
+	
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8001"
+
+	display_name	=	"Servers-Standard/Custom TCP"
+
+</header>
+
+<description>
+
+\GB\Custom TCP Probe\P\
+
+This probe lets you send your own string over the TCP connection and set the status of the device depending on the response received. There are six parameters which control the operation of this probe:
+
+\i\String to send\p\ is the initial string sent over the TCP connection. This could be a command which indicates what to test, or a combination of a command and a password. The string is sent on its own line, terminated by a CR-LF.
+
+\i\Seconds to wait\p\ is the number of seconds to wait for a response.  If no response is received within the specified number of seconds, the device's status is set to DOWN.
+
+\i\OK Response\p\ is the substring which should match the device's "ok response". If it matches the first line received, the device is reported to have a status of OK.
+
+\i\WARN Response\p\ is the substring which should match the device's warning response.
+
+\i\ALRM Response\p\ is the substring which should match the device's alarm response.
+
+\i\CRIT Response\p\ is the substring which should match the device's critical response.
+
+\i\DOWN Response\p\ is the substring which should match the device's down response.
+
+If InterMapper cannot connect to the specified TCP port, the device's status is set to DOWN.
+
+</description>
+
+<parameters>
+
+"String to send"	=	""
+"Seconds to wait"	=	"30"
+"OK Response"		=	""
+"WARN Response"		=	""
+"ALRM Response"		=	""
+"CRIT Response"		=	""
+"DOWN Response"		=	""
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+SEND "${String to send}\r\n"
+WAIT #${Seconds to wait} else goto @IDLE
+EXPT "."r else goto @DISCONNECT
+MTCH "${OK Response}" else #+2
+DONE OKAY "[Custom] Response was \"${_LINE:50}\"."
+MTCH "${WARN Response}" else #+2
+DONE WARN "[Custom] Response was \"${_LINE:50}\"."
+MTCH "${ALRM Response}" else #+2
+DONE ALRM "[Custom] Response was \"${_LINE:50}\"."
+MTCH "${CRIT Response}" else #+2
+DONE CRIT "[Custom] Response was \"${_LINE:50}\"."
+MTCH "${DOWN Response}" else #+2
+DONE DOWN "[Custom] Response was \"${_LINE:50}\"."
+
+@IDLE:
+DONE DOWN "[Custom] Did not receive a line of data within ${Seconds to wait} seconds. [Line ${_IDLELINE}]"
+
+@DISCONNECT:
+DONE DOWN "[Custom] Connection disconnected before a full line was received."
+
+</script>
+
+<script-output>
+
+\B5\Custom TCP Information\0P\
+  \4\Time to establish connection:\0\ ${_connect} msecs
+  \4\Time spent connected to host:\0\ ${_active} msecs
+
+</script-output>
+
+<datasets>
+	$_connect,	'conntime',		"msec",		"true",	"Time to establish connection"
+	$_active,	'connactive',	"msec",		"true",	"Time spent connected to host"
+</datasets>
+

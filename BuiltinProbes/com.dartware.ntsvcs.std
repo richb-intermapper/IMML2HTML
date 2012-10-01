@@ -1,0 +1,49 @@
+<!-- 
+	NT Services (com.dartware.ntservices.standard)
+	Copyright © 2004 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type         = "nt-services"
+	package      = "com.dartware"
+	probe_name   = "ntservices.standard"
+	human_name   = "NT Services"
+	version      = "1.8"
+	address_type = "IP"
+	visible_in   = "Windows"
+	
+	display_name =	"Servers-Proprietary/Microsoft/NT Services"
+	
+</header>
+
+
+<description>
+
+\GB\NT Services\P\
+
+This probe monitors the state of one or many services on a Windows NT-based machine, including Windows NT 4.0, Windows 2000, Windows XP, and Windows Server 2003. InterMapper uses the Service Control Manager (SCM) to retrieve the information about the running services. This probe only works if the InterMapper server is running on a Windows computer.
+
+\i\Services to Monitor\p\ is the list of services selected for monitoring. Services with green icons are currently running; those with red icons are stopped.
+
+InterMapper will monitor one or many services whose box is checked. For a single machine, you may choose from all the services on the machine. For multiple machines, you may choose from among the services common to all of the machines.
+
+\i\Username\p\ is the name of an administrative user on the machine being probed. InterMapper will use this username to log into the target machine in order to be able to query the Service Control Manager.
+
+\i\Password\p\ is the password for the supplied username.
+
+If Username and Password are left blank, the user credentials under which InterMapper is running will be used.
+
+Note that InterMapper must be running as an administrative user for this probe to operate, or you must have supplied the username and password of an administrator in the NT Services panel in Server Settings so that InterMapper can temporarily elevate its privileges.
+
+</description>
+
+<parameters>
+
+"Services to Monitor{&ntservices}"	=	""
+
+"!Username" = ""
+
+"!Password*" = ""
+
+
+</parameters>

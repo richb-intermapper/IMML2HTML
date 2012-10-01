@@ -1,0 +1,140 @@
+ <!--
+	Wireless - Trango P5830S (master) (com.dartware.wrls.trango22)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 22 January 2004 ics,
+	Updates:
+		9 July 2004 by ics.
+		9/13/05 rk fixed wrong variable names in alarms/warnings, added RSSI, added UNII power, added MIB/firmware version info
+		10/7/05 rk added upper/lower bound for in chartables for unii/ism tx power, temperature, and rssi values
+	
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.trango22"
+	"human_name"	=	"Wireless - Trango P5830S (master)"
+	"display_name" 	=	"Wireless/Trango/Trango P5830S (master)"
+	"version"		=	"1.4"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"equiv_class"	= 	"WRLS"
+</header>
+
+<snmp-device-properties>
+nomib2="true"
+</snmp-device-properties>
+
+<description>
+\GB\Trango P5830S Master Unit\P\
+
+This probe monitors a \u2=http://www.trangobroadband.com\Trango\p0\ P5830S master unit.
+
+It retrieves and displays a number of traffic, physical, and radio status variables. It can go into alarm or warning based on user-defined parameters for transmit power, expected active channel number, and temperature. (This probe calculates counters without using sysUpTime, which isn't available.)
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+	"Tx power too low alarm"		=	"-85"
+	"Tx power low warning"			=	"-75"
+	"RSSI too low alarm"			=	"-85"
+	"RSSI low warning"			=	"-75"
+	"Too Hot alarm"				=	"60"
+	"Hot warning"				=	"55"
+	"Too Cold alarm"			=	"-40"
+	"Cold warning"				=	"-20"
+	"Expected Channel"			=	"1"
+	"RF High Traffic Bytes alarm"		=	"100000000"
+	"RF High Traffic Bytes warning"		=	"90000000"
+	"Eth High Traffic Bytes alarm"		=	"100000000"
+	"Eth High Traffic Bytes warning"	=	"90000000"
+</parameters>
+
+<snmp-device-variables>
+
+	mutrafficEthInOctets, 	1.3.6.1.4.1.5454.1.22.1.9.1.0 , 	PER-SECOND, 	"Ethernet In Octets/sec"
+	mutrafficEthOutOctets, 	1.3.6.1.4.1.5454.1.22.1.9.2.0 , 	PER-SECOND, 	"Ethernet Out Octets/sec"
+	mutrafficRfInOctets, 	1.3.6.1.4.1.5454.1.22.1.9.3.0 , 	PER-SECOND, 	"RF In Octets/sec"
+	mutrafficRfOutOctets, 	1.3.6.1.4.1.5454.1.22.1.9.4.0 , 	PER-SECOND, 	"RF Out Octets/sec"
+
+	musysTemperature, 	1.3.6.1.4.1.5454.1.22.1.10.0 , 		INTEGER, 	"Temperature (Celcius)"
+
+	murfRSSI,		1.3.6.1.4.1.5454.1.22.2.1.0,		INTEGER,	"Remote unit RSSI (in dBm)"
+
+	murfActiveChannel, 	1.3.6.1.4.1.5454.1.22.2.2.0,	 	INTEGER, 	"Active Channel Number"
+	murfActivePolarization, 1.3.6.1.4.1.5454.1.22.2.3.0, 		DEFAULT, 	"Current RF Polarization"
+
+	muismTxPowerMax,	1.3.6.1.4.1.5454.1.22.2.5.1.0,		INTEGER,	"The maximum ISM Tx power (in dBm)"
+	muismTxPowerMin,	1.3.6.1.4.1.5454.1.22.2.5.2.0,		INTEGER,	"The minimum ISM Tx power (in dBm)"
+	muismTxPower, 		1.3.6.1.4.1.5454.1.22.2.5.3.0 , 	DEFAULT, 	"ISM Tx Power (in dBm)"
+	muismTargetRSSI, 	1.3.6.1.4.1.5454.1.22.2.5.5.0,		INTEGER, 	"ISM Target RSSI"
+
+	muuniiTxPowerMax,	1.3.6.1.4.1.5454.1.22.2.6.1.0,		INTEGER,	"The maximum UNII Tx power (in dBm)"
+	muuniiTxPowerMin,	1.3.6.1.4.1.5454.1.22.2.6.2.0,		INTEGER,	"The minimum UNII Tx power (in dBm)"
+	muuniiTxPower,		1.3.6.1.4.1.5454.1.22.2.6.3.0,		INTEGER,	"UNI Tx power (in dBm)"
+
+	muuniiTargetRSSI,	1.3.6.1.4.1.5454.1.22.2.6.5.0,		INTEGER,	"UNII Target RSSI"
+
+	mibinfoVersion,		1.3.6.1.4.1.5454.1.22.5.1.0,		STRING,		"MIB version"
+	muversionFW,		1.3.6.1.4.1.5454.1.22.1.1.2.0,		STRING,		"Firmware version"
+	fwVersion,		"$muversionFW" =~ "(.+)H.+"; "${1}",	CALCULATION,	"Firmware version"
+	fwDate,			"$muversionFW" =~ ".+D(......)"; "${1}",	CALCULATION,	"Firmware date"
+	musysDeviceId,		1.3.6.1.4.1.5454.1.22.1.2.0,		STRING,		"Device sysid"
+	macAddrStr,		sprintf("%a", "$musysDeviceId"),	CALCULATION,		"MAC Address"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm:		$muismTxPower < ${Tx power too low alarm} 	"ISM Transmit power too low"
+	alarm:		$muuniiTxPower < ${Tx power too low alarm} 	"UNII Transmit power too low"
+
+	alarm:		$muismTxPower < $muismTxPowerMin		"ISM Transmit power is lower than the minimum for the device"
+	alarm:		$muismTxPower > $muismTxPowerMax		"ISM Transmit power is higher than the maximum for the device"
+
+	alarm:		$muuniiTxPower < $muuniiTxPowerMin		"UNII Transmit power is lower than the minimum for the device"
+	alarm:		$muuniiTxPower > $muuniiTxPowerMax		"UNII Transmit power is higher than the maximum for the device"
+
+	alarm: 		$murfRSSI < ${RSSI too low alarm} 		"RSSI too low"
+
+	alarm: 		$musysTemperature > ${Too Hot alarm} 		"Too Hot"
+	alarm: 		$musysTemperature < ${Too Cold alarm} 		"Too Cold"
+	alarm:		$murfActiveChannel <> ${Expected Channel}	"Active Channel not as expected"
+
+	alarm:		$mutrafficRfOutOctets > ${RF High Traffic Bytes alarm} or $mutrafficRfInOctets > ${RF High Traffic Bytes alarm} "RF Traffic Too High"
+	alarm:		$mutrafficEthOutOctets > ${Eth High Traffic Bytes alarm} or $mutrafficEthInOctets > ${Eth High Traffic Bytes alarm} "Eth Traffic Too High"
+
+	warning:	$mutrafficRfOutOctets > ${RF High Traffic Bytes warning}  or $mutrafficRfInOctets > ${RF High Traffic Bytes warning} "RF Traffic High"
+	warning:	$mutrafficEthOutOctets > ${Eth High Traffic Bytes warning}  or $mutrafficEthInOctets > ${Eth High Traffic Bytes warning} "Eth Traffic High"
+
+	warning:	$muismTxPower < ${Tx power low warning} 	"ISM Transmit power low"
+	warning:	$muuniiTxPower < ${Tx power low warning} 	"UNII Transmit power low"
+
+	warning:	$murfRSSI < ${RSSI low warning} 		"RSSI low"
+	warning:	$musysTemperature > ${Hot warning} 		"Hot"
+	warning:	$musysTemperature < ${Cold warning} 		"Cold"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Trango P5830S (master) Information\0P\
+    \4\MIB/Firmware vers:\0\ $mibinfoVersion/$fwVersion (date: $fwDate)\P0M\
+\4\        Device sys ID:\0\ $macAddrStr \P0M\
+  \4\        Temperature:\0\ ${chartable:-60:+60:#:$musysTemperature}\3IG\° C\P0M\
+\B5\Ethernet Information\0P\
+  \4\        Ethernet In:\0\ ${chartable: #.##:$mutrafficEthInOctets} \3IG\Bytes per sec.\P0M\
+  \4\       Ethernet Out:\0\ ${chartable: #.##:$mutrafficEthOutOctets} \3IG\Bytes per sec.\P0M\
+\B5\Radio Information\0P\
+  \4\               RSSI:\0\ ${chartable:-100:+0:#:$murfRSSI} \3IG\dBm\P0M\ (ISM Target: $muismTargetRSSI, UNII Target: $muuniiTargetRSSI)\P0M\
+  \4\        Wireless In:\0\ ${chartable: #.##:$mutrafficRfInOctets} \3IG\Bytes per sec.\P0M\
+  \4\       Wireless Out:\0\ ${chartable: #.##:$mutrafficRfOutOctets} \3IG\Bytes per sec.\P0M\
+  \4\     Active Channel:\0\ $murfActiveChannel
+  \4\Active Polarization:\0\ ${EVAL: $murfActivePolarization == "v" ? "Vertical" : $murfActivePolarization == "h" ? "Horizontal" : $murfActivePolarization}
+  \4\ ISM Transmit Power:\0\ ${chartable:-20:+50:#:$muismTxPower} \P0M\(max $muismTxPowerMax, min $muismTxPowerMin) \3IG\dBm\P0M\
+  \4\UNII Transmit Power:\0\ ${chartable:-20:+50:#:$muuniiTxPower} \P0M\(max $muuniiTxPowerMax, min $muuniiTxPowerMin) \3IG\dBm\P0M\
+</snmp-device-display>
+
+<!-- Removed variables and display info
+-->

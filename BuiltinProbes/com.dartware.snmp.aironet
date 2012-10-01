@@ -1,0 +1,39 @@
+<!-- 
+	SNMP - Cisco Aironet (com.dartware.snmp.aironet)
+	Copyright (c) 2002 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.aironet"
+	human_name		=	"SNMP - Cisco Aironet"
+	version			= 	"1.5"
+	address_type	= 	"IP,AT"
+	equiv_class		= 	"SNMP"
+	port_number		=	"161"
+
+	display_name	=	"Network Devices/Cisco/Cisco Aironet"
+
+</header>
+
+
+<description>
+
+\GB\SNMP - Cisco Aironet\P\
+
+This probe monitors the custom MIB in a Cisco Aironet Wireless Access Point using SNMPv1. This probe can monitor the number of clients using the base station and list each one with its signal strength.
+
+The alarm/warning thresholds for the number of stations have to be greater than zero (or they will 
+be ignored).
+
+</description>
+
+<parameters>
+    "Number of Active Stations alarm"        =    "64"
+    "Number of Active Stations warning"      =    "60"
+</parameters>
+
+
+
+

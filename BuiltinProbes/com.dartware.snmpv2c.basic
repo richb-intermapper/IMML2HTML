@@ -1,0 +1,54 @@
+<!-- 
+	SNMPv2c - Basic OID (com.dartware.snmpv2c.basic)
+	Copyright © 2001 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmpv2c.basic"
+	human_name		=	"SNMP - Basic OID (v2c)"
+	version			= 	"1.5"
+	address_type	= 	"IP,AT"
+	port_number		=	"161"
+	display_name	=	"Miscellaneous/Legacy/Basic OID (v2c)"
+	flags 			= 	"SNMPv2c"
+</header>
+
+
+<description>
+
+\GB\SNMP - Basic OID (v2c)\P\
+
+This is a legacy probe, provided for compatibility with InterMapper Traditional and older versions of InterMapper (< 4.4). If you are using InterMapper server, please use the Basic OID probe instead and set the probe's SNMP version to SNMP v2 in the Probe Info window.
+
+This probe lets you monitor a single, user-defined MIB variable. It uses SNMPv2c.
+
+\i\Object Name\p\ is the name of the value that you want to monitor. This parameter is optional; the "object name" value only customizes the display in the popup window and chart legend.
+
+\i\Object ID\p\ is the object identifier (OID) of the value that you want to monitor. If you wish to retrieve the value of a MIB variable that is not in a table, the OID must end with ".0" (e.g. "1.3.6.1.2.1.1.1.0").
+
+</description>
+
+<parameters>
+
+"Object Name" 	= "sysDescr.0"
+"Object ID"		= "1.3.6.1.2.1.1.1.0"
+
+-- No parameters...
+
+</parameters>
+
+<snmp-device-variables>
+
+	oidValue,		${Object ID}, 	DEFAULT, 	"${Object Name} for ${DEVICENAME}"
+	
+</snmp-device-variables>
+
+<snmp-device-display>
+
+\B5\SNMPv2c - Basic OID Results\0P\
+  \4\${Object Name}:\0\  ${oidValue}
+ 	
+</snmp-device-display>
+

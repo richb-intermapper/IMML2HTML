@@ -1,0 +1,83 @@
+ <!--
+	Wireless - Alvarion BreezeACCESS LB (com.dartware.wrls.alvarionbalb)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 5 April 2004 ics,
+	Latest revision 8 June 2004 by ics.
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.alvarionbalb"
+	"human_name"	=	"Wireless - Alvarion BreezeACCESS LB"
+	"display_name" 	=	"Wireless/Alvarion/BreezeACCESS LB"
+	"version"		=	"0.15"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"equiv_class"	= 	"WRLS"
+</header>
+
+<description>
+\GB\Alvarion BreezeACCESS LB Probe\P\
+
+This probe is meant to probe an \u2=http://www.alvarion.com\Alvarion\p0\ BreezeACCESS LB radio, acting as either AP or an SU. It retrieves and displays a number traffic and radio related variables. It will go into alarm or warning states based on user-defined parameters.
+
+This probe is part of the InterMapper Wireless Add-on pack, and requires InterMapper 4.2 or later.
+</description>
+
+<parameters>
+	"Expected Operating Frequency"		=	"1"
+	"SNR too low alarm"			=	"40"
+	"SNR low warning"			=	"50"
+</parameters>
+
+<snmp-device-variables>
+	baLBGenRFLink,	 			1.3.6.1.4.1.12394.1.3.1.2.0 , 		DEFAULT, 	"Radio Link Status"
+	baLBGenFrequency,	 		1.3.6.1.4.1.12394.1.3.1.3.0 , 		DEFAULT, 	"Operating Frequency"
+	baLBGenFault,	 			1.3.6.1.4.1.12394.1.3.1.12.0 , 		INTEGER, 	"Fault LED Status"
+	baLBASiteSurveyEtherRxPackets, 		1.3.6.1.4.1.12394.1.3.3.2.1.0 , 	PER-SECOND, 	"Eth Rx Packets"
+	baLBASiteSurveyEtherRxPacketsDisc, 	1.3.6.1.4.1.12394.1.3.3.2.2.0 , 	PER-SECOND, 	"Eth Rx Packets Disc"
+	baLBASiteSurveyEtherTxPackets,	 	1.3.6.1.4.1.12394.1.3.3.2.3.0 , 	PER-SECOND, 	"Eth Tx Packets"
+	baLBASiteSurveyWrlsRxSigMin,	 	1.3.6.1.4.1.12394.1.3.3.3.1.0 , 	DEFAULT, 	"Min RF Rx Sig Str"
+	baLBASiteSurveyWrlsRxSigMean,	 	1.3.6.1.4.1.12394.1.3.3.3.2.0 , 	DEFAULT, 	"Avg RF Rx Sig Str"
+	baLBASiteSurveyWrlsRxSigMax,	 	1.3.6.1.4.1.12394.1.3.3.3.3.0 , 	DEFAULT, 	"Max RF Rx Sig Str"
+	baLBASiteSurveyWrlsAvgSinAdr,	 	1.3.6.1.4.1.12394.1.3.3.3.4.0 , 	DEFAULT, 	"Average SNR"
+	baLBASiteSurveyWrlsRxPackets,	 	1.3.6.1.4.1.12394.1.3.3.3.5.0 , 	PER-SECOND, 	"RF Rx Packets"
+	baLBASiteSurveyWrlsRxPacketsRetx,	1.3.6.1.4.1.12394.1.3.3.3.6.0 , 	PER-SECOND, 	"RF Rx Retransmitted Packets"
+	baLBASiteSurveyWrlsRxPacketsDisc,	1.3.6.1.4.1.12394.1.3.3.3.7.0 , 	PER-SECOND, 	"RF Rx Discarded Packets"
+	baLBASiteSurveyWrlsTxPackets,	 	1.3.6.1.4.1.12394.1.3.3.3.8.0 , 	PER-SECOND, 	"RF Tx Packets"
+	baLBASiteSurveyWrlsTxPacketsRetx,	1.3.6.1.4.1.12394.1.3.3.3.9.0 , 	PER-SECOND, 	"RF Tx Retransmitted Packets"
+	baLBASiteSurveyWrlsTxPacketsDisc,	1.3.6.1.4.1.12394.1.3.3.3.10.0 , 	PER-SECOND, 	"RF Tx Discarded Packets"
+	baLBASiteSurveyWrlsRxCalcDist,		1.3.6.1.4.1.12394.1.3.3.3.11.0 , 	DEFAULT, 	"Calculated Link Distance"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm:		$baLBGenRFLink = 1 					"Radio Link Not Connected"
+	alarm:		$baLBGenFault = 2					"Fault LED On"
+	alarm:		$baLBASiteSurveyWrlsAvgSinAdr < ${SNR too low alarm"}	"SRN too low"
+	warning:	$baLBASiteSurveyWrlsAvgSinAdr < ${SNR low warning"}	"SRN low"
+	warning:	$baLBGenFault = 3					"Fault LED Status Unknown"
+	warning:	$baLBGenFrequency <> ${Expected Operating Frequency}	"Operating Frequency Unexpected"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Alvarion Radio Information\0P\
+  \4\         Ethernet In:\0\ $baLBASiteSurveyEtherRxPackets \3IG\Packets per sec.\P0M\
+  \4\        Ethernet Out:\0\ $baLBASiteSurveyEtherTxPackets \3IG\Packets per sec.\P0M\
+  \4\   Ethernet Discards:\0\ $baLBASiteSurveyEtherRxPacketsDisc \3IG\Packets per sec.\P0M\
+  \4\         Wireless In:\0\ $baLBASiteSurveyWrlsRxPackets \3IG\Packets per sec.\P0M\
+  \4\        Wireless Out:\0\ $baLBASiteSurveyWrlsTxPackets \3IG\Packets per sec.\P0M\
+  \4\   Wireless In Disc.:\0\ $baLBASiteSurveyWrlsRxPacketsDisc \3IG\Packets per sec.\P0M\
+  \4\Wireless In Retrans.:\0\ $baLBASiteSurveyWrlsRxPacketsRetx \3IG\Packets per sec.\P0M\
+  \4\  Wireless Out Disc.:\0\ $baLBASiteSurveyWrlsTxPacketsDisc \3IG\Packets per sec.\P0M\
+  \4\Wireless Out Retran.:\0\ $baLBASiteSurveyWrlsTxPacketsRetx \3IG\Packets per sec.\P0M\
+  \4\Wireless Link Status:\0\    ${eval:$baLBGenRFLink == 1 ? "Not Connected" : $baLBGenRFLink == 2 ? "Connected" : $baLBGenRFLink}
+  \4\ Operating Frequency:\0\    $baLBGenFrequency
+  \4\     Signal Strength:\0\    Min: $baLBASiteSurveyWrlsRxSigMin / Avg: $baLBASiteSurveyWrlsRxSigMean / Max: $baLBASiteSurveyWrlsRxSigMax
+  \4\ Calc. Link Distance:\0\    $baLBASiteSurveyWrlsRxCalcDist
+  \4\         Average SNR:\0\    $baLBASiteSurveyWrlsAvgSinAdr
+</snmp-device-display>

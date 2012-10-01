@@ -1,0 +1,280 @@
+<!-- 
+	InterMapper Engine Status (com.dartware.tcp.intermapper)
+	Copyright © 2008 Dartware, LLC. All rights reserved.
+	
+	21 Nov 2008	Original version -bfish
+	 5 Dec 2008 Updated descripton -reb
+    23 Jan 2010 Added many new variables -spr
+	26 May 2010 Stabilized variable mappings, cleaned up warnings -spr
+	27 Sep 2010 Added packet processing statistics, removed alarm -spr
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.intermapper"
+	human_name		=	"InterMapper Engine Status"
+	version			= 	"0.8"
+	address_type	= 	"IP"
+	port_number		=	"8181"
+	display_name	=	"Experimental/InterMapper"
+	url_hint		=	"intermapper://${ADDRESS}:${PORT}/"
+</header>
+
+<description>
+
+\GB\InterMapper Engine Status\P\
+
+This probe monitors the status of the InterMapper polling engine. With the default setting, this probe displays the results of 500 loops through the polling engine. To measure activity at a finer-grain, decrease the value of the loops parameter. Setting the "loops" parameter to the value 1 will update the statistics on every pass through the main run loop.
+
+The "Main Loop" frequency is the number of times that InterMapper performs the main loop each second. The theoretical maximum loop frequency is 66.667 loops per second, based on the current yield value of 15 msec. If it falls below 10 or even 5 loops per second, InterMapper may report false outages.
+
+This probe also reports polling rate as a percentage of the maximum loops per second. This is a measure of how much additional processing occurs per loop. This percentage will never be 100%. It should, however, level out and remain steady over time.
+
+On Unix systems, this probe reports Context Switches Per Loop (CSPL). This is another measure of the overhead of InterMapper's processing as it runs on your system. Fewer context switches per loop is better (ideal = 0), since context switches carry overhead. A server with thousands of devices and hundreds of mays may well have a CSPL greater than 2 during normal operation. (This value is not available on Windows systems, and is alway set to -1.)
+
+InterMapper tracks the number of bytes sent out the main UDP polling socket. Bytes/Loop is the average bytes sent per loop, averaged over the last batch of N loops. Bytes Peak is the maximum number of bytes sent in a *single* polling loop.  (In the current implementation, the peak bytes is checked on every loop, but only resets to 0 when you change the # loops parameter; ie peak bytes is not the peak bytes of the last batch of N loops.)
+</description>
+
+<parameters>
+
+"Loops"	=	"500"
+
+</parameters>
+
+<script>
+CONN #60 "SECURE"
+
+STOR "frequency" 0
+STOR "cspl" 0
+STOR "efficiency" 0
+STOR "devicecount" 0
+STOR "mapcount" 0
+STOR "udpsent" 0
+STOR "udppeak " 0
+
+EVAL $prevsyncreadcount := defined("syncreadcount") == 1 ? $syncreadcount : 0
+STOR "syncreadcount" 0
+STOR "diffsyncreadcount" 0
+
+EVAL $prevsyncwritecount := defined("syncwritecount") == 1? $syncwritecount : 0
+STOR "syncwritecount" 0
+STOR "diffsyncwritecount" 0
+
+EVAL $prevasyncreadcount := defined("asyncreadcount") == 1 ? $asyncreadcount : 0
+STOR "asyncreadcount" 0
+STOR "diffasyncreadcount" 0
+
+EVAL $prevsyncreadbytes := defined("syncreadbytes") == 1 ? $syncreadbytes : 0
+STOR "syncreadbytes" 0
+STOR "diffsyncreadbytes" 0
+
+EVAL $prevsyncwritebytes := defined("syncwritebytes") == 1 ? $syncwritebytes : 0
+STOR "syncwritebytes" 0
+STOR "diffsyncwritebytes" 0
+
+EVAL $prevasyncreadbytes := defined("asyncreadbytes") == 1 ? $asyncreadbytes : 0
+STOR "asyncreadbytes" 0
+STOR "diffasyncreadbytes" 0
+
+EVAL $prevsyncreadtime := defined("syncreadtime") == 1 ? $syncreadtime : 0
+STOR "syncreadtime" 0
+STOR "diffsyncreadtime" 0
+
+EVAL $prevsyncwritetime := defined("syncwritetime") == 1 ? $syncwritetime : 0
+STOR "syncwritetime" 0
+STOR "diffsyncwritetime" 0
+
+EVAL $prevasyncreadtime := defined("asyncreadtime") == 1 ? $asyncreadtime : 0
+STOR "asyncreadtime" 0
+STOR "diffasyncreadtime" 0
+
+EVAL $prevdatapointscollected := defined("datapointscollected") == 1 ? $datapointscollected : 0
+STOR "datapointscollected" 0
+STOR "diffdatapointscollected" 0
+
+EVAL $prevdatapointrequests := defined("datapointrequests") == 1 ? $datapointrequests : 0
+STOR "datapointrequests" 0
+STOR "diffdatapointrequests" 0
+
+EVAL $prevdatapointsexported := defined("datapointsexported") == 1 ? $datapointsexported : 0
+STOR "datapointsexported" 0
+STOR "diffdatapointsexported" 0
+
+EVAL $prevftiends := defined("ftiends") == 1 ? $ftiends : 0
+STOR "ftiends" 0
+STOR "diffftiends" 0
+
+EVAL $prevftibuffers := defined("ftibuffers") == 1 ? $ftibuffers : 0
+STOR "ftibuffers" 0
+STOR "diffftibuffers" 0
+
+EVAL $prevftireadbuffers := defined("ftireadbuffers") == 1 ? $ftireadbuffers : 0
+STOR "ftireadbuffers" 0
+STOR "diffftireadbuffers" 0
+
+EVAL $prevfticaches := defined("fticaches") == 1 ? $fticaches : 0
+STOR "fticaches" 0
+STOR "difffticaches" 0
+
+EVAL $prevftifiles := defined("ftifiles") == 1 ? $ftifiles : 0
+STOR "ftifiles" 0
+STOR "diffftifiles" 0
+
+STOR "hiccups" 0
+STOR "hiccupticks" 0
+
+EVAL $prevfileopencount := defined("fileopencount") == 1 ? $fileopencount : 0
+STOR "fileopencount" 0
+STOR "difffileopencount" 0
+
+EVAL $prevfileopentime := defined("fileopentime") == 1 ? $fileopentime : 0
+STOR "fileopentime" 0
+STOR "difffileopentime" 0
+
+EVAL $prevfileclosecount := defined("fileclosecount") == 1 ? $fileclosecount : 0
+STOR "fileclosecount" 0
+STOR "difffileclosecount" 0
+
+EVAL $prevfileclosetime := defined("fileclosetime") == 1 ? $fileclosetime : 0
+STOR "fileclosetime" 0
+STOR "difffileclosetime" 0
+
+EVAL $prevdirectoriescount := defined("directoriescount") == 1 ? $directoriescount : 0
+STOR "directoriescount" 0
+STOR "diffdirectoriescount" 0
+
+EVAL $prevdirectoriestime := defined("directoriestime") == 1 ? $directoriestime : 0
+STOR "directoriestime" 0
+STOR "diffdirectoriestime" 0
+
+EVAL $prevdroppedpacketcount := defined("droppedpacketcount") == 1 ? $droppedpacketcount : 0
+STOR "droppedpacketcount" 0
+STOR "diffdroppedpacketcount" 0
+
+EVAL $previdroutedpacketcount := defined("idroutedpacketcount") == 1 ? $idroutedpacketcount : 0
+STOR "idroutedpacketcount" 0
+STOR "diffidroutedpacketcount" 0
+
+EVAL $prevsourceroutedpacketcount := defined("sourceroutedpacketcount") == 1 ? $sourceroutedpacketcount : 0
+STOR "sourceroutedpacketcount" 0
+STOR "diffsourceroutedpacketcount" 0
+
+EVAL $prevdiscoverypacketcount := defined("discoverypacketcount") == 1 ? $discoverypacketcount : 0
+STOR "discoverypacketcount" 0
+STOR "diffdiscoverypacketcount" 0
+
+EVAL $prevtrappacketsonmapcount := defined("trappacketsonmapcount") == 1 ? $trappacketsonmapcount : 0
+STOR "trappacketsonmapcount" 0
+STOR "difftrappacketsonmapcount" 0
+
+EVAL $prevtrappacketsnotonmapcount := defined("trappacketsnotonmapcount") == 1 ? $trappacketsnotonmapcount : 0
+STOR "trappacketsnotonmapcount" 0
+STOR "difftrappacketsnotonmapcount" 0
+
+EVAL $prevdroppedtrappacketcount := defined("droppedtrappacketcount") == 1 ? $droppedtrappacketcount : 0
+STOR "droppedtrappacketcount" 0
+STOR "diffdroppedtrappacketcount" 0
+
+
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT (disconnect handler)
+
+SEND "<KC_checkenginestatus id='12345' loops='${Loops}'/><KC_quit/>"
+SKIP "<KR id='12345' "
+
+@DATA:
+MTCH "^([a-z]+)=(.*)$"ri else goto @FINISHED
+STOR "${1}" "${2}"
+NEXT
+GOTO @DATA
+
+@FINISHED:
+EXPT "</KR>"
+
+EVAL $diffsyncreadcount := $syncreadcount - $prevsyncreadcount
+EVAL $diffsyncwritecount := $syncwritecount - $prevsyncwritecount
+EVAL $diffasyncreadcount := $asyncreadcount - $prevasyncreadcount
+
+EVAL $diffsyncreadbytes := $syncreadbytes - $prevsyncreadbytes
+EVAL $diffsyncwritebytes := $syncwritebytes - $prevsyncwritebytes
+EVAL $diffasyncreadbytes := $asyncreadbytes - $prevasyncreadbytes
+
+EVAL $diffsyncreadtime := $syncreadtime - $prevsyncreadtime
+EVAL $diffsyncwritetime := $syncwritetime - $prevsyncwritetime
+EVAL $diffasyncreadtime := $asyncreadtime - $prevasyncreadtime
+
+EVAL $diffftiends := $ftiends - $prevftiends
+EVAL $diffftibuffers := $ftibuffers - $prevftibuffers
+EVAL $diffftireadbuffers := $ftireadbuffers - $prevftireadbuffers
+EVAL $difffticaches := $fticaches - $prevfticaches
+EVAL $diffftifiles := $ftifiles - $prevftifiles
+
+EVAL $difffileopencount := $fileopencount - $prevfileopencount
+EVAL $difffileclosecount := $fileclosecount - $prevfileclosecount
+EVAL $difffileopentime := $fileopentime - $prevfileopentime
+EVAL $difffileclosetime := $fileclosetime - $prevfileclosetime
+
+EVAL $diffdatapointscollected := $datapointscollected - $prevdatapointscollected
+EVAL $diffdatapointrequests := $datapointrequests - $prevdatapointrequests
+EVAL $diffdatapointsexported := $datapointsexported - $prevdatapointsexported
+
+EVAL $diffdirectoriescount := $directoriescount - $prevdirectoriescount
+EVAL $diffdirectoriestime := $directoriestime - $prevdirectoriestime
+
+EVAL $diffdroppedpacketcount := $droppedpacketcount - $prevdroppedpacketcount
+EVAL $diffidroutedpacketcount := $idroutedpacketcount - $previdroutedpacketcount
+EVAL $diffsourceroutedpacketcount := $sourceroutedpacketcount - $prevsourceroutedpacketcount
+EVAL $diffdiscoverypacketcount := $discoverypacketcount - $prevdiscoverypacketcount
+
+EVAL $difftrappacketsonmapcount := $trappacketsonmapcount - $prevtrappacketsonmapcount
+EVAL $difftrappacketsnotonmapcount := $trappacketsnotonmapcount - $prevtrappacketsnotonmapcount
+EVAL $diffdroppedtrappacketcount := $droppedtrappacketcount - $prevdroppedtrappacketcount
+
+DONE OKAY
+
+@IDLE:
+DONE DOWN "[InterMapper] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\"."
+
+@DISCONNECT:
+DONE DOWN "[InterMapper] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+</script>
+
+<script-output>
+
+\B5\InterMapper Engine Status\0P\ \3\(${Loops} loops)\0\
+  \4\ Main Loop:\0\ ${chartable: #.### : $Frequency} Hz   \4\CSPL:\0\ ${chartable: #.### : $CSPL}
+  \4\  % of Max:\0\ ${chartable: #.## : $Efficiency} %     \4\Device Count:\0\ ${devicecount} (${mapcount} Maps)
+  \4\Bytes/Loop:\0\ ${chartable: #.### : $UDPSent} B    \4\Bytes Peak:\0\ ${UDPPeak} B
+  
+  \5\Disk accesses\0\
+                   Count   (    Total)        Bytes  (      Total)       Time  (      Total)
+  \4\    file opens:\0\ ${chartable:"%6d":$difffileopencount}   (${chartable:"%9d":$fileopencount})                              ${chartable:"%9d":$difffileopentime}  (${chartable:"%11d":$fileopentime})
+  \4\   file closes:\0\ ${chartable:"%6d":$difffileclosecount}   (${chartable:"%9d":$fileclosecount})                              ${chartable:"%9d":$difffileclosetime}  (${chartable:"%11d":$fileclosetime})
+  \4\dir traversals:\0\ ${chartable:"%6d":$diffdirectoriescount}   (${chartable:"%9d":$directoriescount})                              ${chartable:"%9d":$diffdirectoriestime}  (${chartable:"%11d":$directoriestime})
+  \4\    sync reads:\0\ ${chartable:"%6d":$diffsyncreadcount}   (${chartable:"%9d":$syncreadcount})    ${chartable:"%9d":$diffsyncreadbytes}  (${chartable:"%11d":$syncreadbytes})  ${chartable:"%9d":$diffsyncreadtime}  (${chartable:"%11d":$syncreadtime})
+  \4\   sync writes:\0\ ${chartable:"%6d":$diffsyncwritecount}   (${chartable:"%9d":$syncwritecount})    ${chartable:"%9d":$diffsyncwritebytes}  (${chartable:"%11d":$syncwritebytes})  ${chartable:"%9d":$diffsyncwritetime}  (${chartable:"%11d":$syncwritetime})
+  \4\   async reads:\0\ ${chartable:"%6d":$diffasyncreadcount}   (${chartable:"%9d":$asyncreadcount})    ${chartable:"%9d":$diffasyncreadbytes}  (${chartable:"%11d":$asyncreadbytes})  ${chartable:"%9d":$diffasyncreadtime}  (${chartable:"%11d":$asyncreadtime})
+
+  \5\Packet processing statistics\0\
+  ${chartable:"%6d":$diffsourceroutedpacketcount} (${chartable:"%12d":$sourceroutedpacketcount}) Source address routed packets
+  ${chartable:"%6d":$diffidroutedpacketcount} (${chartable:"%12d":$idroutedpacketcount}) ID-routed packets
+  ${chartable:"%6d":$diffdiscoverypacketcount} (${chartable:"%12d":$discoverypacketcount}) Discovery packets
+  ${chartable:"%6d":$diffdroppedpacketcount} (${chartable:"%12d":$droppedpacketcount}) Dropped packets
+  ${chartable:"%6d":$difftrappacketsonmapcount} (${chartable:"%12d":$trappacketsonmapcount}) Trap packets found on a map
+  ${chartable:"%6d":$difftrappacketsnotonmapcount} (${chartable:"%12d":$trappacketsnotonmapcount}) Trap packets not found on a map
+  ${chartable:"%6d":$diffdroppedtrappacketcount} (${chartable:"%12d":$droppedtrappacketcount}) Dropped trap packets
+
+
+  \5\Data export statistics\0\
+  ${chartable:$diffdatapointscollected} \4\data points collected\0\ (${datapointscollected} total)
+  ${chartable:$diffdatapointrequests} \4\export requests processed\0\ (${datapointrequests} total)
+  ${chartable:$diffdatapointsexported} \4\datapoints exported (${datapointsexported} total)
+
+  \5\FindTimeIndex branches\0\
+  End: ${chartable:$ftiends-$prevftiends}   Write Buffers: ${chartable:$ftibuffers-$prevftibuffers}  Read Buffers: ${chartable: $ftireadbuffers-$prevftireadbuffers}  Cache hits:${chartable:$fticaches-$prevfticaches}  File searches: ${chartable:$ftifiles-$prevftifiles}
+
+  ${hiccups} \4\Polling interruptions taking\0\ ${hiccupticks} \4\ticks\0\
+</script-output>
+

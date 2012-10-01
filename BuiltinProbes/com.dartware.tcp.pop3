@@ -1,0 +1,96 @@
+<!-- 
+	POP3 (com.dartware.tcp.pop3)
+	Copyright © 2000-2003 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.pop3"
+	human_name		=	"POP3"
+	version			= 	"2.6"
+	address_type	= 	"IP"
+	port_number		=	"110"
+
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8004"
+
+	display_name	=	"Servers-Standard/Mail/POP3"
+</header>
+
+<description>
+
+\GB\Post Office Protocol Version 3 (POP3)\P\
+
+The protocol used to access email messages from a central maildrop server, as defined in \U2=http://www.ietf.org/rfc/rfc1939.txt\RFC 1939\P0\.  The default TCP port number for POP3 connections is port 110.
+
+If the "User Name" parameter is left empty, this probe verifies that the server send "+OK" as its initial greeting, then immediately sends the QUIT command.
+
+If a "User Name" parameter is specified, this probe will attempt login to the POP3 server using the specified password. If the probe fails to authenticate, the device will be marked in "warning".
+
+By default, this probe will use the APOP command to authenticate the user if the the APOP command is supported by the server. To authenticate via USER and PASS commands for a particular user, set the "Use APOP if supported" parameter to False.
+
+* The "Use APOP if supported" option has no effect if APOP is not supported by the server.
+
+</description>
+
+<parameters>
+
+"User Name"		=	""
+"Password*"		=	""
+"Use APOP if supported[True,False]"	= 	"True"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+MTCH "+OK"i else goto @UNEXPECTED_GREETING
+MTCH m"(<[^>]+>)"i else goto @NO_APOP
+STOR "MESSID" "${1}"
+SBNE "${Use APOP if supported[True,False]}" "True" @NO_APOP
+GOTO @APOP
+
+# Login using APOP command, if a user name is specified.
+@APOP:
+CHCK "${User Name}" else goto @BYE_OKAY
+SEND "APOP ${User Name} ${_MD5:${MESSID}${Password*}}\r\n"
+MTCH "+OK"i else goto @APOP_FAIL
+GOTO @BYE_OKAY
+
+# Login using USER and PASS commands, if a user name is specified.
+@NO_APOP:
+CHCK "${User Name}" else goto @BYE_OKAY
+SEND "USER ${User Name}\r\n"
+MTCH "+OK"i else goto @USER_FAIL
+SEND "PASS ${Password*}\r\n"
+MTCH "+OK"i else goto @PASS_FAIL
+GOTO @BYE_OKAY
+
+@USER_FAIL:
+STAT WARN "[POP3] Failed to authenticate using USER command. (${_LINE:50})"
+GOTO @BYE
+
+@PASS_FAIL:
+STAT WARN "[POP3] Failed to authenticate using PASS command. (${_LINE:50})"
+GOTO @BYE
+
+@APOP_FAIL:
+STAT WARN "[POP3] Failed to authenticate using APOP command. (${_LINE:50})"
+GOTO @BYE
+
+@BYE_OKAY:
+STAT OKAY
+@BYE:
+SEND "QUIT\r\n"
+EXPT "+OK" #+1
+EXIT
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[POP3] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@IDLE:
+DONE DOWN "[POP3] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+</script>

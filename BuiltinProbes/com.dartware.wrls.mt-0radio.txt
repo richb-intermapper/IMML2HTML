@@ -1,0 +1,79 @@
+ <!--
+	Wireless - MikroTik (Software Only) (com.dartware.wrls.mikrotik)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version (from waveriderccu) 14 October 2004 jkj,
+	Modified 25 October by ics.
+	Modified 1-12 November by jkj.
+	Modified 3 December by jkj (made generic -- devices running Mikrotik software)
+	Modified 10 February by jkj (prepared for release)
+	Last modified 18 May 2005 by ics.
+-->
+
+<header>
+	"type"				=	"custom-snmp"
+	"package"			=	"com.dartware"
+	"probe_name"		=	"wrls.mt-0radio"
+	"human_name"		=	"Wireless - MikroTik (Software Only)"
+	"display_name" 		=	"Wireless/MikroTik/MT Software Only"
+	"version"			=	"1.3"
+	"address_type"		=	"IP,AT"
+	"port_number"		=	"161"
+	"equiv_class"		= 	"WRLS"
+</header>
+
+<description>
+\GB\MikroTik (Software Only) Probe\P\
+
+This probe monitors any device using MikroTik software (a wireless access point), but does not monitor its wireless interfaces. It is able to monitor the general SNMP interface and traffic information, as well as device utilization: CPU Load, Disk use, and Memory use (in percent).
+
+This probe will raise an alarm in the following situations:
+-> High Use -- CPU Load, Disk use, or Memory use exceeds 90%.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<!-- OIDs for "interesting variables" stored in Table format
+
+macAddress,		1.3.6.1.4.1.14988.1.1.1.2.1.1., 	DEFAULT, 	"MAC Address"
+interface,		1.3.6.1.4.1.14988.1.1.1.2.1.2.,		DEFAULT, 	"Interface"
+strength,		1.3.6.1.4.1.14988.1.1.1.2.1.3., 	DEFAULT, 	"Strength"
+TxBytes,		1.3.6.1.4.1.14988.1.1.1.2.1.4., 	DEFAULT, 	"Tx Bytes"
+RxBytes,		1.3.6.1.4.1.14988.1.1.1.2.1.5., 	DEFAULT, 	"Rx Bytes"
+TxPackets,		1.3.6.1.4.1.14988.1.1.1.2.1.6., 	DEFAULT, 	"Tx Packets"
+RxPackets,		1.3.6.1.4.1.14988.1.1.1.2.1.7., 	DEFAULT, 	"Rx Packets"
+TxRate,			1.3.6.1.4.1.14988.1.1.1.2.1.8., 	DEFAULT, 	"Tx Rate"
+RxRate,			1.3.6.1.4.1.14988.1.1.1.2.1.9., 	DEFAULT, 	"Rx Rate"
+
+-->
+
+<parameters>
+"High Use Threshold (%)"      	= "90"
+</parameters>
+
+<snmp-device-variables>
+High_Use,		${High Use Threshold (%)},		CALCULATION
+totalHDD_KB,		1.3.6.1.2.1.25.2.3.1.5.1,		DEFAULT,	"Total Drive (KB)"
+usedHDD_KB,		1.3.6.1.2.1.25.2.3.1.6.1,		DEFAULT,	"Used Drive (KB)"
+totalMem_MB,		1.3.6.1.2.1.25.2.3.1.5.2,		DEFAULT,	"Total Memory (MB)"
+usedMem_MB,		1.3.6.1.2.1.25.2.3.1.6.2,		DEFAULT,	"Used Memory (MB)"
+Percent_cpuLoad, 	1.3.6.1.2.1.25.3.3.1.2.1, 		DEFAULT,	"CPU Load (%)"
+Percent_DiskUse,	${usedHDD_KB}/${totalHDD_KB}*100,	CALCULATION,	"Drive Load (%)"
+Percent_MmryUse,	${usedMem_MB}/${totalMem_MB}*100,	CALCULATION,	"Memory Load (%)"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+   alarm: (${Percent_cpuload} > ${High_Use})	"High Use: CPU Load over 90%"
+   alarm: (${Percent_DiskUse} > ${High_Use})	"High Use: Low Disk Space (under 10% free)"
+   alarm: (${Percent_MmryUse} > ${High_Use}) 	"High Use: Low Memory (under 10% free)"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\MikroTik Router Information\0P\
+\M4\ Utilization:  ${chartable: #. : ${Percent_DiskUse}}\GI3\ % of Disk (\p\${usedHDD_KB}\I3\ of \p\${totalHDD_KB}\I3\ KB)\p\
+\M4\               ${chartable: #. : ${Percent_MmryUse}}\GI3\ % of Memory (\p\${usedMem_MB}\I3\ of \p\${totalMem_MB}\I3\ MB)\p\
+\M4\               ${chartable: #. : ${Percent_cpuLoad}}\GI3\ % of CPU\p\
+</snmp-device-display>

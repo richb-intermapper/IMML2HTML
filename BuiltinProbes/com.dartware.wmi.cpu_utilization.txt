@@ -1,0 +1,255 @@
+<!-- 
+Command Line WMI Probe to check CPU utilzation (com.dartware.wmi.cpu_utilization) 
+Copyright (c) 2010 Dartware, LLC. All rights reserved. 
+--> 
+
+<header> 
+	type			=	"cmd-line" 
+	package			=	"com.dartware" 
+	probe_name		=	"wmi.cpu_utilization" 
+	human_name		=	"WMI CPU Utilization" 
+	version			=	"1.10" 
+	address_type	=	"IP"
+	display_name	=	"WMI/WMI CPU Utilization"
+	visible_in 		=	"Windows"
+	flags			=	"NTCREDENTIALS"	
+</header> 
+
+<description> 
+\GB\WMI CPU Utilization\p\ 
+
+This probe uses WMI to retrieve the percentage of time that a processor is executing a non-idle thread on the target host.  Specifically, it queries the PercentProcessorTime property of the Win32_PerfFormattedData_PerfOS_Processor class and compares it against the Warning and Critical parameters you set.  Each processor is compared against the Single Warning and Critical parameters, and the total CPU utilization is compared with the Total Warning and Critical criteria.  Any of these values can be left blank if that check is not desired.
+
+The target host must be running Windows XP, Windows Server 2003 or later.
+
+The User parameter be a local user on the target host, or may take the form of "domain\\user" for a domain login.  Leave it blank if authentication is not required, such as when the target is the localhost.
+
+InterMapper invokes the cpu_util.vbs companion script which was placed in the Tools folder of the InterMapper Settings folder when this probe was loaded.  It uses the exit value to set the condition of the device and the performance data returned by the script to create a nice display of chartable data.
+
+</description> 
+
+<parameters>
+	"Single Warning (%)"="80"
+	"Single Critical (%)"="90"
+	"Total Warning (%)"="80"
+	"Total Critical (%)"="90"
+	User=""
+	"Password*"=""
+	"Timeout (sec)"=""
+</parameters> 
+
+
+<command-line> 
+	-- Empty path forces the InterMapper Settings:Tools directory
+	path= 
+	cmd="${CSCRIPT} cpu_util.vbs"
+	arg="-h ${address} -w ${Single Warning (%)} -c ${Single Critical (%)} -tw ${Total Warning (%)} -tc ${Total Critical (%)}"
+	input = "${User} ${Password*}"
+	timeout = ${Timeout (sec)}
+</command-line> 
+
+<command-exit>
+	down:${EXIT_CODE}=3 
+	critical:${EXIT_CODE}=2 
+	alarm:${EXIT_CODE}=1 
+	okay:${EXIT_CODE}=0 
+</command-exit> 
+
+<command-display>
+${^stdout}
+</command-display> 
+
+<tool:cpu_util.vbs>
+'Command Line WMI Probe to check CPU utilization (to be used with com.dartware.wmi.cpu_utilization) 
+'Copyright (c) 2009 Dartware, LLC. All rights reserved. 
+
+' get args up to next switch in case there are spaces in list
+FUNCTION GetNextArg(j, nargs)
+	arg = ""
+	do until (j = nargs-1)
+		if (instr(wscript.arguments(j+1), "-") = 1) then
+			exit do
+		else
+			arg = arg & wscript.arguments(j+1)
+			j = j + 1
+		end if
+	loop
+	GetNextArg = arg
+END FUNCTION
+
+FUNCTION CheckError(reasonStr)
+	if (err.number <> 0) then
+		reasonStr = vbNewLine & reasonStr & "Error #" & CStr(Err.Number) & " " & Err.Description
+		wscript.echo "\{reason:=""" & reasonStr & """}"
+		wscript.quit(3)
+	end if
+END FUNCTION
+
+On Error Resume Next
+
+' Collect our arguments
+host = ""
+user = ""
+pass = ""
+warn = ""
+crit = ""
+totw = ""
+totc = ""
+verbose = False
+
+numargs = wscript.arguments.count
+for i=0 to numargs-1
+	test = wscript.arguments(i)
+	if (test = "-v") then verbose = True
+	if (test = "-host") OR (test = "-h") then
+		host = GetNextArg(i, numargs)
+	end if
+	if (test = "-user") OR (test = "-u") then
+		user = GetNextArg(i, numargs)
+	end if
+	if (test = "-pass") OR (test = "-p") then
+		pass = GetNextArg(i, numargs)
+	end if
+	if (test = "-warn") OR (test = "-w") then
+		warn = GetNextArg(i, numargs)
+		if (warn <> "") then warn = ccur(warn)
+	end if
+	if (test = "-crit") OR (test = "-c") then
+		crit = GetNextArg(i, numargs)
+		if (crit <> "") then crit = ccur(crit)
+	end if
+	if (test = "-totalwarn") OR (test = "-tw") then
+		totw = GetNextArg(i, numargs)
+		if (totw <> "") then totw = ccur(totw)
+	end if
+	if (test = "-totalcrit") OR (test = "-tc") then
+		totc = GetNextArg(i, numargs)
+		if (totc <> "") then totc = ccur(totc)
+	end if
+next
+
+' Read username and password from stdin
+if  not WScript.StdIn.AtEndOfStream then
+	inpStr = WScript.StdIn.ReadLine
+end if
+if verbose then wscript.echo "stdin: " & inpStr
+
+dim cred
+cred = split(inpStr, " ")
+user = cred(0)
+pass = cred(1) 
+
+if (host = "") then
+	Err.Raise vbObjectError + 1, "", "Error processing arguments"
+	CheckError("")
+end if
+
+' Connect with target via WMI
+strComputer = host
+Set objSWbemLocator = CreateObject("WbemScripting.SWbemLocator")
+CheckError("")
+
+if (user = "") or (lcase(user) = "none") then		' no authentication needed
+	Set objWMIService = GetObject("winmgmts:" & "{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2") 
+	CheckError("")
+else						' authenticate with user/pass
+	user = Replace(user,"\\","\")
+	Set objWMIService = objSWbemLocator.ConnectServer (strComputer, "\root\cimv2", user, pass)
+	CheckError("")
+	objWMIService.Security_.ImpersonationLevel = 3
+end if
+
+' Execute query
+'_Total'",,48)
+Set colItems = objWMIService.ExecQuery("Select * from Win32_PerfFormattedData_PerfOS_Processor",,48)
+CheckError("")
+
+' Massage data
+dim PercentProcessor()	' colItems.Count won't work because WMI needs to enumerate the entire collection, too slow for VBscript
+dim Name()				' the redim in a loop below looks ugly, but is the more effecient choice
+
+nP = 0
+For Each objItem in colItems
+	if (objItem.Name = "_Total") then
+		TotalProcessor = Fix(objItem.PercentProcessorTime)
+	else
+		nP = nP + 1
+		redim preserve PercentProcessor(nP)
+		redim preserve Name(nP)
+		PercentProcessor(nP) = Fix(objItem.PercentProcessorTime)
+		Name(nP) = objItem.Name
+    end if
+Next
+CheckError("")
+
+' Evaluate criteria to set returncode
+criticalreason = ""
+warningreason = ""
+returncode = 0
+
+if (totc <> "") then
+	if (TotalProcessor > totc) then 
+		returncode = 2
+		criticalreason = criticalreason & vbNewLine & "Total Processor Time is above " & totc & "%"
+	end if
+end if
+
+if (totw <> "") then
+	if (TotalProcessor > totw) then 
+		if (returncode < 2) then 
+			returncode = 1
+			warningreason = warningreason & vbNewLine & "Total Processor Time is above " & totw & "%"
+		end if
+	end if
+end if
+
+for n=1 to nP
+	if (crit <> "") then
+		if (PercentProcessor(n) > crit) then 
+			returncode = 2
+			criticalreason = criticalreason & vbNewLine & "Processor Time is above " & crit & "% on processor " & Name(n)
+		end if
+	end if
+	
+	if (warn <> "") then
+		if (PercentProcessor(n) > warn) then 
+			if (returncode < 2) then 
+				returncode = 1
+				warningreason = warningreason & vbNewLine & "Processor Time is above " & warn & "% on processor " & Name(n)
+			end if
+		end if
+	end if
+next
+
+' Build data output
+output= "\{"
+for n=1 to nP
+	output = output & "PercentProcessor" & (n-1) & ":=" & formatnumber(PercentProcessor(n),1,vbTrue,vbFalse,vbFalse) & ","
+next
+
+output = output & "TotalProcessor:=" & formatnumber(TotalProcessor,1,vbTrue,vbFalse,vbFalse) & ","
+
+' Set reason based on returncode
+output = output & "reason:="""
+
+select case returncode
+	case 0:
+'		output = output & "Processor Time is below " & warn & "%"
+	case 1:
+		output = output & warningreason
+	case 2:
+		output = output & criticalreason
+end select
+output = output & """}"
+
+wscript.echo output & "\B5\WMI CPU Utilization\P0\"
+
+for n=1 to nP
+	wscript.echo "    \4\Processor " & Name(n) & ":\0\    $PercentProcessor" & (n-1) & " %"
+next
+
+wscript.echo "  \4\Total Processor:\0\    $TotalProcessor %"
+
+' Done
+wscript.quit(returncode)
+</tool:cpu_util.vbs>

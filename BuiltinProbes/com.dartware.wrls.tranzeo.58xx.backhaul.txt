@@ -1,0 +1,241 @@
+<!--
+	Wireless - Tranzeo 58XX-series backhauls (com.dartware.wrls.tranzeo.58xx.backhaul)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 30 Jun 2005 tex.
+
+	This probe is known to monitor System Firmware Version: 03.01.03
+-->
+
+
+<header>
+	"type"			= 	"tcp-script"
+	"package"		= 	"com.dartware"
+	"probe_name"	=	"wrls.tranzeo.58xx.backhaul"
+	"human_name"	=	"Wireless - Tranzeo 58XX Series Backhaul"
+	"version"		= 	"1.4"
+	"address_type"	= 	"IP"
+	"port_number"	=	"23"
+	"equiv_class"	= 	"WRLS"
+	"display_name"	=	"Wireless/Tranzeo/Tranzeo 58XX Series Backhaul"
+	"url_hint"		=	"http://${ADDRESS}"
+</header>
+
+<description>
+
+\GB\Tranzeo 58XX Series Backhaul\P\
+
+This probe is meant to monitor a \u2=http://www.tranzeo.com\Tranzeo\p0\ 58XX Series Backhaul.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.3 or later.
+</description>
+
+<parameters>
+	"User"				=		"admin"
+	"Password*"			=		""
+</parameters>
+
+<script>
+CONN #60 "TELNET"
+FAIL @FAILED
+
+CHCK "${Password*}" else @NO_PASSWORD
+
+#LINE ON
+WAIT #60 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+
+LINE OFF
+
+EXPT "login:"i @UNEXPECTED_GREETING
+SEND "${User}\r\n"
+EXPT "Password:"i @UNEXPECTED_GREETING
+SEND "${Password*}\r\n"
+LINE ON
+NEXT
+EXPT "*"
+LINE OFF
+NEXT
+
+DISC @PARSING_FAILED
+
+MTCH "Password"i else goto @VALID_LOGIN
+DONE ALRM "Invalid password."
+
+@VALID_LOGIN:
+LINE ON
+NEXT
+SEND "get systemname\r\n"
+EXPT "System Name\\s*:\\s*(.*)"ri
+STOR "^device_name" "${1}"
+NEXT
+
+SEND "get peerapmac\r\n"
+EXPT "MAC Address\\s*:\\s*(.*)"ri
+STOR "^MAC" "${1}"
+NEXT
+
+SEND "get channel\r\n"
+EXPT "\\(IEEE ([0-9]+)"ri
+STOR "^channel" "${1}"
+NEXT
+
+SEND "get ssid\r\n"
+EXPT "SSID\\s*:\\s*(.*)"r
+STOR "^ssid" "${1}"
+NEXT
+
+SEND "get rate\r\n"
+EXPT "Rate\\s*:\\s*(.*)"r
+STOR "^rate" "${1}"
+NEXT
+
+#Must ask for the signal twice:
+#	From: "Michael Rex" <mrex@tranzeo.com>
+#	Date: June 29, 2005 6:01:08 PM EDT
+#	To: "'Ian Struckhoff'" <ian.struckhoff@dartware.com>
+#	Cc: "'Damian Wallace'" <DWallace@tranzeo.com>
+#	Subject: RE: 5800 Units
+#	(note, in telnet, "get signal" needs to be ran twice. 1st
+#	time starts the signal strength function and shows signals of 0 and should
+#	be discarded, the second time shows real signal strength). It will
+#	repeatedly display 0 if there is no link.
+SEND "get signal\r\n"
+EXPT "Remote Signal Level"i
+NEXT
+
+SEND "get signal\r\n"
+EXPT "Local Signal Level\\s*:\\s*X*\\s*([0-9]+)%"ri
+STOR "local_signal" "${1}"
+EXPT "Remote Signal Level\\s*:\\s*X*\\s*([0-9]+)%"ri
+STOR "remote_signal" "${1}"
+NEXT
+
+SEND "get range\r\n"
+EXPT "Range\\s*:\\s*([0-9]+)\\s*(.*)"ri
+STOR "^range" "${1}"
+STOR "^range_units" "${2}"
+NEXT
+
+#Access Point  v03.01.03
+SEND "version\r\n"
+EXPT "\\s+v([0-9]+.[0-9a-z\\.]+)"ri
+STOR "^firmware" "${1}"
+NEXT
+
+#get stats
+#GoodTransmits:
+#GoodReceives:
+#TxExcessiveRetries:
+#TotalRetries:
+#AckRcvFailures:
+#RxDataFrames:
+#TxDataFrames:
+#TransmitErrors:
+
+SEND "get stainfo\r\n"
+
+#Basically, throw an exception to break out of the loop
+DISC @EOF
+WAIT #10 @EOF (idle timeout in secs)
+STOR "^counter" "0"
+@LOOP_START:
+MTCH ".*GoodTransmits[^:]*:\\s*([0-9]+)"ri else GOTO #+3
+STOR "transmits" "${1}"
+GOTO @LOOP_END
+
+MTCH ".*GoodReceives[^:]*:\\s*([0-9]+)"ri else GOTO #+3
+STOR "receives" "${1}"
+GOTO @LOOP_END
+
+MTCH ".*TxExcessiveRetries[^:]*:\\s*([0-9]+)"ri else GOTO #+3
+STOR "tx_excess" "${1}"
+GOTO @LOOP_END
+
+MTCH ".*TotalRetries[^:]*:\\s*([0-9]+)"ri else GOTO #+3
+STOR "total_retries" "${1}"
+GOTO @LOOP_END
+
+MTCH ".*AckRcvFailures[^:]*:\\s*([0-9]+)"ri else GOTO #+3
+STOR "ack_rcv_failures" "${1}"
+GOTO @LOOP_END
+
+MTCH ".*RxDataFrames[^:]*:\\s*([0-9]+)"ri else GOTO #+3
+STOR "rx_frames" "${1}"
+GOTO @LOOP_END
+
+MTCH ".*TxDataFrames[^:]*:\\s*([0-9]+)"ri else GOTO #+3
+STOR "tx_frames" "${1}"
+GOTO @LOOP_END
+
+MTCH ".*TransmitErrors[^:]*:\\s*([0-9]+)"ri else GOTO #+2
+STOR "transmit_errors" "${1}"
+
+@LOOP_END:
+NADD #"^counter" #1
+NBNE #${^counter} #7 #+2
+GOTO @EOF
+NEXT
+GOTO @LOOP_START
+
+#catch the disconnect exception and set the disconnect-handler back to @DISCONNECT
+@EOF:
+DISC @DISCONNECT
+WAIT #60 @IDLE (idle timeout in secs)
+
+SEND "get uptime\r\n"
+EXPT ".*Uptime.*([0-9]+),\\s*([0-9]+):([0-9]+):([0-9]+)"ir
+EVAL _uptime := ((($1*24) + $2) * 60 + $3) * 60 + $4
+
+SEND "exit\r\n"
+NBNE #${^counter} #7 #+2
+DONE OKAY
+
+DONE WARN "Did not receive all data."
+
+@IDLE:
+DONE WARN "No data for ${_IDLETIMEOUT} seconds."
+
+@UNEXPECTED_GREETING:
+DONE DOWN "Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@DISCONNECT:
+DONE DOWN "Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+#Usually occurs because an "EXPT" statement didn't match
+@PARSING_FAILED:
+SEND "exit\r\n"
+DONE ALRM "Unable to parse data."
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+@NO_PASSWORD:
+DONE ALRM "No password specified."
+
+</script>
+
+<script-output>
+\B5\Tranzeo Statistics\P0\
+           \4\Device Name:\0\ ${^device_name}
+      \4\Firmware Version:\0\ ${^firmware}
+                 \4\ESSID:\0\ ${^ssid}
+               \4\Channel:\0\ ${^channel}
+           \4\MAC Address:\0\ ${^MAC}
+             \4\Data Rate:\0\ ${^rate}
+ \4\Local Signal Strength:\0\ ${local_signal}
+\4\Remote Signal Strength:\0\ ${remote_signal}
+                 \4\Range:\0\ ${^range} ${^range_units}
+        \4\Good Transmits:\0\ ${transmits}
+         \4\Good Receives:\0\ ${receives}
+  \4\Tx Excessive Retries:\0\ ${tx_excess}
+         \4\Total Retries:\0\ ${total_retries}
+      \4\Ack Rcv Failures:\0\ ${ack_rcv_failures}
+             \4\Rx Frames:\0\ ${rx_frames}
+             \4\Tx Frames:\0\ ${tx_frames}
+       \4\Transmit Errors:\0\ ${transmit_errors}
+</script-output>

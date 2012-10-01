@@ -1,0 +1,299 @@
+<!-- 
+	OS X Server - Print (com.dartware.tcp.osxserver.print)
+	Copyright © 2002 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.osxserver.print"
+	human_name		=	"OS X Server - Print"
+	version			= 	"1.4"
+	address_type		= 	"IP"
+	port_number		=	"311"
+	display_name		=	"Servers-Proprietary/Apple/OS X Server/Print"
+</header>
+
+<description>
+
+\GB\OS X Server Print Probe\P\
+
+This TCP probe queries a \U2=http://www.apple.com/server/macosx/\Mac OS X Server\P0\ installation for various details about its Print Server using the Server Admin port and protocol.
+
+A request for status information is made via an HTTPS post to the Server Admin port. The server responds with XML data that is then parsed by the probe.
+
+\i\User\p\ is the name of any user on the specified server.  An admin user is not required.
+
+\i\Password\p\ is the password for the user specified in \i\User\p\.
+
+
+\i3\Note: The implementation of this probe uses OpenSSL on MacOS X.\p0\
+
+</description>
+
+
+<parameters>
+
+
+	"User"				=		""
+	"Password*"			=		""
+
+
+</parameters>
+
+<script>
+CONN #60 "SECURE"
+FAIL @FAIL_INIT
+
+STOR "RET" "@START"
+GOTO #+2
+
+@FAIL_INIT:
+STOR "RET" "@FAILED"
+
+GOTO @INIT_VARS
+
+@START:
+
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+
+#https://192.168.1.21:311/commands/servermgr_print?input=%3C%3Fxml+version%3D%221.0%22+encoding%3D%22UTF-8%22%3F%3E%0D%0A%3Cplist+version%3D%220.9%22%3E%0D%0A%3Cdict%3E%0D%0A%09%3Ckey%3Ecommand%3C%2Fkey%3E%0D%0A%09%3Cstring%3EgetState%3C%2Fstring%3E%0D%0A%09%3Ckey%3Evariant%3C%2Fkey%3E%0D%0A%09%3Cstring%3EwithDetails%3C%2Fstring%3E%0D%0A%3C%2Fdict%3E%0D%0A%3C%2Fplist%3E%0D%0A&send=Send+Command
+
+STOR "URL" "/commands/servermgr_print"
+STOR "FormData1" "input=%3C%3Fxml+version%3D%221.0%22+encoding%3D%22UTF-8%22%3F%3E%0D%0A%3Cplist+version%3D%220.9%22%3E%0D%0A%3Cdict%3E%0D%0A%09%3Ckey%3Ecommand"
+STOR "FormData2" "%3C%2Fkey%3E%0D%0A%09%3Cstring%3EgetState%3C%2Fstring%3E%0D%0A%09%3Ckey%3Evariant%3C%2Fkey%3E%0D%0A%09"
+STOR "FormData3" "%3Cstring%3EwithDetails%3C%2Fstring%3E%0D%0A%3C%2Fdict%3E%0D%0A%3C%2Fplist%3E%0D%0A&send=Send+Command"
+
+SEND "POST ${URL} HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+2
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+STOR "LEN" "${_LENGTH:${FormData1}}"
+NADD "LEN" #${_LENGTH:${FormData2}}
+NADD "LEN" #${_LENGTH:${FormData3}}
+SEND "Content-Length: ${LEN}\r\n"
+CHCK "${User}${Password*}" else goto #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+SEND "${FormData1}"
+SEND "${FormData2}"
+SEND "${FormData3}"
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @UNAVAIL_GET_RESPONSE
+LINE HTML
+DISC @NO_MATCH
+EXPT "<dict>"i else goto @NO_MATCH
+EXPT "<key>"i else goto @NO_MATCH
+
+
+DISC @DONE_OKAY
+
+
+#Return here from subroutines
+STOR "RET" "@ROOT_SWITCH"
+
+#a switch...case structure here should search for all important keys
+@ROOT_SWITCH:
+MTCH "<key>([^<]+)</key>"ir ELSE GOTO @END_ROOT
+#Now ${1} contains the key
+#  So, switch on it:
+SBNE "${1}" "currentQueues"i #+2
+GOTO @GET_VALUE
+
+SBNE "${1}" "currentJobs"i #+2
+GOTO @GET_VALUE
+
+SBNE "${1}" "state"i #+2
+GOTO @GET_VALUE
+
+SBNE "${1}" "startedTime"i #+2
+GOTO @GET_VALUE
+
+SBNE "${1}" "error"i ELSE #+4
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE #+2
+DONE WARN "Error: ${2}"
+
+
+#default: ignore the following element and return to ${RET} (Which should be @ROOT_SWITCH)
+GOTO @IGNORE
+
+
+@END_ROOT:
+MTCH "</dict>"i ELSE #+2
+
+@DONE_OKAY:
+#check the state
+#if it is STOPPED, then set the probe state to CRITICAL
+#also, startedTime MAY be 1 if it is STOPPED, so deal with that here
+SBNE "${state}" "STOPPED" @DONE_OKAY1
+STOR "_uptime" "n/a"
+DONE CRIT
+
+@DONE_OKAY1:
+#startedTime should be used to init the _uptime variable:
+#	1. Convert ${startedTime} to UTC
+#	2. Substract current time from the start time
+#	3. Store the result in _uptime
+EVAL $_uptime := time() - strptime( "$startedTime", "%Y-%m-%d %H:%M:%S %z" )
+
+DONE OKAY
+
+@NO_MATCH:
+DONE WARN "Improperly formed data in response."
+
+@IDLE:
+DONE DOWN "No data for ${_IDLETIMEOUT} seconds. [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@UNAVAIL_GET_RESPONSE:
+MTCH m"50[0-9]" else goto @BAD_GET_RESPONSE
+DONE DOWN "${_LINE:50} (${URL})"
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "201 Created (${URL})"
+MTCH "202" ELSE #+2
+DONE WARN "202 Accepted (${URL})"
+MTCH "204" ELSE #+2
+DONE WARN "204 No Content (${URL})"
+MTCH "301" ELSE #+2
+DONE WARN "301 Moved Permanently (${URL})"
+MTCH "302" ELSE #+2
+DONE WARN "302 Moved Temporarily (${URL})"
+MTCH "304" ELSE #+2
+DONE WARN "304 Not Modified (${URL})"
+MTCH "400" ELSE #+2
+DONE WARN "400 Bad Request (${URL})"
+MTCH "401" ELSE #+2
+DONE WARN "401 Unauthorized (${URL})"
+MTCH "403" ELSE #+2
+DONE WARN "403 Forbidden (${URL})"
+MTCH "404" ELSE #+2
+DONE WARN "404 Not Found (${URL})"
+MTCH "500" ELSE #+2
+DONE ALRM "500 Internal Server Error (${URL})"
+MTCH "501" ELSE #+2
+DONE ALRM "501 Not Implemented (${URL})"
+MTCH "502" ELSE #+2
+DONE ALRM "502 Bad Gateway (${URL})"
+MTCH "503" ELSE #+2
+DONE ALRM "503 Service Unavailable (${URL})"
+DONE ALRM "Unknown Error Code ${_LINE:4} (${URL})"
+
+@DISCONNECT:
+DONE DOWN "Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+#subroutine to initialize the variables
+@INIT_VARS:
+#init variables in case there is no response
+# - instead of "(NOT FOUND: VARNAME)", it will display ""
+STOR "currentQueues" ""
+STOR "currentJobs" ""
+
+STOR "startedTime" ""
+
+STOR "state" ""
+GOTO ${RET}
+
+
+#subroutine to skip the entire next XML element and return
+@IGNORE:
+NEXT
+#check for an empty tag
+MTCH "^[ \t]*<[^<]+/>[ \t]*$"ir else GOTO #+3
+NEXT
+GOTO ${RET}
+
+#figure out what kind of tag it is
+MTCH "<([a-z]+)>"ir else GOTO ${RET}
+STOR "TAG" "${1}"
+STOR "XML_STACK" "0"
+
+@IGNORE_LOOP:
+EXPT "${TAG}>"i else goto ${RET}
+MTCH "</${TAG}>"i ELSE #+2
+#We add -2, then fall through to the ELSE and add 1, to have a net effect of adding -1
+#	(It was easier than a bunch of GOTO statements and an extra label or two...)
+NADD "XML_STACK" #-2
+
+# else assume it's a <${TAG}> tag
+NADD "XML_STACK" #1
+
+NEXT
+NBGT #${XML_STACK} #0 @IGNORE_LOOP
+GOTO ${RET}
+
+
+#Get the value of the next element and store it into the variable whose name is contained in ${1}
+@GET_VALUE:
+STOR "VAR1" "${1}"
+NEXT
+MTCH "<([a-z]+)>([^<]*)</([a-z]+)>"ir else goto ${RET}
+NEXT
+STOR "${VAR1}" "${2}"
+GOTO ${RET}
+
+
+</script>
+
+<script-output>
+
+\B5\Print Server Information\0P\
+  \4\Current Queues:\0P\   ${currentQueues}
+  \4\Spooled Jobs:\0P\     ${currentJobs}
+</script-output>
+
+
+<!--
+Sample plist:
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>command</key>
+	<string>getState</string>
+	<key>currentJobs</key>
+	<integer>0</integer>
+	<key>currentQueues</key>
+	<integer>0</integer>
+	<key>logPaths</key>
+	<dict>
+		<key>logPathsArray</key>
+		<array>
+			<dict>
+				<key>name</key>
+				<string>SYSTEMLOG</string>
+				<key>path</key>
+				<string>/Library/Logs/PrintService/PrintService.server.log</string>
+			</dict>
+		</array>
+	</dict>
+	<key>pluginVers</key>
+	<string>1.0.38</string>
+	<key>readWriteSettingsVersion</key>
+	<integer>1</integer>
+	<key>setStateVersion</key>
+	<integer>1</integer>
+	<key>startedTime</key>
+	<string></string>
+	<key>state</key>
+	<string>STOPPED</string>
+</dict>
+</plist>
+
+-->
+
+<datasets>
+	$currentQueues,	'queues',	"",	"true",		"Current Queues"
+	$currentJobs,	'numjobs',	"",	"true",		"Spooled Jobs"
+</datasets>
+

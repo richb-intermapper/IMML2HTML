@@ -1,0 +1,75 @@
+ <!--
+	Single OID Custom Probe (com.dartware.snmp.oidsingle.txt)
+    Custom Probe for InterMapper (http://www.intermapper.com)
+    Please feel free to use this as a base for further development.
+
+	10 May 2007 Cloned from High Threshold probe -reb
+	 3 Jul 2007 Changed probe name to Single OID Viewer -reb
+	 4 Sep 2012 Added a datasets section -jpd
+	 
+	You can read the Developer Guide to learn more about InterMapper Probes. It's at:
+		http://intermapper.com/go.php?to=intermapper.devguide
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"snmp.oidsingle"
+	"human_name"	=	"SNMP - Single OID Viewer"
+	"version"		=	"1.4"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"display_name"	=	"SNMP/Single OID Viewer"
+	"flags"			= 	"Minimal"
+</header>
+
+<snmp-device-properties>
+	nomib2="true"
+	pdutype="get-request"
+</snmp-device-properties>
+
+<description>
+\GB\Single OID Viewer\P\
+
+This probe retrieves a single SNMP MIB variable and displays it in the device's Status Window.
+
+\ib\Variable\p\ specifies the MIB name or OID for the value to retrieve. If you have imported the MIB for this device, you may enter the symbolic name for this value, otherwise, simply enter its OID here. 
+
+\bi\Legend\p\ is a text string used to identify the variable in the status window and any strip charts. If left blank, the variable's name or OID will be used.
+
+\bi\Units\p\ is a text string that will be displayed next to the value in the Status Window. You can use it for the unit of measure (packets/sec, degrees, etc.) 
+
+\bi\Tag\p\ is a short text string that identifies a particular class of dataset. Tags will be used to correlate different variables from different probes that describe the same thing, such as CPU% or temperature.
+</description>
+
+-- Parameters are user-settable values that the probe uses for its comparisons.
+-- Specify the default values here. The customer can change them and they will be retained for each device.
+
+<parameters>
+	"Variable"		= 	"ifNumber.0"
+	"Legend"		= 	""
+	"Units"			=	""
+	"Tag"			=	"exampletag"
+</parameters>
+
+-- SNMP values to be retrieved from the device, and 
+-- Specify the variable name, its OID, a format (usually DEFAULT) and a short description.
+-- CALCULATION variables are computed from other values already retrieved from the device.
+ 
+<snmp-device-variables>
+
+    theLegend, 	($Legend!="" ? "$Legend" : "$Variable"), CALCULATION, "Legend/OID"
+    theOID,      $Variable ,    DEFAULT, 	"$theLegend"
+
+</snmp-device-variables>
+
+-- The <snmp-device-display> section specifies the text that will be appended 
+-- to the device's Staus Window. 
+
+<snmp-device-display>
+\B5\  $theLegend:\0P\  $theOID \3G\$Units\mp0\
+</snmp-device-display>
+
+<datasets>
+  $theOID, "$Tag", "$Units", "false", "$Legend"
+</datasets>

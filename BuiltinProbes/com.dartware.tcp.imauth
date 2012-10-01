@@ -1,0 +1,144 @@
+<HEADER>
+	type			=	"tcp-script"
+	package			=	"com.dartware"
+	probe_name		=	"tcp.imauth"
+	human_name		=	"IMAuth"
+	version			=	"0.3"
+	address_type	=	"IP"
+	port_number		=	"8182"
+	display_name	=	"Servers-Proprietary/Dartware/DataCenter/IMAuth"
+	url_hint		=	"https://${ADDRESS}:${PORT}/"
+</HEADER>
+
+<DESCRIPTION>
+
+\GB\InterMapper Authentication Server (IMAuth)\P0\
+
+This TCP probe queries an \U2=http://www.intermapper.com/\InterMapper DataCenter\P0\ server to verify that IMAuth is configured and running on that server. This will only work when run against InterMapper DataCenter 5.1 or later.
+
+\i\User\p\ is the DataCenter admin user's name.
+
+\i\Password\p\ is the DataCenter admin user's password.
+
+\i\Port\p\ is the port the DataCenter server listens on.
+
+</DESCRIPTION>
+
+<PARAMETERS>
+
+"User"			=	"admin"
+"Password*"		=	""
+
+</PARAMETERS>
+
+<SCRIPT>
+
+CONN #60 "SECURE"
+FAIL @FAILED
+
+CHCK "${User}" else goto @NO_USER
+
+###############################################################################
+# Connect to the server and request ~imauth/appstatus.html.
+###############################################################################
+
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @FAILED (disconnect handler)
+SEND "POST /~imauth/appstatus.html HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+STOR "FormData" "username=${_URLENCODE:${User}}&password=${_URLENCODE:${Password*}}"
+STOR "LEN" "${_LENGTH:${FormData}}"
+SEND "Content-Type: application/x-www-form-urlencoded\r\n"
+SEND "Content-length: ${LEN}\r\n"
+SEND "\r\n"
+
+NBGT #${LEN} #0 goto #+2
+GOTO #+2
+SEND "${FormData}"
+LINE ON
+
+###############################################################################
+# Make sure this starts out as a good HTTP response.
+###############################################################################
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @BAD_GET_RESPONSE
+
+###############################################################################
+# Parse the actual document, which should start with <appstatus>.
+# The next lines should be one of the following tags:
+#  - <status>	: App status code (okay/warn/alrm/crit/down)
+#  - <msg>		: App status message (reason)
+###############################################################################
+
+EXPT "<appstatus>" else goto @NO_MATCH
+
+NEXT
+MTCH "\\s*<status>([^<]*)</status>"ir else goto @NO_MATCH
+STOR "^status" "${1}"
+
+NEXT
+MTCH "\\s*<msg>([^<]*)</msg>"ir else goto @NO_MATCH
+STOR "^reason" "${1}"
+
+DONE ${^status} "${^reason}"
+
+###############################################################################
+# Finished reading everything we care about; error handlers below.
+###############################################################################
+
+@FAILED:
+DONE DOWN
+
+@IDLE:
+DONE DOWN "[HTTP] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[HTTP] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@NO_MATCH:
+DONE ALRM "Unable to parse page. ${_STRINGTOMATCH}"
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "[HTTP] 201 Created"
+MTCH "202" ELSE #+2
+DONE WARN "[HTTP] 202 Accepted"
+MTCH "204" ELSE #+2
+DONE WARN "[HTTP] 204 No Content"
+MTCH "301" ELSE #+2
+DONE WARN "[HTTP] 301 Moved Permanently"
+MTCH "302" ELSE #+2
+DONE WARN "Invalid access."
+MTCH "304" ELSE #+2
+DONE WARN "[HTTP] 304 Not Modified"
+MTCH "400" ELSE #+2
+DONE WARN "[HTTP] 400 Bad Request"
+MTCH "401" ELSE #+2
+DONE WARN "[HTTP] 401 Unauthorized"
+MTCH "403" ELSE #+2
+DONE WARN "[HTTP] 403 Forbidden"
+MTCH "404" ELSE #+2
+DONE WARN "[HTTP] 404 Not Found"
+MTCH "500" ELSE #+2
+DONE ALRM "[HTTP] 500 Internal Server Error"
+MTCH "501" ELSE #+2
+DONE ALRM "[HTTP] 501 Not Implemented"
+MTCH "502" ELSE #+2
+DONE ALRM "[HTTP] 502 Bad Gateway"
+MTCH "503" ELSE #+2
+DONE ALRM "[HTTP] 503 Service Unavailable"
+DONE ALRM "[HTTP] Unknown Error Code ${_LINE:4}"
+
+@NO_USER:
+DONE ALRM "No DataCenter admin user specified."
+
+@DISCONNECT:
+DONE DOWN "[HTTP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+</SCRIPT>
+
+<SCRIPT-OUTPUT>
+</SCRIPT-OUTPUT>

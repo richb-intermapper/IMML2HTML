@@ -1,0 +1,47 @@
+<!-- 
+	4D Database Server (com.dartware.tcp.4D)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.4D"
+	human_name		=	"4D Server"
+	version			= 	"1.5"
+	address_type	= 	"IP"
+	port_number		=	"19813"
+	display_name	=	"Servers-Proprietary/4D Server"
+</header>
+
+<description>
+
+\GB\4D Server Probe\P\
+
+This probe attempts to connect to a 4D server listening on port 19813. If the response contains the \i\database name\p\, the probe exits with OKAY status; if not, the result is WARN. If no response arrives within \i\timeout\p\, the probe exits with a WARN status. 
+
+</description>
+
+<parameters>
+
+"database name"							=		""
+"timeout"								=		"15"
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+IDLE ${timeout} @IDLE
+CHCK "${database name}" @MISCONFIGURED
+LINE OFF
+EXPT "${database name}"i else #+2
+DONE OKAY 
+DONE ALRM "[4D Server] Database '${database name}' not available"
+
+@IDLE
+DONE WARN "[4D Server] No response received after 15 seconds"
+
+@MISCONFIGURED
+DONE ALRM "[4D Server] Database name parameter must not be empty."
+
+</script>

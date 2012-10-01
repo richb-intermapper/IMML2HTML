@@ -1,0 +1,70 @@
+<!--
+	SNMP - Host Resources (com.dartware.snmp.hrmib)
+	Copyright (c) 2003,2008 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.hrmib"
+	human_name		=	"SNMP - Host Resources"
+	version			= 	"1.12"
+	address_type	= 	"IP,AT"
+	equiv_class		= 	"SNMP"
+	port_number		=	"161"
+	display_name	=	"Servers-Standard/Host Resources"
+</header>
+
+
+<description>
+
+\GB\SNMP - Host Resources\P\
+
+This probe monitors elements of the Host Resources MIB of the target device using SNMP.
+
+\i\Processor Load Alarm %\p\ specifies what processor load, expressed as a percentage, will cause an alarm.
+\i\Processor Load Warning %\p\ specifies what processor load, expressed as a percentage, will cause a warning.
+
+\i\Disk Usage Alarm %\p\ specifies the percentage of a disk above which an alarm is caused.
+\i\Disk Usage Warning %\p\ specifies the percentage of a disk above which a warning is caused.
+
+\i\Memory Usage Alarm %\p\ specifies the percentage of memory above which an alarm is caused.
+\i\Memory Usage Warning %\p\ specifies the percentage of memory above which a warning is caused.
+
+\i\One-minute Load Average Alarm\p\ specifies the one-minute load average value above which an alarm is caused.
+\i\One-minute Load Average Warning\p\ specifies the one-minute load average value above which a warning is caused.
+\i\Five-minute Load Average Alarm\p\ specifies the five-minute load average value above which an alarm is caused.
+\i\Five-minute Load Average Warning\p\ specifies the five-minute load average value above which a warning is caused.
+
+\i\Fifteen-minute Load Average Alarm\p\ specifies the fifteen-minute load average value above which an alarm is caused.
+\i\Fifteen-minute Load Average Warning\p\ specifies the fifteen-minute load average value above which a warning is caused.
+
+\i\Ignore storage table indices\p\ allows you to indicate storage table entries you want to ignore. They will not be used in cause alarms or warnings, nor will they be displayed in the popup window. Note that you will generally be unable to set this until the device has been polled at least once.
+</description>
+
+<parameters>
+"Processor Load Alarm %"	=	"95"
+"Processor Load Warning %"  =   "80"
+
+"Disk Usage Alarm %"        =   "90"
+"Disk Usage Warning %"      =   "75"
+
+"Memory Usage Alarm %"      =   "90"
+"Memory Usage Warning %"    =   "75"
+
+"One-minute Load Average Alarm"			=	"12"
+"One-minute Load Average Warning"		=	"9"
+
+"Five-minute Load Average Alarm"		=	"12"
+"Five-minute Load Average Warning"		=	"9"
+
+"Fifteen-minute Load Average Alarm"		=	"12"
+"Fifteen-minute Load Average Warning"	=	"9"
+
+"Ignore storage table indices{&IgnoreStorageTable}"	=	""
+
+</parameters>
+
+<datasets>
+  $_CPUUtilization, "cpupercentavg", "percent", "true", "Average CPU Percent"
+</datasets>

@@ -1,0 +1,44 @@
+<!-- 
+	KeyServer (com.dartware.keyserver)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+	
+	KeyServer is a registered trademark of Sassafras Software
+	<http://www.sassafras.com>
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"keyserver"
+	human_name		=	"KeyServer"
+	version			= 	"1.5"
+	address_type	= 	"IP"
+	port_number		=	"19283"
+
+	old_protocol	= 	"13"		# Backward compat. with old numbering scheme.
+	old_script		= 	"0"
+	
+	display_name	=	"Servers-Proprietary/KeyServer"
+
+</header>
+
+<description>
+
+\GB\KeyServer Status\P\
+
+This probe tests the operation of \U2\Sassafras Software\p0\'s KeyServer via TCP/IP.  \u2\KeyServer\p0\ is a software license management tool for Windows, Macintosh and thin-client based computers.
+
+This probe sends a proprietary status request to the KeyServer -- a full description is available from \U2\Sassafras Software\p0\. By default, the server accepts UDP requests on port 19283.
+
+\i\KeyServer is a registered trademark of Sassafras Software\p\.
+
+</description>
+
+
+<parameters>
+
+-- No Parameters
+
+</parameters>
+
+

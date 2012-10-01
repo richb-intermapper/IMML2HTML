@@ -1,0 +1,189 @@
+<!--
+	Wireless - smartBridges airClient Nexus
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version Aug 2005 rk
+
+	Tested against: sb3410 airClient Nexus
+-->
+
+<header>
+	"type"			=	"built-in"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.airclientnexus"
+	"human_name"	=	"Wireless - smartBridges airClient Nexus"
+	"display_name" 	=	"Wireless/smartBridges/airClient Nexus"
+	"version"		=	"0.4"
+	"address_type"	=	"IP"
+	"port_number"	=	"161"
+	"equiv_class"	= 	"WRLS"
+	url_hint		=	"http://${ADDRESS}/"
+</header>
+
+<snmp-device-properties>
+interface_visible		=	("$ifDescr" =~ "eth0" or "$ifDescr" =~ "eth1" or "$ifDescr" == "br0")
+</snmp-device-properties>
+
+<description>
+\GB\smartBridges airClient Nexus probe\P\
+
+This probe monitors a \u2=http://www.smartbridges.com\smartBridges\p0\ airClient Nexus device. It retrieves and displays general device information, remote device information, 
+wireless statistics information and bridge information (when the device is operating as a bridge).
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.4 or later. 
+
+</description>
+
+<parameters>
+"RSSI (dBm) low warning" = "-50"
+"RSSI (dBm) too low alarm" = "-90"
+"Tx retries (%) high warning" = "20"
+"Tx retries (%) too high alarm" = "50"
+"Tx failed (%) high warning" = "20"
+"Tx failed (%) too high alarm" = "50"
+"Frame errors (%) high warning" = "20"
+"Frame errors (%) too high alarm" = "50"
+"ACK failures/min high warning" = "10"
+"ACK failures/min too high alarm" = "5"
+"Aborted frames/min high warning" = "10"
+"Aborted frames/min too high alarm" = "5"
+"RTS errors (%) high warning" = "20"
+"RTS errors (%) too high alarm" = "50"
+</parameters>
+
+<snmp-device-variables>
+
+sbRadioMode,		       1.3.6.1.4.1.14882.5.1.18,		TRAPVARIABLE,		 "Radio mode"
+operIPAddress,		       1.3.6.1.4.1.14882.2.1.1,			TRAPVARIABLE-STRING,		 "IP Address"
+operIPMask,		       1.3.6.1.4.1.14882.2.1.2,			TRAPVARIABLE-STRING,		 "IP Mask"
+sbaSSID,		       1.3.6.1.4.1.14882.5.1.3.3,		TRAPVARIABLE-STRING,		 "Device's SSID"
+
+-- this trap actually has the OID 1
+
+clientChanges,		       0.1,					TRAPVARIABLE-STRING,		 "Client disassociates/associated"
+
+-- elapsed time
+prevTime,			$currentTime,				CALCULATION,			"previous time"
+currentTime,			time(),					CALCULATION,			"Current time"
+deltaMins,			((($currentTime-$prevTime) == 0 ) ? 1  : ($currentTime-$prevTime))/60.0,		CALCULATION,			"delta number of minutes"
+
+-- -------------------
+-- wireless statistics 
+-- ------------------- 
+
+-- OID values
+sbaMPDUTxSuccessfulOID,	       1.3.6.1.4.1.14882.5.1.9.1.0,			INTEGER,	 "Successful transmitted unicast/multicast MPDUs"
+sbaMPDUTxOneRetryOID,	       1.3.6.1.4.1.14882.5.1.9.2.0,			INTEGER,         "The number of unicast MPDUs successfully transmitted after one retry"
+sbaMPDUTxMultipleRetriesOID,   1.3.6.1.4.1.14882.5.1.9.3.0,			INTEGER,	 "The number of unicast MPDUs successfully transmitted after two or more retries"
+sbaMPDUTxRetriesOID,	       $sbaMPDUTxOneRetryOID+$sbaMPDUTxMultipleRetriesOID,	CALCULATION,	 "The number of unicast MPDUs successfully transmitted after one or more retries"
+sbaMPDUTxFailedOID,	       1.3.6.1.4.1.14882.5.1.9.4.0,			INTEGER,	 "The number of unicast MPDU for which the maximum retries were exceeded" 
+sbaMPDURxSuccessfulOID,	       1.3.6.1.4.1.14882.5.1.9.5.0,			INTEGER,         "The number of successfully received unicast MPDUs"
+sbaMPDURxDupsOID,	       1.3.6.1.4.1.14882.5.1.9.6.0,			INTEGER,	 "The number of successfully received unicast MPDUs that were a duplicate of earlier frames" 
+sbaRTSFailedOID,	       1.3.6.1.4.1.14882.5.1.9.8.0,			INTEGER,	 "The number of transmitted RTS frames for which no response CTS frame was received"
+sbaRTSSuccessfulOID,	       1.3.6.1.4.1.14882.5.1.9.7.0,			INTEGER,	 "The number of CTS frames received in response to an RTS frame"
+aFrameReceivesOID,	       1.3.6.1.4.1.14882.5.1.9.10.0,			INTEGER,	 "The number of successfully received frames, before any address and type filtering"
+sbaFrameErrorsOID,	       1.3.6.1.4.1.14882.5.1.9.11.0,			INTEGER,	 "FCS Error"
+sbaACKFailedOID,	       1.3.6.1.4.1.14882.5.1.9.9.0,			INTEGER,	 "ACK failed"
+sbaFrameAbortsOID,	       1.3.6.1.4.1.14882.5.1.9.12.0,			INTEGER,	 "Aborted frames"
+sbaFrameAbortsPHYOID,	       1.3.6.1.4.1.14882.5.1.9.13.0,			INTEGER,	 "PHY aborted frames"
+
+-- prev values
+sbaMPDUTxSuccessfulPrev,       $sbaMPDUTxSuccessfulCurrent,			CALCULATION,	 "Successful transmitted unicast/multicast MPDUs"
+sbaMPDUTxRetriesPrev,	       $sbaMPDUTxRetriesCurrent,			CALCULATION,	 "The number of unicast MPDUs successfully transmitted after one or more retries"
+sbaMPDUTxFailedPrev,	       $sbaMPDUTxFailedCurrent,				CALCULATION,	 "The number of unicast MPDU for which the maximum retries were exceeded" 
+sbaMPDURxSuccessfulPrev,       $sbaMPDURxSuccessfulCurrent,			CALCULATION,     "The number of successfully received unicast MPDUs"
+sbaMPDURxDupsPrev,	       $sbaMPDURxDupsCurrent,				CALCULATION,	 "The number of successfully received unicast MPDUs that were a duplicate of earlier frames" 
+sbaRTSFailedPrev,	       $sbaRTSFailedCurrent,				CALCULATION,	 "The number of transmitted RTS frames for which no response CTS frame was received"
+sbaRTSSuccessfulPrev,	       $sbaRTSSuccessfulCurrent,			CALCULATION,	 "The number of CTS frames received in response to an RTS frame"
+aFrameReceivesPrev,	       $aFrameReceivesCurrent,				CALCULATION,	 "The number of successfully received frames, before any address and type filtering"
+sbaFrameErrorsPrev,	       $sbaFrameErrorsCurrent,				CALCULATION,	 "FCS Error"
+sbaACKFailedPrev,	       $sbaACKFailedCurrent,				CALCULATION,	 "ACK failed"
+sbaFrameAbortsPrev,	       $sbaFrameAbortsCurrent,				CALCULATION,	 "Aborted frames"
+sbaFrameAbortsPHYPrev,	       $sbaFrameAbortsPHYCurrent,			CALCULATION,	 "PHY aborted frames"
+
+-- current values
+sbaMPDUTxSuccessfulCurrent,    $sbaMPDUTxSuccessfulOID,				CALCULATION,	 "Successful transmitted unicast/multicast MPDUs"
+sbaMPDUTxRetriesCurrent,       $sbaMPDUTxRetriesOID,				CALCULATION,	 "The number of unicast MPDUs successfully transmitted after one or more retries"
+sbaMPDUTxFailedCurrent,	       $sbaMPDUTxFailedOID,				CALCULATION,	 "The number of unicast MPDU for which the maximum retries were exceeded" 
+sbaMPDURxSuccessfulCurrent,    $sbaMPDURxSuccessfulOID,				CALCULATION,     "The number of successfully received unicast MPDUs"
+sbaMPDURxDupsCurrent,	       $sbaMPDURxDupsOID,				CALCULATION,	 "The number of successfully received unicast MPDUs that were a duplicate of earlier frames" 
+sbaRTSFailedCurrent,	       $sbaRTSFailedOID,				CALCULATION,	 "The number of transmitted RTS frames for which no response CTS frame was received"
+sbaRTSSuccessfulCurrent,       $sbaRTSSuccessfulOID,				CALCULATION,	 "The number of CTS frames received in response to an RTS frame"
+aFrameReceivesCurrent,	       $aFrameReceivesOID,				CALCULATION,	 "The number of successfully received frames, before any address and type filtering"
+sbaFrameErrorsCurrent,	       $sbaFrameErrorsOID,				CALCULATION,	 "FCS Error"
+sbaACKFailedCurrent,	       $sbaACKFailedOID,				CALCULATION,	 "ACK failed"
+sbaFrameAbortsCurrent,	       $sbaFrameAbortsOID,				CALCULATION,	 "Aborted frames"
+sbaFrameAbortsPHYCurrent,      $sbaFrameAbortsPHYOID,				CALCULATION,	 "PHY aborted frames"
+
+-- per minute values
+sbaMPDUTxSuccessfulPerMin,     ($sbaMPDUTxSuccessfulCurrent > $sbaMPDUTxSuccessfulPrev) ? (($sbaMPDUTxSuccessfulCurrent - $sbaMPDUTxSuccessfulPrev)/$deltaMins) : 0, CALCULATION,	 "Successful transmitted unicast/multicast MPDUs"
+sbaMPDUTxRetriesPerMin,	       ($sbaMPDUTxRetriesCurrent > $sbaMPDUTxRetriesPrev)       ? (($sbaMPDUTxRetriesCurrent - $sbaMPDUTxRetriesPrev)/$deltaMins)	: 0, CALCULATION,	 "The number of unicast MPDUs successfully transmitted after one or more retries"
+sbaMPDUTxFailedPerMin,	       ($sbaMPDUTxFailedCurrent > $sbaMPDUTxFailedPrev)		? (($sbaMPDUTxFailedCurrent - $sbaMPDUTxFailedPrev)/$deltaMins) : 0,				CALCULATION,	 "The number of unicast MPDU for which the maximum retries were exceeded" 
+sbaMPDURxSuccessfulPerMin,     ($sbaMPDURxSuccessfulCurrent > $sbaMPDURxSuccessfulPrev) ? (($sbaMPDURxSuccessfulCurrent - $sbaMPDURxSuccessfulPrev)/$deltaMins) : 0,			CALCULATION,     "The number of successfully received unicast MPDUs"
+sbaMPDURxDupsPerMin,	       ($sbaMPDURxDupsCurrent > $sbaMPDURxDupsPrev)		? (($sbaMPDURxDupsCurrent - $sbaMPDURxDupsPrev)/$deltaMins) : 0,					CALCULATION,	 "The number of successfully received unicast MPDUs that were a duplicate of earlier frames" 
+sbaRTSFailedPerMin,	       ($sbaRTSFailedCurrent > $sbaRTSFailedPrev)		? (($sbaRTSFailedCurrent - $sbaRTSFailedPrev)/$deltaMins) : 0,					CALCULATION,	 "The number of transmitted RTS frames for which no response CTS frame was received"
+sbaRTSSuccessfulPerMin,        ($sbaRTSSuccessfulCurrent > $sbaRTSSuccessfulPrev)	? (($sbaRTSSuccessfulCurrent - $sbaRTSSuccessfulPrev)/$deltaMins) : 0,			CALCULATION,	 "The number of CTS frames received in response to an RTS frame"
+aFrameReceivesPerMin,	       ($aFrameReceivesCurrent > $aFrameReceivesPrev)		? (($aFrameReceivesCurrent - $aFrameReceivesPrev)/$deltaMins) : 0,				CALCULATION,	 "The number of successfully received frames, before any address and type filtering"
+sbaFrameErrorsPerMin,	       ($sbaFrameErrorsCurrent > $sbaFrameErrorsPrev)		? (($sbaFrameErrorsCurrent - $sbaFrameErrorsPrev)/$deltaMins) : 0,				CALCULATION,	 "FCS Error"
+sbaACKFailedPerMin,	       ($sbaACKFailedCurrent > $sbaACKFailedPrev)		? (($sbaACKFailedCurrent - $sbaACKFailedPrev)/$deltaMins) : 0,				CALCULATION,	 "ACK failed"
+sbaFrameAbortsPerMin,	       ($sbaFrameAbortsCurrent > $sbaFrameAbortsPrev)		? (($sbaFrameAbortsCurrent - $sbaFrameAbortsPrev)/$deltaMins) : 0,				CALCULATION,	 "Aborted frames"
+sbaFrameAbortsPHYPerMin,       ($sbaFrameAbortsPHYCurrent > $sbaFrameAbortsPHYPrev)	? (($sbaFrameAbortsPHYCurrent - $sbaFrameAbortsPHYPrev)/$deltaMins) : 0,			CALCULATION,	 "PHY aborted frames"
+
+
+-- percentage values
+txRetryPct,		       ($sbaMPDUTxSuccessfulPerMin + $sbaMPDUTxRetriesPerMin  == 0) ? 0 : ($sbaMPDUTxRetriesPerMin * 100.0/ ($sbaMPDUTxSuccessfulPerMin + $sbaMPDUTxRetriesPerMin)), CALCULATION, "Tx retries (%)"
+txFailedPct,		       ($sbaMPDUTxSuccessfulPerMin + $sbaMPDUTxFailedPerMin == 0)   ? 0 : ($sbaMPDUTxFailedPerMin * 100.0/ ($sbaMPDUTxSuccessfulPerMin + $sbaMPDUTxFailedPerMin)),   CALCULATION, "Tx failed (%)"
+rxDuplicatesPct,	       ($sbaMPDURxSuccessfulPerMin + $sbaMPDURxDupsPerMin == 0) ? 0 : ($sbaMPDURxDupsPerMin * 100.0/ ($sbaMPDURxSuccessfulPerMin + $sbaMPDURxDupsPerMin)),	       CALCULATION, "Rx duplicates (%)"
+rtsFailedPct,		       ($sbaRTSSuccessfulPerMin + $sbaRTSFailedPerMin == 0) ? 0 : ($sbaRTSFailedPerMin * 100.0/ ($sbaRTSSuccessfulPerMin + $sbaRTSFailedPerMin)),		       CALCULATION, "RTS failures (%)"
+frameErrPct,		       ($aFrameReceivesPerMin + $sbaFrameErrorsPerMin == 0) ? 0 : ($sbaFrameErrorsPerMin * 100.0/ ($aFrameReceivesPerMin + $sbaFrameErrorsPerMin)),		       CALCULATION, "Frame errors (%)"
+
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+alarm: ${txRetryPct} > ${Tx retries (%) too high alarm} "Tx retry pct too high"
+alarm: ${txFailedPct} > ${Tx failed (%) too high alarm} "Tx failure pct too high"
+alarm: ${frameErrPct} > ${Frame errors (%) too high alarm} "Frame error pct too high"
+alarm: ${sbaACKFailedPerMin} > ${ACK failures/min too high alarm} "Too many ACK failures"
+alarm: ${sbaFrameAbortsPerMin} > ${Aborted frames/min too high alarm} "Too many aborted frames"
+alarm: ${sbaFrameAbortsPHYPerMin} > ${Aborted frames/min too high alarm} "Too many aborted PHY frames"
+alarm: ${rtsFailedPct} > ${RTS errors (%) too high alarm} "RTS failure pct too high"
+
+warning: ${txRetryPct} > ${Tx retries (%) high warning} "Tx retry pct high"
+warning: ${txFailedPct} > ${Tx failed (%) high warning} "Tx failure pct high"
+warning: ${frameErrPct} > ${Frame errors (%) high warning} "Frame error pct high"
+warning: ${sbaACKFailedPerMin} > ${ACK failures/min high warning} "Many ACK failures"
+warning: ${sbaFrameAbortsPerMin} > ${Aborted frames/min high warning} "Many aborted frames"
+warning: ${sbaFrameAbortsPHYPerMin} > ${Aborted frames/min high warning} "Many aborted PHY frames"
+warning: ${rtsFailedPct} > ${RTS errors (%) high warning} "RTS failure pct high"
+</snmp-device-thresholds>
+
+<snmp-device-alarmpoints> 
+
+_RemoteDevice: major ("$clientChanges" !=  "") "$clientChanges"
+_RemoteDevice: clear ("$clientChanges" ==  "") "Remote Device status is reset"
+
+_RadioModeChanged: major ("$sbRadioMode" != "") "Device's RadioMode changed to $sbRadioMode"
+_RadioModeChanged: clear ("$sbRadioMode" == "") "Device's RadioMode is reset"
+
+_IPAddressChanged: major ("$operIPAddress" !=  "") "Device's IP Address changed to $operIPAddress (previous SSID: $prevIPAddress)"
+_IPAddressChanged: clear ("$$operIPAddress" ==  "") "Device's IP Address is reset to initial IP Address"
+
+_IPMaskChanged: major ("$operIPMask" !=  "") "Device's IP Mask changed to $operIPMask"
+_IPMaskChanged: clear ("$operIPMask" ==  "") "Device's IP Mask is reset to initial IP Mask"
+
+</snmp-device-alarmpoints> 
+
+<snmp-device-display>
+\b5\Wireless Statistics\p0m\
+\4\Tx success/retry/failed: \0\${chartable: ###.##: $sbaMPDUTxSuccessfulPerMin}/${chartable: ###.##:$sbaMPDUTxRetriesPerMin}/${chartable: ###.##:$sbaMPDUTxFailedPerMin} \3\MDUs/min\4\ (${chartable: ###.## : $txRetryPct}% \4\retries, ${chartable: ###.## : $txFailedPct}% \4\failed)\p0m\
+\4\  Rx success/duplicates: \0\${chartable: ###.##:$sbaMPDURxSuccessfulPerMin}/${chartable: ###.##:$sbaMPDURxDupsPerMin} \3\MDUs/min \4\(${chartable: ###.## : $rxDuplicatesPct}\4\% duplicates)\p0m\
+\4\ RTS failed/RTS success: \0\${chartable: ###.##:$sbaRTSFailedPerMin}/${chartable: ###.##:$sbaRTSSuccessfulPerMin}\3\/min \4\(${chartable: ###.## : $rtsFailedPct}\4\% failures)\p0m\
+\4\    Rx frames/FCS error: \0\${chartable: ###.##:$aFrameReceivesPerMin}/${chartable: ###.##:$sbaFrameErrorsPerMin} \3\frames/min (${chartable: ###.## : $frameErrPct}\4\% frame errors)\p0m\
+\4\             ACK failed: \0\${chartable: ###.##:$sbaACKFailedPerMin}\3\/min 
+\4\    Aborted/PHY aborted: \0\${chartable: ###.##:$sbaFrameAbortsPerMin}/${chartable: ###.##:$sbaFrameAbortsPHYPerMin} \3\frames/min 
+$alarmpointlist
+</snmp-device-display>
+

@@ -1,0 +1,132 @@
+ <!--
+	Wireless - Tranzeo (PXP) (com.dartware.wrls.tranzeopxp)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 27 February 2004 ics,
+	Latest revision 9 July 2004 by ics.
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.tranzeopxp"
+	"human_name"	=	"Wireless - Tranzeo (PXP)"
+	"display_name" 	=	"Wireless/Tranzeo/Tranzeo (PXP)"
+	"version"		=	"1.2"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"equiv_class"	= 	"WRLS"
+</header>
+
+<description>
+\GB\Tranzeo PXP (Bridge) Probe\P\
+
+This probe is meant to probe a \u2=http://www.tranzeo.com\Tranzeo\p0\ 1000, 2000, 3000, 400, and 4000-series all in one device used as a PXP (bridge), or as an SAI (station) in router mode.
+
+The probe retrieves and displays a number of variables for basic, ethernet, wireless, and bridge information. It will go into alarm and warning states based on user-defined parameters for Received Signal level, Expected versus actual Station Channel, and incoming traffic on the radio interface, as well as into alarm when the wireless or ethernet links are reported down.
+
+Supported Models: TR-410, TR-420, TR-430, TR-440, TR-450, TR-4115, TR-4215, TR-4315, TR-4415, TR-4118, TR-4218, TR-4318, TR-4418, TR-4500, and TR-4519. This probe will also support TR-1000, TR-1100, TR-1200, TR-1300, TR-2015, TR-2115, TR-2215, TR-2315, TR-3015, TR-3115, TR-3215, TR-3315, TR-2018, TR-2118, TR-2218, and TR-2318 model radios with firmware version 3.4.31.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+	"Received Signal Level too low alarm"		=	"0"
+	"Received Signal Level low warning"		=	"0"
+	"Expected Channel"				=	"0"
+	"No Buffer Packets too high alarm"		=	"1000"
+	"No Buffer Packets high warning"		=	"1"
+	"High Traffic Bytes alarm"			=	"100000000"
+	"High Traffic Bytes warning"			=	"90000000"
+</parameters>
+
+<snmp-device-variables>
+	ifInOctets,		1.3.6.1.2.1.2.2.1.10.2 , 		DEFAULT, 	"RF In Octets"
+	apname,			1.3.6.1.4.1.1567.50.1.1.2.5.2.0 , 	DEFAULT, 	"Name"
+	major,			1.3.6.1.4.1.1567.50.1.1.3.1.1.0 , 	DEFAULT, 	"Firmware Major Rev"
+	middle,			1.3.6.1.4.1.1567.50.1.1.3.1.2.0 , 	DEFAULT, 	"Firmware Middle Rev"
+	minor,			1.3.6.1.4.1.1567.50.1.1.3.1.3.0 , 	DEFAULT, 	"Firmware Minor Rev"
+	ethInDiscards, 		1.3.6.1.4.1.1567.50.1.1.3.4.7.0 , 	PER-SECOND, 	"Ethernet In Discards"
+	ethOutDiscards, 	1.3.6.1.4.1.1567.50.1.1.3.4.8.0 , 	PER-SECOND, 	"Ethernet Out Discards"
+	ethRXErr, 		1.3.6.1.4.1.1567.50.1.1.3.4.9.0 , 	PER-SECOND, 	"Ethernet Rx Errors"
+	ethTXErr, 		1.3.6.1.4.1.1567.50.1.1.3.4.10.0 , 	PER-SECOND, 	"Ethernet Tx Errors"
+	ethInOctet, 		1.3.6.1.4.1.1567.50.1.1.3.4.3.0 , 	PER-SECOND, 	"Ethernet In Octets"
+	ethOutOctet, 		1.3.6.1.4.1.1567.50.1.1.3.4.4.0 , 	PER-SECOND, 	"Ethernet Out Octets"
+	ethLink, 		1.3.6.1.4.1.1567.50.1.1.3.4.19.0 , 	DEFAULT, 	"Ethernet Link Status"
+	wlaRxDiscards, 		1.3.6.1.4.1.1567.50.1.1.3.5.11.0 , 	PER-SECOND, 	"RF Rx Discards"
+	wlaTxErr, 		1.3.6.1.4.1.1567.50.1.1.3.5.13.0 , 	PER-SECOND, 	"RF Tx Errors"
+	wlaRxUniOctet, 		1.3.6.1.4.1.1567.50.1.1.3.5.5.0 , 	PER-SECOND, 	"RF Rx Unicast Octets"
+	wlaTxUniOctet, 		1.3.6.1.4.1.1567.50.1.1.3.5.6.0 , 	PER-SECOND, 	"RF Tx Unicast Octets"
+	wlaRxNuOctet, 		1.3.6.1.4.1.1567.50.1.1.3.5.9.0 , 	PER-SECOND, 	"RF Rx Non-unicast Octets"
+	wlaTxNuOctet, 		1.3.6.1.4.1.1567.50.1.1.3.5.10.0 , 	PER-SECOND, 	"RF Tx Non-unicast Octets"
+	wlaRxNoBuffer,	 	1.3.6.1.4.1.1567.50.1.1.3.5.20.0 , 	PER-SECOND, 	"Non-buffered RF Packets Rx"
+	brgEthInDiscards, 	1.3.6.1.4.1.1567.50.1.1.3.2.5.0 , 	PER-SECOND, 	"Bridge Ethernet In Discards"
+	brgEthOutDiscards, 	1.3.6.1.4.1.1567.50.1.1.3.2.6.0 , 	PER-SECOND, 	"Bridge Ethernet Out Discards"
+	brgEthInOctet, 		1.3.6.1.4.1.1567.50.1.1.3.2.3.0 , 	PER-SECOND, 	"Bridge Ethernet In Octets"
+	brgEthOutOctet, 	1.3.6.1.4.1.1567.50.1.1.3.2.4.0 , 	PER-SECOND, 	"Bridge Ethernet Out Octets"
+	brgwlaInDiscards,	1.3.6.1.4.1.1567.50.1.1.3.2.11.0 , 	PER-SECOND, 	"Bridge Wireless In Discards"
+	brgwlaOutDiscards,	1.3.6.1.4.1.1567.50.1.1.3.2.12.0 , 	PER-SECOND, 	"Bridge Wireless Out Discards"
+	brgwlaInOctet,	 	1.3.6.1.4.1.1567.50.1.1.3.2.9.0 , 	PER-SECOND, 	"Bridge Wireless In Octets"
+	brgwlaOutOctet,	 	1.3.6.1.4.1.1567.50.1.1.3.2.10.0 , 	PER-SECOND, 	"Bridge Wireless Out Octets"
+	channel,	 	1.3.6.1.4.1.1567.50.1.1.2.1.2.1.2.1 ,	DEFAULT, 	"Current Channel"
+	statxrate,	 	1.3.6.1.4.1.1567.50.1.1.2.1.2.1.4.1 ,	DEFAULT, 	"Transmission Rate"
+	wlaLastRxSignal, 	1.3.6.1.4.1.1567.50.1.1.3.5.30.0 , 	DEFAULT, 	"Last Rx Signal Level"
+
+  -- Non-polled values:
+	realChannel,		(${channel}+1) , 			CALCULATION,	"Channel Number"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm:		$ethLink = 0 							"Ethernet Link Down"
+	alarm:		$wlaLastRxSignal < ${Received Signal Level too low alarm} 	"Received Signal Level too low"
+	alarm:		$realChannel <> ${Expected Channel}			"Station Channel unexpected"
+	alarm:		$wlaRxNoBuffer >= ${No Buffer Packets too high alarm}		"High No Buffer Errors Radio Overloaded"
+	alarm:		$ifInOctets > ${High Traffic Bytes alarm}	 		"Traffic Too High"
+	warning:	$ifInOctets > ${High Traffic Bytes warning} 			"Traffic High"	
+	warning:	$wlaRxNoBuffer >= ${No Buffer Packets high warning}		"No Buffer Errors Radio Overloaded"
+	warning:	$wlaLastRxSignal < ${Received Signal Level low warning} 	"Received Signal Level low"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Tranzeo PXP Information\0P\
+    \4\Firmware Version:\0\ $major.$middle.$minor
+
+\B5\Ethernet Traffic\0P\
+    \4\              In:\0\ $ethInOctet \3IG\Bytes per sec.\P0M\
+    \4\             Out:\0\ $ethOutOctet \3IG\Bytes per sec.\P0M\
+    \4\     In Discards:\0\ $ethInDiscards \3IG\Packets per sec.\P0M\
+    \4\    Out Discards:\0\ $ethOutDiscards \3IG\Packets per sec.\P0M\
+    \4\       In Errors:\0\ $ethRXErr \3IG\Packets per sec.\P0M\
+    \4\      Out Errors:\0\ $ethTXErr \3IG\Packets per sec.\P0M\
+    \4\     Link Status:\0\    ${eval:$ethLink ? "UP" : "DOWN"}
+
+\B5\Wireless Traffic\0P\
+    \4\      Unicast In:\0\ $wlaRxUniOctet \3IG\Bytes per sec.\P0M\
+    \4\  Non-Unicast In:\0\ $wlaRxNuOctet \3IG\Bytes per sec.\P0M\
+    \4\     Unicast Out:\0\ $wlaTxUniOctet \3IG\Bytes per sec.\P0M\
+    \4\ Non-Unicast Out:\0\ $wlaTxNuOctet \3IG\Bytes per sec.\P0M\
+    \4\     In Discards:\0\ $wlaRxDiscards \3IG\Packets per sec.\P0M\
+    \4\      Out Errors:\0\ $wlaTxErr \3IG\Packets per sec.\P0M\
+
+\B5\Bridge Traffic\0P\
+    \4\ Eth In Discards:\0\ $brgEthInDiscards \3IG\Packets per sec.\P0M\
+    \4\Eth Out Discards:\0\ $brgEthOutDiscards \3IG\Packets per sec.\P0M\
+    \4\     Ethernet In:\0\ $brgEthInOctet \3IG\Bytes per sec.\P0M\
+    \4\    Ethernet Out:\0\ $brgEthOutOctet \3IG\Bytes per sec.\P0M\
+    \4\  RF In Discards:\0\ $brgwlaInDiscards \3IG\Packets per sec.\P0M\
+    \4\ RF Out Discards:\0\ $brgwlaOutDiscards \3IG\Packets per sec.\P0M\
+    \4\     Wireless In:\0\ $brgwlaInOctet \3IG\Bytes per sec.\P0M\
+    \4\    Wireless Out:\0\ $brgwlaOutOctet \3IG\Bytes per sec.\P0M\
+
+\B5\Wireless Information\0P\
+    \4\ Current Channel:\0\      $realChannel \3IG\(1-14)\P0M\
+    \4\   Transmit Rate:\0\      ${eval: $statxrate == 1 ? "Fixed 1MB/s" : $statxrate == 2 ? "Fixed 2MB/s" : $statxrate == 3 ? "Auto-select 1M or 2M" : $statxrate == 4 ? "Fixed 5.5 MB/s" : $statxrate == 8 ? "Fixed 11MB/s" : $statxrate == 15 ? "Fully Auto" : $statxrate}
+    \4\ Rx Signal Level:\0\      $wlaLastRxSignal
+</snmp-device-display>
+
+<!-- Removed display
+    \4\     Link Status:\0\      ${eval: $wlaStaLinkStatus == 0 ? "N/A" : $wlaStaLinkStatus == 1 ? "Down" : $wlaStaLinkStatus == 2 ? "Searching" : $wlaStaLinkStatus == 3 ? "Connection" : $wlaStaLinkStatus == 4 ? "AP Out of Range" : $wlaStaLinkStatus == 5 ? "Unknown Status" : $wlaStaLinkStatus}
+-->

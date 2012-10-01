@@ -1,0 +1,133 @@
+<!-- 
+	HTTP (Post) (com.dartware.tcp.http.cgi.post)
+	Copyright © 2000-2011 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.http.cgi.post"
+	human_name		=	"HTTP (Post)"
+	version			= 	"2.7"
+	address_type	= 	"IP"
+	port_number		=	"80"
+	
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8121"
+
+	display_name	=	"Servers-Standard/HTTP & HTTPS/HTTP (Post)"
+	url_hint		=	"http://${ADDRESS}:${PORT}/"
+</header>
+
+<description>
+
+  \GB\Hypertext Transfer Protocol (HTTP) - Post Form Results\P\
+
+  The protocol used to transfer web pages on the World Wide Web, defined in \U2=http://www.ietf.org/rfc/rfc2068.txt\RFC 2068\P0\ and \U2=http://www.ietf.org/rfc/rfc1945.txt\RFC 1945\P0\.  The default TCP port number for HTTP connections is port 80.
+
+  This TCP probe lets you post form results to a specific web CGI.
+
+  \i\Host Name\p\ is the domain name of the web server (e.g. "www.intermapper.com"). This can be derived from the host name part of the URL that you want to test.
+
+  \i\URL Path\p\ is the full path to the desired CGI on the web server (e.g. "/index.cgi"). The first character must be a '/'.
+
+  \i\Form Data\p\ is the encoded data sent in the body of the POST message.
+
+  \i\String to verify\p\ is a string to verify in the data returned by the HTTP server.  For example, if you post form data that is designed to generate an error response, you might search for "sorry" or "could not be processed" to verify that the CGI is properly rejecting the data. If this string is not found, the device will go into alarm.
+
+</description>
+
+<parameters>
+
+"Host Name"				= 	""
+"URL Path"				=	"/update.cgi"
+"Form Data"				=	"username=Tom&password=terriFic"
+"String to verify"		=	"update OK"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+SEND "POST ${URL Path} HTTP/1.1\r\n"
+CHCK "${Host Name}" else goto #+2
+SEND "Host: ${Host Name}\r\n"
+SEND "Content-type: application/x-www-form-urlencoded\r\n"
+SEND "Content-length: ${_LENGTH:${Form Data}}\r\n"
+SEND "Connection: close\r\n"
+SEND "\r\n"
+SEND "${Form Data}"
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @UNAVAIL_GET_RESPONSE
+EXPT "^$"r
+LINE OFF
+DISC if disconnected goto @NO_MATCH
+EXPT "${String to verify}"i else goto @NO_MATCH
+DONE OKAY
+
+@IDLE:
+DONE DOWN "[HTTP (Post)] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[HTTP (Post)] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@NO_MATCH:
+DONE WARN "[HTTP (Post)] \"${String to verify}\" not found in returned HTTP data."
+
+@UNAVAIL_GET_RESPONSE:
+MTCH m"50[0-9]" else goto @BAD_GET_RESPONSE
+DONE DOWN "[HTTP (Post)] ${_LINE:50} (${URL Path})"
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "[HTTP (Post)] 201 Created (${URL Path})"
+MTCH "202" ELSE #+2
+DONE WARN "[HTTP (Post)] 202 Accepted (${URL Path})"
+MTCH "204" ELSE #+2
+DONE WARN "[HTTP (Post)] 204 No Content (${URL Path})"
+MTCH "301" ELSE #+2
+DONE WARN "[HTTP (Post)] 301 Moved Permanently (${URL Path})"
+MTCH "302" ELSE #+2
+DONE WARN "[HTTP (Post)] 302 Moved Temporarily (${URL Path})"
+MTCH "303" ELSE #+2
+DONE WARN "[HTTP (Post)] 303 See Other (${URL Path})"
+MTCH "304" ELSE #+2
+DONE WARN "[HTTP (Post)] 304 Not Modified (${URL Path})"
+MTCH "400" ELSE #+2
+DONE WARN "[HTTP (Post)] 400 Bad Request (${URL Path})"
+MTCH "401" ELSE #+2
+DONE WARN "[HTTP (Post)] 401 Unauthorized (${URL Path})"
+MTCH "403" ELSE #+2
+DONE WARN "[HTTP (Post)] 403 Forbidden (${URL Path})"
+MTCH "404" ELSE #+2
+DONE WARN "[HTTP (Post)] 404 Not Found (${URL Path})"
+MTCH "500" ELSE #+2
+DONE ALRM "[HTTP (Post)] 500 Internal Server Error (${URL Path})"
+MTCH "501" ELSE #+2
+DONE ALRM "[HTTP (Post)] 501 Not Implemented (${URL Path})"
+MTCH "502" ELSE #+2
+DONE ALRM "[HTTP (Post)] 502 Bad Gateway (${URL Path})"
+MTCH "503" ELSE #+2
+DONE ALRM "[HTTP (Post)] 503 Service Unavailable (${URL Path})"
+DONE ALRM "[HTTP (Post)] Unknown Error Code ${_LINE:4} (${URL Path})"
+
+@DISCONNECT:
+DONE DOWN "[HTTP (Post)] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+</script>
+
+<script-output>
+
+\B5\HTTP Information\0P\
+  \4\Time to establish connection:\0\ ${_connect} msecs
+  \4\Time spent connected to host:\0\ ${_active} msecs
+
+</script-output>
+
+<datasets>
+  $_connect,	'conntime',   "msec",   "true",   "Time to establish connection"
+  $_active,   'connactive', "msec",   "true",   "Time spent connected to host"
+</datasets>

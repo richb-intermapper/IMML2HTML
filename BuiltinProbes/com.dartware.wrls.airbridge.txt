@@ -1,0 +1,192 @@
+<!--
+	Wireless - smartBridges airBridge
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 02 November 2004 rk
+        Update 10/7/2005 cap the RSSI value from calculation to max at -10. If RSSIPct is 100 and the RSSIdbm is > -10dBm use -10dBm as the displayed RSSI value instead. This will match the value from smartBridges simpleMonitor and reduce confusions.
+
+	Supports all airBridge models: Indoor, Outdoor, Total.
+	Tested against: Firmware version  0.01.11
+
+        
+-->
+
+<header>
+	"type"				=	"custom-snmp"
+	"package"			=	"com.dartware"
+	"probe_name"		=	"wrls.airbridge"
+	"human_name"		=	"Wireless - smartBridges airBridge"
+	"display_name" 		=	"Wireless/smartBridges/airBridge"
+	"version"			=	"1.4"
+	"address_type"		=	"IP"
+	"port_number"		=	"161"
+	"equiv_class"		= 	"WRLS"
+	"FLAGS"             =   "NOLINKS"
+</header>
+
+<snmp-device-properties>
+nomib2="true"
+pdutype="get-request"
+</snmp-device-properties>
+
+<description>
+\GB\smartBridges airBridge\P\
+
+This probe monitors a \u2=http://www.smartbridges.com\smartBridges\p0\ airBridge device. It retrieves and displays a number of traffic (bytes received/transmitted) and physical variables (name, MAC address). 
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.3 or later. 
+
+Please install InterMapper on a machine where you don't plan to run smartBridges simpleMonitor. To be able to run both InterMapper and smartBridges' simpleMonitor on the same machine, you will need to disable trap processing in InterMapper.
+
+</description>
+
+<parameters>
+"RSSI % low warning" = "50"
+"RSSI % too low alarm" = "20"
+"Too many failed packets/sec" = "100"
+"Too many retry packets/sec" = "100"
+"Link to Device Management Tool" = ""
+</parameters>
+
+<snmp-device-variables>
+
+PrevTime,  $CurrentTime, CALCULATION, "Prev time"
+PrevEthTx, $EthTx, CALCULATION, "Prev EthTx"
+PrevEthRx, $EthRx, CALCULATION, "Prev EthRx"
+PrevWTx, $WTx, CALCULATION, "Prev WTx"
+PrevWRx, $WRx, CALCULATION, "Prev WRx"
+PrevWFailed, $WFailed, CALCULATION, "Prev WFailed"
+PrevWRetry, $WRetry, CALCULATION, "Prev WRetry"
+
+CurrentTime, time(), CALCULATION, "Current time"
+
+<!-- EthTxStatistics -->
+EthTxStr, 1.3.6.1.4.1.410.1.1.7.2.0, STRING, "EthTxStr"
+
+<!-- WirelessStatistics -->
+WStatStr, 1.3.6.1.4.1.410.1.2.3.1.0, STRING, "WStatStr"
+
+<!-- sysDeviceInfo -->
+DeviceInfoStr, 1.3.6.1.4.1.410.1.1.1.5.0, STRING, "Device info str"
+
+<!-- EthRxStatistics -->
+EthRxStr, 1.3.6.1.4.1.410.1.1.7.1.0, STRING, "EthRxStr"
+
+<!-- operWirelessBridgeName -->
+bridgeName, 1.3.6.1.4.1.410.1.2.1.10.0, STRING, "Bridge Name str"
+
+<!-- NetworkSettings -->
+NetSettings, 1.3.6.1.4.1.410.1.2.8.1.0, STRING, "Network settings"
+
+<!-- sysDescr -->
+sysDescr, 1.3.6.1.4.1.410.1.1.1.1.0, STRING, "System description"
+
+<!-- firmware version -->
+VersionStr, "$sysDescr" =~ ".+Ver\. ([0-9\.A-Za-z]+).+"; "${1}", CALCULATION, "Version"
+
+<!-- operEthernetAddress AP SSID/MAC addr -->
+SSID, 1.3.6.1.4.1.410.1.1.2.3.0, STRING, "SSID (MAC addr)"
+
+<!-- Remove traling zeros from the name -->
+
+shortBridgeName, "$bridgeName" =~ "([^\\x0]*)";"${1}", CALCULATION, "Bridge Name"
+
+<!-- Product name -->
+productName, substr("$DeviceInfoStr", 56, 32) =~ "([^\\x0]*)";"${1}", CALCULATION, "Product name"
+
+<!-- min is being used to convert string to int -->
+
+EthRx, min(unpack(substr("$EthRxStr", 0, 4), "<L")), CALCULATION, "Eth Rx Byt"
+EthTx, min(unpack(substr("$EthTxStr", 0, 4), "<L")), CALCULATION, "Eth Tx Bytes"
+
+UWTx, min(unpack(substr("$WStatStr", 0, 4), "<L")), CALCULATION, "Wireless Unicast Tx Packets"
+BWTx, min(unpack(substr("$WStatStr", 4, 4), "<L")), CALCULATION, "Wireless Broadcast Tx Packets"
+MWTx, min(unpack(substr("$WStatStr", 8, 4), "<L")), CALCULATION, "Wireless Multicast Tx Packets"
+WTx, $UWTx + $BWTx + $MWTx, CALCULATION, "Wireless Tx Packets"
+
+UWRx, min(unpack(substr("$WStatStr", 28, 4), "<L")), CALCULATION, "Wireless Unicast Rx Packets"
+BWRx, min(unpack(substr("$WStatStr", 32, 4), "<L")), CALCULATION, "Wireless Broadcast Rx Packets"
+MWRx, min(unpack(substr("$WStatStr", 36, 4), "<L")), CALCULATION, "Wireless Multicast Rx Packets"
+
+WRx, $UWRx + $BWRx + $MWRx, CALCULATION, "Wireless Rx Packets"
+
+WFailed, min(unpack(substr("$WStatStr", 72, 4), "<L")), CALCULATION, "Failed wireless packets"
+WRetry, min(unpack(substr("$WStatStr", 64, 4), "<L")), CALCULATION, "Retry wireless packets"
+
+WTotal, $WTx + $WRx, CALCULATION, "Total wireless Tx/Rx bytes"
+WPctU, ($WTotal > 0) ? (($UWRx + $UWTx) / $WTotal * 100) : "N/A", CALCULATION, "Pct wireless unicast traffic"
+WPctM, ($WTotal > 0) ? (($MWRx + $MWTx) / $WTotal * 100) : "N/A", CALCULATION, "Pct wireless multicast traffic"
+WPctB, ($WTotal > 0) ? (($BWRx + $BWTx) / $WTotal * 100): "N/A", CALCULATION, "Pct wireless broadcast traffic"
+
+MacAddr, sprintf("%a", substr("$DeviceInfoStr", 4, 6)), CALCULATION, "Mac Addr"
+
+ESSIDLen, unpack(substr("$NetSettings", 52, 1), "C"), CALCULATION, "ESSID len"
+ESSID, substr("$NetSettings", 20, $ESSIDLen), CALCULATION, "ESSID"
+
+<!-- link quality only make sense when the bridge is associated with an AP, its values are between [0-40] -->
+LinkQuality, ($ESSIDLen > 0) ? unpack(substr("$NetSettings", 14, 1), "C") : 0, CALCULATION, "Link quality"
+LinkQualityPct, max(0.0, 40.0-$LinkQuality)*100/40.0, CALCULATION, "Link Quality pct"
+
+<!-- RSSI calc -->
+RSSI, ($ESSIDLen > 0) ? unpack(substr("$NetSettings", 10, 1), "C") : 0, CALCULATION, "RSSI"
+RSSIPct, ($RSSI > 40) ? 100 : max($RSSI, 0)/40.0 * 100.0, CALCULATION, "RSSI pct" 
+RSSIdBm, ($ESSIDLen > 0) ? (85.0/40.0*$RSSI-95) : 0, CALCULATION, "RSSI dBm actual calculation" 
+RSSIdBmDisplay, ($RSSIdBm > -10 && $RSSIPct == 100) ? -10 : $RSSIdBm, CALCULATION, "RSSI dBm"
+Channel, unpack(substr("$NetSettings", 11, 1), "C"), CALCULATION, "Channel"
+
+<!-- BSSID -->
+Bssid, sprintf("%a", substr("$NetSettings", 2, 6)), CALCULATION, "BSSID"
+
+<!-- these statistics seem to be reset every now and then, use 0 as previous total if it has just been reset, we will
+end up having a little bit low statistic though -->
+
+EthRxRate, (($PrevEthRx <= $EthRx) ? ($EthRx - $PrevEthRx) : $EthRx)/($CurrentTime - $PrevTime), CALCULATION, "Bytes/sec received via eth"
+EthTxRate, (($PrevEthTx <= $EthTx) ? ($EthTx - $PrevEthTx) : $EthTx) /($CurrentTime - $PrevTime), CALCULATION, "Bytes/sec transmitted via eth"
+EthRate, $EthTxRate + $EthRxRate, CALCULATION, "Bytes/sec total eth"
+
+WRxRate, (($PrevWRx <= $WRx) ? ($WRx - $PrevWRx) : $WRx)/($CurrentTime - $PrevTime), CALCULATION, "Packets/sec received via wireless"
+WTxRate, (($PrevWTx <= $WTx) ? ($WTx - $PrevWTx) : $WTx) /($CurrentTime - $PrevTime), CALCULATION, "Packets/sec transmitted via wireless"
+WRate, $WRxRate + $WTxRate, CALCULATION, "Packets/sec total wireless"
+
+WFailedRate, (($PrevWFailed <= $WFailed) ? ($WFailed - $PrevWFailed) : $WFailed)/($CurrentTime - $PrevTime), CALCULATION, "Failed Packets/sec"
+WRetryRate, (($PrevWRetry <= $WRetry) ? ($WRetry - $PrevWRetry) : $WRetry)/($CurrentTime - $PrevTime), CALCULATION, "Retry Packets/sec"
+
+<!--
+LQraw, unpack(substr("$NetSettings", 14, 1), "C"), CALCULATION, "link quality raw"
+rawnetsettings, sprintf("%a", "$NetSettings"), CALCULATION, "raw netsettings"
+-->
+
+<!-- Device management tool -->
+ToolLink, strlen("${Link to Device Management Tool}") ? sprintf("\\P0\\(\\u2=%s\\manage\\P0\\)", "${Link to Device Management Tool}") : " ", CALCULATION, "Device management tool link"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+alarm: ${RSSIPct} < ${RSSI % too low alarm} "RSSI too low"
+alarm: ${WRetryRate} >= ${Too many retry packets/sec} "Too many retry packets transmitted/sec"
+alarm: ${WFailedRate} >= ${Too many failed packets/sec} "Too many failed packets received/sec"
+warning: ${RSSIPct} < ${RSSI % low warning} "RSSI low"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\${productName} Information $ToolLink\0P\
+\4\            Station name:\0\ ${shortBridgeName}\POM\
+\4\        Firmware Version:\0\ ${VersionStr}\POM\
+\4\        MAC Address/SSID:\0\ $MacAddr \POM\
+\4\        AP's BSSID/ESSID:\0\ ${EVAL: ($ESSIDLen > 0) ? sprintf("%s/%s", "$Bssid", "$ESSID") : "Not associated with an AP"}\POM\
+\4\                 Channel:\0\ ${Channel}\POM\
+\4\       Link quality/RSSI:\0\ ${LinkQualityPct} % / ${chartable:-100:+0:#:$RSSIdBmDisplay} dBm (${RSSIPct} %)\POM\
+\4\                Ethernet:\0\ $EthRate total ($EthTxRate Tx $EthRxRate Rx) bytes/sec \POM\
+\4\                Wireless:\0\ ${WRate} total ($WTxRate Tx $WRxRate Rx) packets/sec \POM\
+\4\                         \0\ ${WRetryRate} Tx retry ${WFailedRate} Rx failed packets/sec \POM\
+\4\  Total wireless traffic:\0\ ${WPctU}% Unicast ${WPctM}% Multicast ${WPctB}% Broadcast\POM\
+<!--
+\4\   Link quality raw data:\0\ ${LQraw}
+\4\   Network settings data:\0\ ${rawnetsettings}
+\4\           Eth               :\0\ Rx ${EthRx} Tx ${EthTx} \P0M\
+\4\           Wireless Received:\0\ U ${UWRx} M ${MWRx} B ${BWRx} \P0M\
+\4\           Wireless Trans    :\0\ U ${UWTx} M ${MWTx} B ${BWTx} \P0M\
+\4\           Wireless Err      :\0\ F ${WFailed} R ${WRetry}  \P0M\ -->
+</snmp-device-display>

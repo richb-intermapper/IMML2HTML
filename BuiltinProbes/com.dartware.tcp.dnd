@@ -1,0 +1,72 @@
+<!-- 
+	DND Protocol (com.dartware.tcp.dnd)
+	Copyright © 2001 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.dnd"
+	human_name		=	"DND Protocol"
+	version			= 	"1.6"
+	address_type	= 	"IP"
+	port_number		=	"902"
+	display_name	=	"Servers-Proprietary/DND Protocol"
+</header>
+
+<description>
+
+\GB\DND Protocol\P\
+
+The protocol used to lookup directory entries and validation information in a DND server. The \u2\DND\p0\ is a centralized authentication/directory service developed at Dartmouth College. The default TCP port number for DND connections is port 902.
+
+\i\Name\p\ is the name to look up in the DND.
+
+</description>
+
+<parameters>
+
+"Name"		=	"Tom Terrific"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+MTCH "220" else goto @UNEXPECTED_GREETING
+EXPT "220 " else goto @DISCONNECT
+
+SEND "LOOKUP ${Name},EMAIL\r\n"
+MTCH m"101 #+ 1" else goto @UNEXPECTED_LOOKUP_RESULT
+NEXT
+SKIP m"110 .+" else goto @DISCONNECT
+MTCH m"20[01]" else goto @UNEXPECTED_LOOKUP_RESULT
+
+SEND "QUIT\r\n"
+MTCH "200" #+2
+EXPT "200 " #+1
+DONE OKAY
+
+
+@UNEXPECTED_GREETING:
+STAT DOWN "[DND] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+SEND "QUIT\r\n"
+MTCH "200" #+2
+EXPT "200 " #+1
+EXIT
+
+@UNEXPECTED_LOOKUP_RESULT:
+STAT ALRM "[DND] Unexpected response to LOOKUP command. (${_LINE:50})"
+SEND "QUIT\r\n"
+MTCH "200" #+2
+EXPT "200 " #+1
+EXIT
+
+@IDLE:
+DONE DOWN "[DND] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@DISCONNECT:
+DONE DOWN "[DND] Connection disconnected while expecting \"${_STRINGTOMATCH}\"."
+
+</script>

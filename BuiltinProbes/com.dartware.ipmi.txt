@@ -1,0 +1,41 @@
+<!-- 
+	IPMI (com.dartware.ipmi)
+	Copyright © 2007-2009 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"ipmi"
+	human_name		=	"IPMI v2.0"
+	version			= 	"1.1"
+	address_type	= 	"IP"
+	port_number		=	"623"
+	display_name	=	"Servers-Standard/IPMI v2.0"
+
+</header>
+
+<description>
+\GB\Intelligent Platform Management Interface (IPMI 2.0)\P\
+
+This probe implements version 2.0 of the Intelligent Platform Management Interface (IPMI) over a LAN. It sends UDP-based RMCP+ packets to a Baseboard Management Controller (BMC) located within a server or workstation. The BMC is hardware which permits network-based management of the computer even when it is turned off, i.e. "lights-out management".
+
+\i\User\p\ is an administrator-level user name to the BMC. This parameter is required.
+
+\i\Password\p\ is the password for the desired administrator-level user. This parameter is required.
+
+\i\Dialect\p\ specifies the variant of the IPMI protocol. Unfortunately, there are subtle differences in implementations of IPMI in various products. To use this probe with an Apple XServe 2008 or earlier, set the "Dialect" parameter to "XServe". For Dell Servers, the Apple XServe 2009, and any other product set the "Dialect" parameter to "Other".
+
+This probe supports one-key, non-anonymous logins only. Internally, it uses RAKP-HMAC-SHA1 and AES-CBS-128 for authentication and confidentiality, respectively. The firewall configuration of the BMC must permit UDP packets from InterMapper.
+
+</description>
+
+<parameters>
+
+"User" = "admin"
+"Password*" = ""
+"Dialect[XServe,Other]" = "XServe"
+
+</parameters>
+

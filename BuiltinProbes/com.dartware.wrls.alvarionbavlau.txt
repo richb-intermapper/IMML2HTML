@@ -1,0 +1,103 @@
+ <!--
+	Wireless - Alvarion BreezeACCESS VL (AU) (com.dartware.wrls.alvarionbavlau)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 27 February 2004 ics,
+	Latest revision 7 March 2005 by ics.
+-->
+
+<header>
+	"type"				=	"custom-snmp"
+	"package"			=	"com.dartware"
+	"probe_name"		=	"wrls.alvarionbavlau"
+	"human_name"		=	"Wireless - Alvarion BreezeACCESS VL (AU)"
+	"display_name" 		=	"Wireless/Alvarion/BreezeACCESS VL (AU)"
+	"version"			=	"1.6"
+	"address_type"		=	"IP,AT"
+	"port_number"		=	"161"
+	"equiv_class"		= 	"WRLS"
+</header>
+
+<description>
+\GB\Alvarion BreezeACCESS VL AU Probe\P\
+
+This probe monitors an \u2=http://www.alvarion.com\Alvarion\p0\ BreezeACCESS VL access unit (AU). It retrieves and displays the radio band, operating frequency, and number of clients. It will go into an alarm or warning based on user defined parameters for high and low numbers of clients (SUs), and when the operating frequency doesn't match the configured frequency. Traffic information is available for the ethernet and radio interfaces. (To show the ethernet interface, we recommend using the "Display unnumbered interfaces" behavior.)
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+	"Current SU Count too high alarm"	=	"50"
+	"Current SU Count high warning"		=	"35"
+	"Current SU Count too low alarm"	=	"0"
+	"Current SU Count low warning"		=	"0"
+</parameters>
+
+<!-- Removed parameters
+	"High Traffic Bytes alarm"			=	"100000000"
+	"High Traffic Bytes warning"			=	"90000000"
+	"High Traffic Interface Number"			=	"1"
+	"Dropped frames too high alarm"			=	"10"
+	"Dropped frames high warning"			=	"1"
+	"Transmit errors too high alarm"		=	"10"
+	"Transmit errors high warning"			=	"1"
+	"Receive errors too high alarm"			=	"10"
+	"Receive errors high warning"			=	"1"
+-->
+
+<snmp-device-variables>
+--	ifDescr,	1.3.6.1.2.1.2.2.1.2.${High Traffic Interface Number} , 		DEFAULT,	"Description"
+--	ifInOctets,	1.3.6.1.2.1.2.2.1.10.${High Traffic Interface Number} , 	PER-SECOND, 	"Bytes In"
+--	brzaccVLTotalRxFramesViaEthernet, 	1.3.6.1.4.1.12394.1.1.11.2.2.1.0 , 	PER-SECOND, 	"Ethernet In Frames"
+--	brzaccVLTotalTxWirelessToEthernet, 	1.3.6.1.4.1.12394.1.1.11.2.2.2.0 , 	PER-SECOND, 	"Wireless to Ethernet Frames"
+--	brzaccVLTotalRxFramesFromWireless, 	1.3.6.1.4.1.12394.1.1.11.2.3.2.0 , 	PER-SECOND, 	"Wireless In Frames"
+--	brzaccVLFramesDropped, 			1.3.6.1.4.1.12394.1.1.11.2.3.4.0 , 	PER-SECOND, 	"Droped Wireless Frames"
+--	brzaccVLTotalTxEvents, 			1.3.6.1.4.1.12394.1.1.11.2.4.1.5.0 , 	PER-SECOND, 	"Transmit Errors"
+--	brzaccVLTotalRxEvents, 			1.3.6.1.4.1.12394.1.1.11.2.4.2.5.0 , 	PER-SECOND, 	"Receive Errors"
+	brzaccVLRadioBand,		 	1.3.6.1.4.1.12394.1.1.1.15.0 ,	 	DEFAULT, 	"Radio Band"
+	brzaccVLCurrentNumofAssociations, 	1.3.6.1.4.1.12394.1.1.1.13.0 , 		DEFAULT, 	"Current SU Count"
+	brzaccVLCurrentAUOperatingFrequency,	1.3.6.1.4.1.12394.1.1.6.12.7.0 ,	DEFAULT,	"AU Operating Frequency"
+	brzaccVLAUDefinedFrequency,		1.3.6.1.4.1.12394.1.1.6.12.8.0 ,	DEFAULT,	"AU Defined Frequency"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm:		$brzaccVLCurrentNumofAssociations > ${Current SU Count too high alarm} 	"Current SU Count too high"
+	alarm:		$brzaccVLCurrentNumofAssociations < ${Current SU Count too low alarm} 	"Current SU Count too low"
+	alarm:		$brzaccVLCurrentAUOperatingFrequency <> $brzaccVLAUDefinedFrequency	"Operating Frequency Incorrect"
+	warning:	$brzaccVLCurrentNumofAssociations < ${Current SU Count low warning} 	"Current SU Count low"
+	warning:	$brzaccVLCurrentNumofAssociations > ${Current SU Count high warning} 	"Current SU Count high"
+</snmp-device-thresholds>
+
+<!-- Removed thresholds
+	alarm:		$brzaccVLFramesDropped > ${Dropped frames too high alarm} 		"Dropped frames too high"
+	alarm:		$brzaccVLTotalTxEvents > ${Transmit errors too high alarm} 		"Transmit errors too high"
+	alarm:		$brzaccVLTotalRxEvents > ${Receive errors too high alarm} 		"Receive errors too high"
+	alarm:		$ifInOctets > ${High Traffic Bytes alarm}	 			"Traffic Too High"
+	warning:	$ifInOctets > ${High Traffic Bytes warning} 				"Traffic High"
+	warning:	$brzaccVLFramesDropped > ${Dropped frames high warning} 		"Dropped frames high"
+	warning:	$brzaccVLTotalTxEvents > ${Transmit errors high warning} 		"Transmit errors high"
+	warning:	$brzaccVLTotalRxEvents > ${Receive errors high warning} 		"Receive errors high"
+-->
+
+<snmp-device-display>
+\B5\BreezeACCESS VL Information\0P\
+ \4\          Radio Band:\0\ $brzaccVLRadioBand
+ \4\ Operating Frequency:\0\ $brzaccVLCurrentAUOperatingFrequency \3IG\MHz\P0M\
+ \4\   Number of Clients:\0\ $brzaccVLCurrentNumofAssociations
+</snmp-device-display>
+
+<!-- Removed display:
+ \4\         Ethernet In:\0\  $brzaccVLTotalRxFramesViaEthernet \3IG\Frames per sec.\P0M\
+ \4\Wireless to Ethernet:\0\  $brzaccVLTotalTxWirelessToEthernet \3IG\Frames per sec.\P0M\
+ \4\         Wireless In:\0\  $brzaccVLTotalRxFramesFromWireless \3IG\Frames per sec.\P0M\
+ \4\    Wireless Dropped:\0\  $brzaccVLFramesDropped \3IG\Frames per sec.\P0M\
+ \4\     Transmit Errors:\0\  $brzaccVLTotalTxEvents \3IG\Frames per sec.\P0M\
+ \4\      Receive Errors:\0\  $brzaccVLTotalRxEvents \3IG\Frames per sec.\P0M\
+
+\B5\Interface Information:\0P\
+  \4\Description:\0\     $ifDescr
+  \4\ Traffic In:\0\     $ifInOctets \3IG\Bytes per sec.\P0M\
+-->

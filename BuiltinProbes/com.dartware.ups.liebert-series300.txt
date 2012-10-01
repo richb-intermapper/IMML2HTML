@@ -1,0 +1,136 @@
+<!--
+    Liebert UPS - Series 300 (com.dartware.ups.liebert-series300.txt)
+    Custom Probe for InterMapper (http://www.intermapper.com)
+    Please feel free to use this as a base for further development.
+    Part of the UPS Probe Bundle -- Current Version: 2.4 / 31 August 2005.
+    Bugs or Requests? Please contact us: upsbundle@intermapper.com.
+
+    Revisions: (Probe Version reflects version of UPS Probe Bundle)
+    Created from com.dartware.ups.liebert.txt - 3 August 2005 by jkj.
+    Updated for "display_name" change (IM 4.4) - 31 August 2005 by jkj.
+-->
+ 
+<header>
+    "type"          =  "custom-snmp"
+    "package"       =  "com.dartware"
+    "probe_name"    =  "ups.liebert-series300"
+    "human_name"    =  "Liebert UPS - Series 300"
+    "version"       =  "2.6"
+    "address_type"  =  "IP,AT"
+    "port_number"   =  "161"
+    "display_name"  =  "Network Devices/UPS/Liebert UPS - Series 300"
+</header>
+
+<snmp-device-properties>
+    maxvars = "10" -- should solve the "tooBig" Error
+</snmp-device-properties>
+
+<description>
+\g0i++\For Liebert Series 300 UPS devices.\p--\
+\b++\A. Probed MIB(s)\p--\
+\i\This probe works best with devices which have implemented the listed MIB(s).\p\
+(1 of 1) \b\LIEBERT-SERIES-300-UPS-MIB\p\ [... enterprises.emerson.liebertCorp.liebertUps.luExtensions.luCore / ... 1.476.1.1.1.1] and [... luExtensions.luUPStationS / ... 1.2]
+
+\b++\B. Displayed Values\p--\
+vendor, model, software version, firmware version, output load (%), battery voltage, battery current, (\i\three input, output, and bypass phases:\p\ voltage, current),(\i\frequencies:\p\ input, output, bypass)
+
+\b++\C. Alarms\p--\
+(1 of 1) If the device is reporting any alarms. (The MIB includes a comprehensive list of alarms).
+
+\bG3\Bugs or Requests? \p\\iG3\\U=mailto:upsbundle@intermapper.com\Please contact us.\p\\pM0\
+</description>
+
+<snmp-device-variables>
+<!-- text variables for status window -->
+vendor,    1.3.6.1.4.1.476.1.1.1.1.1.1.0,   DEFAULT <!--lcUpsIdentManufacturer: "The UPS manufacturer."-->
+model,     1.3.6.1.4.1.476.1.1.1.1.1.2.0,   DEFAULT <!--lcUpsIdentModel: "The UPS Model designation."-->
+software,  1.3.6.1.4.1.476.1.1.1.1.1.3.0,   DEFAULT <!--lcUpsIdentSoftwareVersion: "The UPS SNMP Agent software version."-->
+alarms,    1.3.6.1.4.1.476.1.1.1.1.6.1.0,   DEFAULT <!--lcUpsAlarms,  "[Gauge] The current number of alarm conditions."-->
+firmware,  1.3.6.1.4.1.476.1.1.1.2.1.1.0,   DEFAULT <!--lsUpsIdentFirmwareVersion: "The firmware revision level of the UPS."-->
+
+<!-- internal variables (used in calculations or integer-to-text conversions -->
+inNum,     1.3.6.1.4.1.476.1.1.1.1.3.5.0,   DEFAULT <!--lcUpsInputNumLines: "The number of input lines utilized in thisdevice. This entry indicates the number of rows inthe input table."-->
+ouNum,    1.3.6.1.4.1.476.1.1.1.1.4.3.0,   DEFAULT <!--lcUpsOutputNumLines: "The number of output lines utilized in thisdevice. This entry indicates the number of rows inthe output table."-->
+byCode,    1.3.6.1.4.1.476.1.1.1.2.13.1.0,  DEFAULT <!--lcUpsOnBypass: "Indicates that the UPS is currently on bypass."-->
+byNum,     1.3.6.1.4.1.476.1.1.1.2.13.3.0,  DEFAULT <!--lsUpsBypassNumLines: "The number of bypass lines utilized in this device. This entry indicates the number of rows inthe bypass table."-->
+
+<!-- integer variables -->
+batVolts,  1.3.6.1.4.1.476.1.1.1.1.2.3.0,   DEFAULT,  "Battery Voltage (Volts)" <!--lcUpsBatVoltage: "The current battery voltage. (Unit of measure:volt)"-->
+batAmps,   1.3.6.1.4.1.476.1.1.1.1.2.4.0,   DEFAULT,  "Battery Current (Amps)"  <!--lcUpsBatCurrent: "The current battery discharging/charging current.(Unit of measure: Amp)"-->
+inFreq,    1.3.6.1.4.1.476.1.1.1.1.3.1.0,   DEFAULT,  "Input Frequency (%)"     <!--lcUpsInputFrequency: "The current input frequency. (Unit of measure:Hertz)"-->
+ouFreq,    1.3.6.1.4.1.476.1.1.1.1.4.1.0,   DEFAULT,  "Output Frequency (Hz)"   <!--lcUpsOutputFrequency: "The current output frequency. (Unit of measure:Hertz)"-->
+ouLoad,    1.3.6.1.4.1.476.1.1.1.1.4.2.0,   DEFAULT,  "Output Load (%)"         <!--lcUpsOutputLoad: "The current output load percentage."-->
+byFreq,    1.3.6.1.4.1.476.1.1.1.2.13.2.0,  DEFAULT,  "Bypass Frequency (Hz)"   <!--lsUpsBypassFrequency: "The current bypass frequency. (Unit of measure:Hertz)"-->
+
+<!-- input, output, & bypass tables: 3 phases
+(in#V) input voltage = 1.3.6.1.4.1.476.1.1.1.1.3.6.1.2.PHASE#
+(in#A) input current = 1.3.6.1.4.1.476.1.1.1.1.3.6.1.3.PHASE#
+(ou#V) output voltage = 1.3.6.1.4.1.476.1.1.1.1.4.4.1.2.PHASE#
+(ou#A) output current = 1.3.6.1.4.1.476.1.1.1.1.4.4.1.3.PHASE#
+(by#V) bypass voltage = 1.3.6.1.4.1.476.1.1.1.2.13.4.1.2.PHASE#
+(by#A) bypass current = 1.3.6.1.4.1.476.1.1.1.2.13.4.1.3.PHASE#
+-->
+in1V,    1.3.6.1.4.1.476.1.1.1.1.3.6.1.2.1,   DEFAULT,  "Input 1 Voltage (Volts)"
+in2V,    1.3.6.1.4.1.476.1.1.1.1.3.6.1.2.2,   DEFAULT,  "Input 2 Voltage (Volts)"
+in3V,    1.3.6.1.4.1.476.1.1.1.1.3.6.1.2.3,   DEFAULT,  "Input 3 Voltage (Volts)"
+in1A,    1.3.6.1.4.1.476.1.1.1.1.3.6.1.3.1,   DEFAULT,  "Input 1 Current (Amps)"
+in2A,    1.3.6.1.4.1.476.1.1.1.1.3.6.1.3.2,   DEFAULT,  "Input 2 Current (Amps)"
+in3A,    1.3.6.1.4.1.476.1.1.1.1.3.6.1.3.3,   DEFAULT,  "Input 3 Current (Amps)"
+ou1V,    1.3.6.1.4.1.476.1.1.1.1.4.4.1.2.1,   DEFAULT,  "Output 1 Voltage (Volts)"
+ou2V,    1.3.6.1.4.1.476.1.1.1.1.4.4.1.2.2,   DEFAULT,  "Output 2 Voltage (Volts)"
+ou3V,    1.3.6.1.4.1.476.1.1.1.1.4.4.1.2.3,   DEFAULT,  "Output 3 Voltage (Volts)"
+ou1A,    1.3.6.1.4.1.476.1.1.1.1.4.4.1.3.1,   DEFAULT,  "Output 1 Current (Amps)"
+ou2A,    1.3.6.1.4.1.476.1.1.1.1.4.4.1.3.2,   DEFAULT,  "Output 2 Current (Amps)"
+ou3A,    1.3.6.1.4.1.476.1.1.1.1.4.4.1.3.3,   DEFAULT,  "Output 3 Current (Amps)"
+by1V,    1.3.6.1.4.1.476.1.1.1.2.13.4.1.2.1,  DEFAULT,  "Bypass 1 Voltage (Volts)"
+by2V,    1.3.6.1.4.1.476.1.1.1.2.13.4.1.2.2,  DEFAULT,  "Bypass 2 Voltage (Volts)"
+by3V,    1.3.6.1.4.1.476.1.1.1.2.13.4.1.2.3,  DEFAULT,  "Bypass 3 Voltage (Volts)"
+by1A,    1.3.6.1.4.1.476.1.1.1.2.13.4.1.3.1,  DEFAULT,  "Bypass 1 Current (Amps)"
+by2A,    1.3.6.1.4.1.476.1.1.1.2.13.4.1.3.2,  DEFAULT,  "Bypass 2 Current (Amps)"
+by3A,    1.3.6.1.4.1.476.1.1.1.2.13.4.1.3.3,  DEFAULT,  "Bypass 3 Current (Amps)"
+
+<!-- lines displayed ($inNum,$ouNum,$byNum): number of phases displayed out of total (should be 3) -->
+ouPhases,  "3 of $ouNum", CALCULATION
+inPhases,  "3 of $inNum", CALCULATION
+byPhases,  "3 of $byNum", CALCULATION
+<!-- bypass status ($byCode): unknown=1,yes=2,no=3,maintenance=4-->
+statusBypass,  ($byCode = 1)?"Unknown":($byCode = 2)?"On Bypass":($byCode = 3)?"Not On Bypass":($byCode = 4)?"Maintenance":"(!)Unknown Bypass Status Code", CALCULATION
+<!-- alarm status ($alarms): number of alarms that the device is reporting -->
+statusAlarm,   ($alarms = 0)?"No Alarms Reported":"Device is Reporting $alarms Alarm(s).",  CALCULATION,  ""
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+     ALARM:    $alarms > 0  "Alarms Reported"
+</snmp-device-thresholds>
+
+<!--
+Battery runtime not displaying correctly, probably implemented incorectly on device
+runtime,   1.3.6.1.4.1.476.1.1.1.1.2.1.0,   DEFAULT <!--lcUpsBatTimeRemaining: "The estimated time to depletion of battery charge.(Unit of measure: Minute)"-->
+\pM4\     Runtime:  \p\$leftMin\iG3\ minutes left.\p\
+-->
+
+<snmp-device-display>
+\bM5\Liebert Series 300 UPS Information\p\
+\pM4\      Vendor:  \pG0\$vendor\p\
+\pM4\       Model:  \pG0\$model\p\
+\pM4\    Software:  \pG0\$software\p\
+\pM4\    Firmware:  \pG0\$firmware\p\
+\bM4\Device Status\p\ 
+\pM4\      Alarms:  \p\\bG0\$statusAlarm\p\
+\pM4\      Output:  \p\\bG4\$ouLoad\p\\bG4\ % Load\p\
+\pM4\     Battery:  \p\$batVolts\iG3\ Volts; \p\$batAmps\iG3\ Amps.\p\
+\bM4\ Input Phases\p\  \iG3\($inPhases shown, \p\$inFreq\iG3\ Hz)\p\
+\pM4\     Phase 1:  \p\$in1V\iG3\ Volts;  \p\$in1A\iG3\ Amps.\p\
+\pM4\     Phase 2:  \p\$in2V\iG3\ Volts;  \p\$in2A\iG3\ Amps.\p\
+\pM4\     Phase 3:  \p\$in3V\iG3\ Volts;  \p\$in3A\iG3\ Amps.\p\
+\MB4\Output Phases\p\  \iG3\($ouPhases shown, \p\$ouFreq\iG3\ Hz)\p\
+\pM4\     Phase 1:  \p\$ou1V\iG3\ Volts;  \p\$ou1A\iG3\ Amps.\p\
+\pM4\     Phase 2:  \p\$ou2V\iG3\ Volts;  \p\$ou2A\iG3\ Amps.\p\
+\pM4\     Phase 3:  \p\$ou3V\iG3\ Volts;  \p\$ou3A\iG3\ Amps.\p\
+\MB4\Bypass Phases\p\  \iG3\($byPhases shown, \p\$byFreq\iG3\ Hz)\p\
+\pM4\     Phase 1:  \p\$by1V\iG3\ Volts;  \p\$by1A\iG3\ Amps.\p\
+\pM4\     Phase 2:  \p\$by2V\iG3\ Volts;  \p\$by2A\iG3\ Amps.\p\
+\pM4\     Phase 3:  \p\$by3V\iG3\ Volts;  \p\$by3A\iG3\ Amps.\p\
+
+\p\\bG3\Bugs or Requests? \p\\iG3\\U=mailto:upsbundle@intermapper.com\Please contact us.\p\\pM0\
+</snmp-device-display>

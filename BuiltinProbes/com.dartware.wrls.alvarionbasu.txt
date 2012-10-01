@@ -1,0 +1,100 @@
+ <!--
+	Wireless - Alvarion BreezeACCESS (SU) (com.dartware.wrls.alvarionbaau)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 9 March 2004 ics,
+	Last updated 3 March 2005, ics.
+
+	NOTE: The canonical "probe_name" for this file has a mistake in it. To maintain compatibility, do not fix the incorrect reference to BreezeCom.
+-->
+
+<header>
+	"type"				=	"custom-snmp"
+	"package"			=	"com.dartware"
+	"probe_name"		=	"wrls.breezecombasu" <!-- Do not change-->
+	"human_name"		=	"Wireless - Alvarion BreezeACCESS (SU)"
+	"display_name" 		=	"Wireless/Alvarion/BreezeACCESS (SU)"
+	"version"			=	"1.6"
+	"address_type"		=	"IP,AT"
+	"port_number"		=	"161"
+	"equiv_class"		= 	"WRLS"
+</header>
+
+<description>
+\GB\Alvarion BreezeACCESS (2.4 Ghz / 900 MHz) SU Probe\P\
+
+This probe monitors a BreezeCom or \u2=http://www.alvarion.com\Alvarion\p0\ BreezeACCESS 2.4 Ghz or 900 MHz subscriber unit (SU). It retrieves and displays the radio band, average power (in dBm or RSSI), and the MAC address of the associated AU. For a 900 MHz unit, it will also display the radio frequency. The probe will go into alarm or warning states based on user-definable parameters for low signal power or high incoming traffic on a specified interface.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+	"Average Power too low alarm"			=	"-78"
+	"Average Power low warning"			=	"-75"
+	"High Traffic Bytes alarm"			=	"100000000"
+	"High Traffic Bytes warning"			=	"90000000"
+	"High Traffic Interface Number"			=	"1"
+</parameters>
+
+<!--Removed parameters
+	"Retransmitted Fragments too high alarm"	=	"50"
+	"Retransmitted Fragments high warning"		=	"25"
+	"Dropped Frames too high alarm"			=	"50"
+	"Dropped Frames high warning"			=	"25"
+-->
+
+<snmp-device-variables>
+	ifDescr,	1.3.6.1.2.1.2.2.1.2.${High Traffic Interface Number} , 		DEFAULT,	"Description"
+	ifInOctets,	1.3.6.1.2.1.2.2.1.10.${High Traffic Interface Number} , 	PER-SECOND, 	"Bytes In"
+	frequency,				1.3.6.1.4.1.710.3.3.6.15.4.1.3.1 ,	DEFAULT,	"Frequency"
+--	brzaccTotalRxFramesEthernet, 		1.3.6.1.4.1.710.3.3.8.2.2.1.0 , 	PER-SECOND, 	"Ethernet In Frames"
+--	brzaccTxWirelessToEthernet, 		1.3.6.1.4.1.710.3.3.8.2.2.2.0 , 	PER-SECOND, 	"Wireless to Ethernet Frames"
+--	brzaccTotalTxFramesToWireless, 		1.3.6.1.4.1.710.3.3.8.2.3.1.0 , 	PER-SECOND, 	"Wireless Out Frames"
+--	brzaccTotalRxFramesFromWireless, 	1.3.6.1.4.1.710.3.3.8.2.3.2.0 , 	PER-SECOND, 	"Wireless In Frames"
+--	brzaccTotalRetransmittedFragments, 	1.3.6.1.4.1.710.3.3.8.2.3.3.0 , 	PER-SECOND, 	"Retransmitted Fragments"
+--	brzaccWlanFramesDropped, 		1.3.6.1.4.1.710.3.3.8.2.3.4.0 , 	PER-SECOND, 	"Dropped Wireless Frames"
+	BrzaccAveragePower,	 		1.3.6.1.4.1.710.3.3.8.3.1.0 , 		DEFAULT, 	"Average Power"
+	brzaccRssiOrDbm,	 		1.3.6.1.4.1.710.3.3.8.3.2.0 , 		DEFAULT, 	"RSSI or dBm"
+	brzaccRadioBand,		 	1.3.6.1.4.1.710.3.3.9.3.0 ,	 	DEFAULT, 	"Radio Band"
+	brzaccAssociatedAU,		 	1.3.6.1.4.1.710.3.3.13.8.0 , 		DEFAULT, 	"Associated AU"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm:		$BrzaccAveragePower < ${Average Power too low alarm} 				"Average Power too low"
+	alarm:		$ifInOctets > ${High Traffic Bytes alarm}	 				"Wireless Traffic Too High"
+	warning:	$ifInOctets > ${High Traffic Bytes warning} 					"Wireless Traffic High"
+	warning:	$BrzaccAveragePower < ${Average Power low warning} 				"Average Power low"
+</snmp-device-thresholds>
+
+<!-- Removed thresholds
+	alarm:		$brzaccTotalRetransmittedFragments > ${Retransmitted Fragments too high alarm} 	"Retransmitted Fragments too high"
+	alarm:		$brzaccWlanFramesDropped > ${Dropped Frames too high alarm} 			"Dropped Frames too high"
+	warning:	$brzaccTotalRetransmittedFragments > ${Retransmitted Fragments high warning} 	"Retransmitted Fragments high"
+	warning:	$brzaccWlanFramesDropped > ${Dropped Frames high warning} 			"Dropped Frames high"
+-->
+
+<snmp-device-display>
+\B5\BreezeACCESS Information\0P\
+ \4\         Radio Band:\0\  ${eval: $brzaccRadioBand == "0.9" ? "900 \3IG\MHz\P0M\" : $brzaccRadioBand == "2.4" ? "2.4 \3IG\GHz\P0M\" : "Unknown"}${eval: strlen("$frequency") ? "
+ \4\    Radio Frequency:\0\" : " "}  ${chartable: # : strlen("$frequency") ? $frequency : " "} ${eval: strlen("$frequency") ? "\3IG\MHz\P0M\" : " "}
+ \4\      Average Power:\0\  ${chartable: # : $BrzaccAveragePower} \3IG\${eval:$brzaccRssiOrDbm ? "dBm" : "RSSI"}\P0M\
+ \4\      Associated AU:\0\  $brzaccAssociatedAU
+\B5\Interface Information\0P\
+ \4\        Description:\0\  $ifDescr
+ \4\         Traffic In:\0\$ifInOctets \3IG\Bytes per sec.\P0M\
+</snmp-device-display>
+
+<!-- Removed Display
+  \4\    Radio Frequency:\0\  ${chartable: # : strlen("$frequency") ? $frequency : "Unavailable"} ${eval: strlen("$frequency") ? "\3IG\MHz\P0M\" : " "} 
+
+  \4\        Ethernet In:\0\$brzaccTotalRxFramesEthernet \3IG\Frames per sec.\P0M\
+  \4\     RF to Ethernet:\0\$brzaccTxWirelessToEthernet \3IG\Frames per sec.\P0M\
+  \4\              RF In:\0\$brzaccTotalRxFramesFromWireless \3IG\Frames per sec.\P0M\
+  \4\             RF Out:\0\$brzaccTotalTxFramesToWireless \3IG\Frames per sec.\P0M\
+
+  \4\        RF Retrans.:\0\$brzaccTotalRetransmittedFragments \3IG\Fragments per sec.\P0M\
+  \4\         RF Dropped:\0\$brzaccWlanFramesDropped \3IG\Frames per sec.\P0M\
+-->

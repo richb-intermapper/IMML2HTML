@@ -1,0 +1,118 @@
+<!-- 
+	Subversion Apache module probe (com.dartware.tcp.svn.apache)
+	Copyright © 2006 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.svn.apache"
+	human_name		=	"SVN (apache)"
+	version			= 	"1.0"
+	address_type	= 	"IP"
+	port_number		=	"80"
+
+	old_protocol	= 	"8"
+	old_script		= 	"8000"
+
+	display_name	=	"Servers-Standard/Subversion/SVN (Apache)"
+	url_hint		=	"http://${ADDRESS}:${PORT}/"
+</header>
+
+<description>
+
+\GB\Subversion Server (Apache module)\P\
+
+This probe tests a Subversion server running as an Apache module. The subversion module lets Apache function as a WebDAV/DeltaV server. Since the server responds normally to HTTP GET requests, testing whether it is up is the same as performing an HTTP GET request and checking to ensure the location was found.
+
+\i\Host Name\p\ is the domain name of the subversion server (e.g. "svn.collab.net"). Only add an IP address or domain name; do not add "http://".
+
+\i\URL Path\p\ is the path to the repository. The first and last characters must be a '/'.
+
+\i\User ID\p\ is the user name used by the subversion server for authentication, if required.
+
+\i\Password\p\ is the password used by the subversion server for authentication, if required.
+
+Subversion is a version control system intended as a replacement for CVS. The software is released under an Apache/BSD style open-source license. The project can be found at \U2=http://subversion.tigris.org\http://subversion.tigris.org\P0\.
+
+</description>
+
+<parameters>
+
+	"Host Name"							=		""
+	"Repository Path"					=		"/"
+	"User Name"							=		""
+	"Password*"							=		""
+
+</parameters>
+
+<script>
+
+STOR "svnhost" "${Host Name}"
+STOR "svnrepo" "${Repository Path}"
+STOR "svnuser" "${User Name}"
+STOR "svnpass" "${Password*}"
+
+CONN #60 (idle timeout in seconds)
+WAIT #30 @IDLE @DISCONNECT
+
+<!-- Try to perform a simple GET on the repository -->
+
+SEND "GET ${svnrepo} HTTP/1.0\r\n"
+CHCK "${svnhost}" else goto #+2
+SEND "Host: ${svnhost}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${svnuser}${svnpass}" else goto #+2
+SEND "Authorization: Basic ${_BASE64:${svnuser}:${svnpass}}\r\n"
+SEND "\r\n"
+
+<!-- Check HTTP error codes and make sure it was all fine -->
+
+MTCH "HTTP/"i else goto @UNEXPECTED
+MTCH "200" else goto @BADGET
+DONE OKAY
+
+<!-- Probe exit and failure/warning labels -->
+
+@UNEXPECTED:
+DONE DOWN "[modsvn] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@BADGET:
+MTCH "201" ELSE #+2
+DONE ALRM "[modsvn] Repository ${svnrepo} does not exist (HTTP 201)"
+MTCH "202" ELSE #+2
+DONE ALRM "[modsvn] Repository ${svnrepo} does not exist(HTTP 202)"
+MTCH "204" ELSE #+2
+DONE ALRM "[modsvn] Repository ${svnrepo} does not exist (HTTP 204)"
+MTCH "301" ELSE #+2
+DONE ALRM "[modsvn] Repository ${svnrepo} is moved permanently (HTTP 301)"
+MTCH "302" ELSE #+2
+DONE ALRM "[modsvn] Repository ${svnrepo} is moved temporarily (HTTP 302)"
+MTCH "304" ELSE #+2
+DONE CRIT "[modsvn] Subversion server error (HTTP 304)"
+MTCH "400" ELSE #+2
+DONE CRIT "[modsvn] Subversion server error (HTTP 400)"
+MTCH "401" ELSE #+2
+DONE WARN "[modsvn] Username or password are incorrect (HTTP 401)"
+MTCH "403" ELSE #+2
+DONE ALRM "[modsvn] Repository ${svnrepo} does not exist (HTTP 403)"
+MTCH "404" ELSE #+2
+DONE ALRM "[modsvn] Repository ${svnrepo} does not exist (HTTP 404)"
+MTCH "500" ELSE #+2
+DONE CRIT "[modsvn] Subversion server error (HTTP 500)"
+MTCH "501" ELSE #+2
+DONE CRIT "[modsvn] Subversion server error (HTTP 501)"
+MTCH "502" ELSE #+2
+DONE CRIT "[modsvn] Subversion server error (HTTP 502)"
+MTCH "503" ELSE #+2
+DONE CRIT "[modsvn] Subversion server error (HTTP 503)"
+DONE ALRM "[modsvn] Subversion server error (Unknown ${_LINE:4})"
+
+@IDLE:
+DONE DOWN "[modsvn] No connection."
+
+@DISCONNECT:
+DONE DOWN "[modsvn] Unexpectedly disconnected."
+
+</script>

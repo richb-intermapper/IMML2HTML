@@ -1,0 +1,79 @@
+<!-- 
+	IMAP4 (com.dartware.tcp.imap4)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.imap4"
+	human_name		=	"IMAP4"
+	version			= 	"1.7"
+	address_type	= 	"IP"
+	port_number		=	"143"
+	
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8012"
+
+	display_name	=	"Servers-Standard/Mail/IMAP4"
+</header>
+
+<description>
+
+\GB\Internet Message Access Protocol - Version 4\P\
+
+The protocol used for accessing and manipulating email messages on a server, as defined in \U2=http://www.ietf.org/rfc/rfc2060.txt\RFC 2060\P0\.  The default TCP port number for IMAP4 connections is port 143.
+
+This TCP script connects to the IMAP4 server and issues a CAPABILITY command, a NOOP command, and finally terminates with a LOGOUT command.  The script checks the server's response to the CAPABILITY command to verify that the server supports IMAP4 or IMAP4rev1.
+
+</description>
+
+<parameters>
+
+-- no parameters
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+MTCH "* OK" else goto @CHECK_PREAUTH
+@BEGIN:
+SEND "A001 CAPABILITY\r\n"
+EXPT "* CAPABILITY" else goto @DISCONNECT
+MTCH "IMAP4"i else goto @UNRECOGNIZED_CAPABILITY
+SKIP "* " else goto @DISCONNECT
+MTCH "A001 OK" else goto @UNEXPECTED_RESPONSE
+SEND "A002 NOOP\r\n"
+SKIP "* " else goto @DISCONNECT
+MTCH "A002 " else goto @UNEXPECTED_RESPONSE
+STAT OKAY
+@LOGOUT:
+SEND "A003 LOGOUT\r\n"
+SKIP "* " #+2
+MTCH "A003 OK" #+1
+EXIT
+
+@CHECK_PREAUTH:
+MTCH "* PREAUTH" else goto @UNEXPECTED_GREETING
+GOTO <BEGIN #4>
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[IMAP4] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@DISCONNECT:
+DONE DOWN "[IMAP4] Connection disconnected while expecting \"${_STRINGTOMATCH}\"."
+
+@UNRECOGNIZED_CAPABILITY:
+STAT ALRM "[IMAP4] Unrecognized CAPABILITY response. (${_LINE:50})"
+GOTO @LOGOUT
+
+@UNEXPECTED_RESPONSE:
+STAT ALRM "[IMAP4] Unexpected response. (${_LINE:50})"
+GOTO @LOGOUT
+
+@IDLE:
+DONE DOWN "[IMAP4] No data for ${_IDLETIMEOUT} seconds. Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+</script>

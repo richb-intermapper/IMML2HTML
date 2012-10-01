@@ -1,0 +1,96 @@
+ <!--
+	Wireless - probe to monitor 802.11 counters of a wireless interface
+
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 
+
+	Original version May 2005 by rk
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"		=	"wrls.80211counters"
+	"human_name"		=	"Wireless - IEEE 802.11"
+	"display_name"  	=	"Wireless/Basic/IEEE 802.11"
+	"version"		=	"0.1"
+	"address_type"		=	"IP"
+	"port_number"		=	"161"
+	"equiv_class"		= 	"WRLS"
+</header>
+
+<description>
+\GB\802.11 counter monitoring probe\P\
+
+This probe monitors 802.11 counters from a wireless device that supports the IEEE802dot11-MIB.
+
+</description>
+
+<parameters>
+	"Interface index"			=	"3"
+
+	"Tx Failed frames/sec warning"          =       "5"
+	"Tx Failed frames/sec alarm"            =       "10"
+
+	"Tx Retry frames/sec warning"           =       "5"
+	"Tx Retry frames/sec alarm"             =       "10"
+
+	"Rx FCS err fragments/sec warning"      =       "5"
+	"Rx FCS err fragments/sec alarm"        =       "10"
+
+	"ACK failures/sec warning"              =       "5"
+	"ACK failures/sec alarm"                =       "10"
+</parameters>
+
+<snmp-device-variables>
+
+dot11TransmittedFragmentCount,		1.2.840.10036.2.2.1.1.${Interface index},	PER-SECOND, "Transmitted fragment/sec"
+dot11MulticastTransmittedFrameCount,	1.2.840.10036.2.2.1.2.${Interface index},	PER-SECOND, "Transmitted Mcast frames/sec"
+dot11FailedCount,			1.2.840.10036.2.2.1.3.${Interface index},	PER-SECOND, "Tx Failed frames/sec"
+dot11RetryCount,			1.2.840.10036.2.2.1.4.${Interface index},	PER-SECOND, "Tx Retry frames/sec"
+dot11MultipleRetryCount,		1.2.840.10036.2.2.1.5.${Interface index},	PER-SECOND, "Multiple retry tx frames/sec"
+dot11FrameDuplicateCount,		1.2.840.10036.2.2.1.6.${Interface index},	PER-SECOND, "Duplicate rx frames/sec"
+dot11RTSSuccessCount,			1.2.840.10036.2.2.1.7.${Interface index},	PER-SECOND, "RTS success/sec"
+dot11RTSFailureCount,			1.2.840.10036.2.2.1.8.${Interface index},	PER-SECOND, "RTS failures/sec"
+dot11ACKFailureCount,			1.2.840.10036.2.2.1.9.${Interface index},	PER-SECOND, "ACK failures/sec"
+dot11ReceivedFragmentCount,		1.2.840.10036.2.2.1.10.${Interface index},	PER-SECOND, "Received fragments/sec"
+dot11MulticastReceivedFrameCount,	1.2.840.10036.2.2.1.11.${Interface index},	PER-SECOND, "Received Mcast frames/sec"
+dot11FCSErrorCount,			1.2.840.10036.2.2.1.12.${Interface index},	PER-SECOND, "Rx FCS err fragments/sec"
+dot11TransmittedFrameCount,		1.2.840.10036.2.2.1.13.${Interface index},	PER-SECOND, "Tx frames/sec"
+dot11WEPUndecryptableCount,		1.2.840.10036.2.2.1.14.${Interface index},	PER-SECOND, "Rx WEP undecryptable frames/sec"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+warning: ${dot11FailedCount} > ${Tx Failed frames/sec warning} "High Tx failures"
+alarm:   ${dot11FailedCount} > ${Tx Failed frames/sec alarm}   "Tx failures too high"
+
+warning: ${dot11RetryCount} > ${Tx Retry frames/sec warning} "High Tx retries"
+alarm:   ${dot11RetryCount} > ${Tx Retry frames/sec alarm}   "Tx retries too high"
+
+warning: ${dot11FCSErrorCount} > ${Rx FCS err fragments/sec warning} "High FCS errors"
+alarm:   ${dot11FCSErrorCount} > ${Rx FCS err fragments/sec alarm}   "FCS errors too high"
+
+warning: ${dot11ACKFailureCount} > ${ACK failures/sec warning} "High ACK failures"
+alarm:   ${dot11ACKFailureCount} > ${ACK failures/sec alarm}   "ACK failures too high"
+
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Interface ${Interface index} 802.11 counters:\0P\
+\4\           Transmitted:\0\ ${dot11TransmittedFragmentCount} fragments/sec\PO\
+\4\     Transmitted Mcast:\0\ ${dot11MulticastTransmittedFrameCount} frames/sec\PO\
+\4\             Tx Failed:\0\ ${dot11FailedCount} frames/sec\PO\
+\4\              Tx Retry:\0\ ${dot11RetryCount} frames/sec\PO\
+\4\     Multiple retry tx:\0\ ${dot11MultipleRetryCount} frames/sec\PO\
+\4\          Duplicate rx:\0\ ${dot11FrameDuplicateCount} frames/sec\PO\
+\4\           RTS success:\0\ ${dot11RTSSuccessCount} /sec\PO\
+\4\          RTS failures:\0\ ${dot11RTSFailureCount} /sec\PO\
+\4\          ACK failures:\0\ ${dot11ACKFailureCount} /sec\PO\
+\4\              Received:\0\ ${dot11ReceivedFragmentCount} fragments/sec\PO\
+\4\        Received Mcast:\0\ ${dot11MulticastReceivedFrameCount} frames/sec\PO\
+\4\            Rx FCS err:\0\ ${dot11FCSErrorCount} fragments/sec\PO\
+\4\           Transmitted:\0\ ${dot11TransmittedFrameCount} frames/sec\PO\
+\4\  Rx WEP undecryptable:\0\ ${dot11WEPUndecryptableCount} frames/sec\PO\
+</snmp-device-display>
+

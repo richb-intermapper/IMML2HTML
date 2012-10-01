@@ -1,0 +1,53 @@
+ <!--
+	Wireless - Canopy CMM-Micro (com.dartware.wrls.canopy.cmmmicro)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Based on com.dartware.canopysm,
+	Latest revision 5 August 2005 by ics.
+-->
+
+<!--
+This probe is a re-labeled SNMP v2c probe with no extra variables.
+In the future, it may be helpful to force this probe to use a special polling interval.
+-->
+
+<header>
+	"type"				=	"custom-snmp"
+	"package"			=	"com.dartware"
+	"probe_name"		=	"wrls.canopy.cmmmicro"
+	"human_name"		=	"Wireless - Canopy CMM-Micro"
+	"display_name" 		=	"Wireless/Canopy/Canopy CMM-Micro"
+	"version"			=	"0.4"
+	"address_type"		=	"IP,AT"
+	"port_number"		=	"161"
+	"flags"				= 	"SNMPv2c"
+	"equiv_class"		= 	"WRLS"
+</header>
+
+<description>
+\GB\Canopy CMM-Micro\P\
+
+This probe monitors a Canopy CMM-Micro. The device only supports basic SNMP v2c MIBs, no device-specific enterprise information is available.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+</parameters>
+
+<snmp-device-variables>
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+</snmp-device-thresholds>
+
+<snmp-device-display></snmp-device-display>
+
+<!-- Removed variables and display:
+-->
+
+<snmp-device-properties>
+</snmp-device-properties>

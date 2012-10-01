@@ -1,0 +1,200 @@
+<!-- 
+Command Line WMI Probe to inventory installed software (com.dartware.wmi.installed_software.txt) 
+Copyright (c) 2010 Dartware, LLC. All rights reserved. 
+--> 
+
+<header> 
+	type			=	"cmd-line" 
+	package			=	"com.dartware" 
+	probe_name		=	"wmi.installed_software" 
+	human_name		=	"WMI Installed Software" 
+	version			=	"1.4" 
+	address_type	=	"IP"
+	display_name	=	"WMI/WMI Installed Software"
+	visible_in 		=	"Windows"
+	flags			=	"NTCREDENTIALS"	
+</header> 
+
+<description> 
+\GB\WMI Installed Software\p\ 
+
+This probe uses WMI to retrieve information about software installed on the target host.  Specifically, it queries the Win32_Product class for information about products installed using Windows Installer.  It also queries Win32_OperatingSystem and displays the operating system name, version and service pack level.
+
+The target host must be running Windows XP, Windows Server 2003 or later.  On Windows Server 2003, the Win32_Product class isn't always installed by default.  You can install the "WMI Windows Installer Provider" component under "Management and Monitoring Tools" in "Add/Remove Windows Components".
+
+The User parameter may be a local user on the target host, or may take the form of "domain\\user" for a domain login.  Leave it blank if authentication is not required, such as when the target is the localhost.
+
+InterMapper invokes the installed_sofware.vbs companion script which was placed in the Tools folder of the InterMapper Settings folder when this probe was loaded.
+
+</description> 
+
+<parameters>
+	User=""
+	"Password*" = ""
+	"Timeout (sec)"="60"
+</parameters> 
+
+
+<command-line> 
+	-- Empty path forces the InterMapper Settings:Tools directory
+	path="" 
+	cmd="${CSCRIPT} installed_software.vbs"
+	arg="-h ${address}"
+	input = "${User} ${Password*}"
+	timeout = ${Timeout (sec)}
+</command-line> 
+
+<command-exit>
+	down:${EXIT_CODE}=3 
+	critical:${EXIT_CODE}=2 
+	alarm:${EXIT_CODE}=1 
+	okay:${EXIT_CODE}=0 
+</command-exit> 
+
+<command-display>
+${^stdout}
+</command-display> 
+
+<tool:installed_software.vbs>
+'Command Line WMI Probe to inventory installed software (com.dartware.wmi.installed_software.txt) 
+'Copyright (c) 2009 Dartware, LLC. All rights reserved. 
+
+On Error Resume Next
+
+' get args up to next switch in case there are spaces in list
+FUNCTION GetNextArg(j, nargs)
+	arg = ""
+	do until (j = nargs-1)
+		if (instr(wscript.arguments(j+1), "-") = 1) then
+			exit do
+		else
+			arg = arg & wscript.arguments(j+1)
+			j = j + 1
+		end if
+	loop
+	GetNextArg = arg
+END FUNCTION
+
+FUNCTION CheckError(reasonStr)
+	if (err.number <> 0) then
+		reasonStr = vbNewLine & reasonStr & "Error #" & CStr(Err.Number) & " " & Err.Description
+		wscript.echo "\{reason:=""" & reasonStr & """}"
+		wscript.quit(3)
+	end if
+END FUNCTION
+
+FUNCTION SpaceOut(item, width)
+	SpaceOut = item & space(width-len(item))
+END FUNCTION
+
+class Installed
+	public Name
+	public Version
+	public Installed
+end class
+
+' Collect our arguments
+host = ""
+user = ""
+pass = ""
+verbose = False
+
+numargs = wscript.arguments.count
+for i=0 to numargs-1
+	test = wscript.arguments(i)
+	if (test = "-v") then verbose = True
+	if (test = "-host") OR (test = "-h") then
+		host = GetNextArg(i, numargs)
+	end if
+	if (test = "-user") OR (test = "-u") then
+		user = GetNextArg(i, numargs)
+	end if
+	if (test = "-pass") OR (test = "-p") then
+		pass = GetNextArg(i, numargs)
+	end if
+next
+
+' Read username and password from stdin
+if  not WScript.StdIn.AtEndOfStream then
+	inpStr = WScript.StdIn.ReadLine
+end if
+if verbose then wscript.echo "stdin: " & inpStr
+
+dim cred
+cred = split(inpStr, " ")
+user = cred(0)
+pass = cred(1) 
+
+if (host = "") then
+	Err.Raise vbObjectError + 1, "", "Error processing arguments"
+	CheckError("")
+end if
+
+' Connect with target via WMI
+Set objSWbemLocator = CreateObject("WbemScripting.SWbemLocator")
+CheckError("")
+
+if (user = "") or (lcase(user) = "none") then		' no authentication needed
+	Set objWMIService = GetObject("winmgmts:" & "{impersonationLevel=impersonate}!\\" & host & "\root\cimv2") 
+	CheckError("")
+else						' authenticate with user/pass
+	user = Replace(user,"\\","\")
+	Set objWMIService = objSWbemLocator.ConnectServer (host, "\root\cimv2", user, pass)
+	CheckError("")
+	objWMIService.Security_.ImpersonationLevel = 3
+end if
+
+' Get OS version
+Set colOS = objWMIService.ExecQuery("SELECT Caption,Version,CSDVersion FROM Win32_OperatingSystem",,48)
+CheckError("")
+
+' Get software installed with Windows Installer
+Set colSoftware = objWMIService.ExecQuery("Select Name, Version, InstallDate2 from Win32_Product")
+CheckError("")
+
+' Massage data
+dim items()			' colItems.Count won't work because WMI needs to enumerate the entire collection, to slow for VBscript
+nItems = 0			' the redim in a loop below looks ugly, but is the more effecient choice
+
+Set objSWbemDateTime = CreateObject("WbemScripting.SWbemDateTime")
+CheckError("")
+
+For Each objSoftware in colSoftware
+	redim preserve items(nItems+1)
+	set items(nItems) = new Installed
+
+	items(nItems).Name = objSoftware.Name
+	l = len(items(nItems).Name)
+	if (l > maxName) then maxName = l
+
+	items(nItems).Version = objSoftware.Version
+	l = len(items(nItems).Version)
+	if (l > maxVersion) then maxVersion = l
+
+	if verbose then wscript.echo "objSoftware.InstallDate2 = |" & objSoftware.InstallDate2 & "|"
+	if IsDate(objSoftware.InstallDate2) then
+		objSWbemDateTime.Value = objSoftware.InstallDate2
+		items(nItems).Installed = objSWbemDateTime.GetVarDate(False)
+	else
+		items(nItems).Installed = ""
+	end if
+	
+	nItems = nItems + 1
+Next
+CheckError("")
+
+' Build data output
+wscript.echo "\{reason:=""""}"	' make sure we always define the reason string
+wscript.echo "\B5\WMI Installed Software\0P\"
+For Each objOS in colOS
+	wscript.echo "  " & objOS.Caption & " (" & objOS.Version & ")  " & objOS.CSDVersion
+Next
+
+wscript.echo vbNewLine & "  \4\" & SpaceOut("Name",maxName+2) & SpaceOut("Version",maxVersion+2) & "Install Date" & "\0\"
+for i = 1 to nItems
+	wscript.echo "  " & SpaceOut(items(i-1).Name,maxName+2) & SpaceOut(items(i-1).Version,maxVersion+2) & items(i-1).Installed
+Next
+
+' Done
+wscript.quit(0)
+</tool:installed_software.vbs>

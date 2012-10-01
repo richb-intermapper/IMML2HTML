@@ -1,0 +1,59 @@
+<!-- 
+	VNC Server probe (com.dartware.tcp.vnc)
+	Copyright © 2001-2005 Dartware, LLC. All rights reserved.
+
+	TEX: (1.7) Fixed a typo (LINE -> _LINE) and added support for other versions of the RFB protocol.
+	TEX: (1.7) Added output of version (see http://www.realvnc.com/docs/rfbproto.pdf
+					or http://www.csd.uwo.ca/staff/magi/doc/vnc/rfbproto.pdf).
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.vnc"
+	human_name		=	"VNC Server"
+	version			= 	"1.7"
+	address_type		= 	"IP"
+	port_number		=	"5900"
+	display_name		=	"Servers-Standard/VNC Server"
+	
+</header>
+
+<description>
+
+\GB\VNC Server\P\
+
+Attempt to connect to a VNC Server. VNC uses RFB (Remote Frame Buffer) protocol for communication between clients and server.  The probe waits to receive a "RFB ###.###" string. If it arrives, the VNC server is assumed to be up and the probe simply disconnects.
+
+The Virtual Network Computer (VNC) protocol was originally designed at AT&T Labs in Cambridge. There are many implementations: the developers now support it from the RealVNC site at \U2\http://www.realvnc.com/\P0\.
+</description>
+
+<parameters>
+
+-- No parameters
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #20 @IDLE
+MTCH "RFB ([0-9][0-9][0-9]).([0-9][0-9][0-9])"r else @NO_VERSION
+#put $1 into $^major and $2 into $^minor
+EVAL ${^major} := sprintf( "%d", "${1}" )
+EVAL ${^minor} := sprintf( "%d", "${2}" )
+
+DONE OKAY
+
+@NO_VERSION:
+DONE ALRM "Did not receive version prompt. Received:${_LINE:40}"
+
+@IDLE
+DONE ALRM "No response from VNC Server."
+
+</script>
+
+<script-output>
+\B5\VNS Server information\P0\
+  \4\RFB Protocol version:\0\ ${^major}.${^minor}
+</script-output>

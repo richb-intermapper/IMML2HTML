@@ -1,0 +1,48 @@
+<!-- 
+	Basic TCP (com.dartware.tcp.basic)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.basic"
+	human_name		=	"Basic TCP"
+	version			= 	"1.5"
+	address_type	= 	"IP"
+	port_number		=	"23"
+	
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8008"
+
+	display_name	=	"Servers-Standard/Basic TCP"
+</header>
+
+<description>
+
+\GB\Basic TCP Connection Test\P\
+
+This basic TCP probe tests whether a TCP port accepts connections or not. If the specified port accepts the TCP connection, the device is reported UP. If the specified port fails to accept the TCP connection within sixty seconds, the device is reported DOWN.
+
+</description>
+
+<parameters>
+
+-- No parameters
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+DONE OKAY
+
+</script>
+
+<script-output>
+
+\B5\Basic TCP Information\0P\
+  \4\Time to establish connection:\0\ ${_connect} msecs
+
+</script-output>
+

@@ -1,0 +1,54 @@
+<!-- 
+	Gopher (com.dartware.tcp.gopher)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.gopher"
+	human_name		=	"Gopher"
+	version			= 	"1.6"
+	address_type	= 	"IP"
+	port_number		=	"70"
+	
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8011"
+
+	display_name	=	"Servers-Standard/Gopher"
+</header>
+
+<description>
+
+\GB\Internet Gopher Protocol\P\
+
+The document search and retrieval protocol described in \U2=http://www.ietf.org/rfc/rfc1436.txt\RFC 1436\P0\.  The default TCP port number for Gopher connections is port 70.
+
+This script connects to the gopher server and sends a line containing the "selector string".  By default, the selector string is empty and the gopher server returns its top level information as a sequence of lines.  This script only checks that some data is returned by the gopher server, it does not validate the contents.
+
+\i\Selector string\p\ is the line of data sent to the gopher server.  By default, this should be empty.
+
+</description>
+
+<parameters>
+
+"Selector String"	=	""
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+SEND "${Selector String}\r\n"
+MTCH "."r else goto @DISCONNECT
+SKIP "."r #+1
+DONE OKAY
+
+@IDLE:
+DONE DOWN "[Gopher] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@DISCONNECT:
+DONE DOWN "[Gopher] Connection disconnected while expecting \"${_STRINGTOMATCH}\"."
+
+</script>

@@ -1,0 +1,97 @@
+<!-- 
+	SNMP - DHCP Check (com.dartware.snmp.dhcpcheck)
+	Copyright (c) 2000-2010 Dartware, LLC. All rights reserved.
+	
+	23 Sep 2010  Created version 0.1. -cls
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.dhcpcheck"
+	human_name		=	"SNMP - Microsoft DHCP Lease Check"
+	version			= 	"0.3"
+	address_type	= 	"IP,AT"
+	port_number		=	"161"
+	display_name	=	"Servers-Proprietary/Microsoft/DHCP Lease Check"
+</header>
+
+
+<description>
+\GB\SNMP - Microsoft DHCP Lease Check\P\
+
+This probe generates an alarm if the count of free DHCP leases on a Microsoft DHCP server goes below the indicated number.
+The check is specific to a scope.
+
+\i\Scope\p\ is the DHCP scope to check (e.g., "192.168.1.0").
+
+\i\Free Lease Warning\p\ is the number of free leases remaining at which the device should go into warning.
+
+\i\Free Lease Alarm\p\ is the number of free leases remaining at which the device should go into alarm.
+
+\i\Free Lease Critical\p\ is the number of free leases remaining at which the device should become critical.
+
+Click \i\View the DHCP scope table\p\ to see a list of scopes available, along with their in-use lease, free lease, and pending offers information.
+
+</description>
+
+<parameters>
+"Scope"               = "0.0.0.0"
+"Free Lease Warning"  = "8"
+"Free Lease Alarm"    = "4"
+"Free Lease Critical" = "2"
+
+</parameters>
+
+<snmp-device-variables>
+	noAddInUse,			1.3.6.1.4.1.311.1.3.2.1.1.2.${Scope}, 		INTEGER, 		"Number of DHCP Leases In Use"
+	noAddFree,			1.3.6.1.4.1.311.1.3.2.1.1.3.${Scope}, 		INTEGER, 		"Number of DHCP Leases Free"
+	noPending,			1.3.6.1.4.1.311.1.3.2.1.1.4.${Scope}, 		INTEGER, 		"Number of Pending Offers"
+
+</snmp-device-variables>
+
+
+<snmp-device-thresholds>
+
+   critical: ${noAddFree} < ${Free Lease Critical}	"Fewer than ${Free Lease Critical} leases available."
+      alarm: ${noAddFree} < ${Free Lease Alarm}		"Fewer than ${Free Lease Alarm} leases available."
+    warning: ${noAddFree} < ${Free Lease Warning}	"Fewer than ${Free Lease Warning} leases available."
+
+</snmp-device-thresholds>
+
+<snmp-device-variables-ondemand>
+
+	scopeTable,						.1,								TABLE,       "Information about the DHCP scopes"
+	scopeTable/subnetAdd,       	1.3.6.1.4.1.311.1.3.2.1.1.1,	DEFAULT,     "Address"
+	scopeTable/noAddInUse,			1.3.6.1.4.1.311.1.3.2.1.1.2,	DEFAULT,     "Leases In Use"
+	scopeTable/noAddFree,			1.3.6.1.4.1.311.1.3.2.1.1.3,	DEFAULT,   	 "Leases Free"
+	scopeTable/noPending,			1.3.6.1.4.1.311.1.3.2.1.1.4,	DEFAULT,   	 "Pending Offers"
+
+</snmp-device-variables-ondemand>
+
+
+<snmp-device-display>
+
+\B5\SNMP Device Information\0P\
+  \4\Scope being checked         :\0\ ${Scope}
+  \4\Number of DHCP Leases In Use:\0\ ${noAddInUse}
+  \4\Number of DHCP Leases Free  :\0\ ${noAddFree}
+  \4\Number of Pending Offers    :\0\ ${noPending}
+
+  ${scopeTable:View the DHCP scope table}
+  
+</snmp-device-display>
+
+
+<snmp-device-properties>
+
+  pdutype = "get-request"
+  
+</snmp-device-properties>
+
+
+<datasets>
+	$noAddFree,		'dhcpfree',		"",		"true",		"Number of DHCP Leases Free"
+	$noAddInUse,	'dhcpinuse',	"",		"false",	"Number of DHCP Leases In Use"
+	$noPending,		'dhcppending',	"",		"false",	"Number of Pending Offers"
+</datasets>

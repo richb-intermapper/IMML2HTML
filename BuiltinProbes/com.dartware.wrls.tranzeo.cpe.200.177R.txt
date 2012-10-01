@@ -1,0 +1,320 @@
+<!--
+	Wireless - Tranzeo CPE 200 (com.dartware.wrls.tranzeo.cpe.200)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 23 May 2005 tex.
+-->
+
+
+<header>
+	"type"			= 	"tcp-script"
+	"package"		= 	"com.dartware"
+	"probe_name"	=	"wrls.tranzeo.cpe.200.177R"
+	"human_name"	=	"Wireless - Tranzeo CPE-200 (1.77.R)"
+	"version"		= 	"1.4"
+	"address_type"	= 	"IP"
+	"port_number"	=	"80"
+	"equiv_class"	= 	"WRLS"
+	"display_name"	=	"Wireless/Tranzeo/Tranzeo CPE-200 (1.77.R)"
+	"url_hint"		=	"http://${ADDRESS}"
+</header>
+
+<description>
+
+\GB\Tranzeo CPE-200\P\
+
+This probe is meant to monitor a \u2=http://www.tranzeo.com\Tranzeo\p0\ TR-CPE.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.3 or later.
+</description>
+
+<parameters>
+	"User"				=		""
+	"Password*"			=		""
+	"Quality Warning"		=		"60"
+	"Quality Alarm"			=		"50"
+	"Signal Warning"		=		"-72"
+	"Signal Alarm"			=		"-80"
+</parameters>
+
+<script>
+CONN #60
+FAIL @FAILED
+
+CHCK "${User}" ELSE @NO_USER
+
+STOR "RET" "@GET_CONFIG_DATA"
+
+WAIT #60 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+
+@GET_CONFIG_DATA
+
+#Get config data
+SEND "GET /DataConfig.js HTTP/1.1\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User}${Password*}" ELSE #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+SEND "\r\n"
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @UNAVAIL_GET_RESPONSE
+
+STOR "^content_length" #2048
+#Scan lines for "Content-Length" or ""
+NEXT
+MTCH "Content-Length[^0-9]*([0-9]+)"ir else goto #+4
+STOR "^content_length" "${1}"
+EXPT "^$"r
+GOTO #+2
+MTCH "^$"r else goto #-5
+
+LINE #${^content_length}
+DISC @NO_MATCH
+EXPT "data=\"(.*)\""ir
+
+EVAL ${^data} := unpack( "${1}", "#~" )
+
+#From ui.js ex_ConfigData():
+#	ret.SSID = ex_str(33);
+EVAL ${^ssid} := sprintf( "%s", substr( "${^data}", 10, 32 ) )
+
+
+#	ret.channel = ex_udec(1);
+EVAL ${^channel} := unpack( substr( "${^data}", 44, 1 ), "C" )
+
+#	if ( txrate<= 1) txrate = 1;
+#	else if (txrate <= 3) txrate = 2;
+#	else if (txrate <= 7) txrate = 5.5;
+#	else txrate = 11;
+EVAL ${^val} := unpack( substr( "${^data}", 48, 1 ), "C" )
+NBGT #7 #${^val} #+3
+STOR "^tx_rate" "11"
+GOTO #+8
+NBGT #3 #${^val} #+3
+STOR "^tx_rate" "5.5"
+GOTO #+5
+NBGT #1 #${^val} #+3
+STOR "^tx_rate" "2"
+GOTO #+2
+STOR "^tx_rate" "1"
+SCAT "^tx_rate" " Mb/s"
+
+#	if ( DataConfig.use_wep && DataConfig.wep_128 )
+#		document.write ("On (128 bit)");
+#	else if ( DataConfig.use_wep )
+#		document.write ("On (64 bit)");
+#	else
+#		document.write ("Off");
+STOR "^sec" "Off"
+EVAL ${^usewep} := unpack( substr( "${^data}", 50, 1 ), "C" )
+NBNE #${^usewep} #0 #+3
+STOR "^sec" "Off"
+GOTO #+7
+STOR "^sec" "On"
+EVAL ${^val} := unpack( substr( "${^data}", 51, 1 ), "C" )
+NBNE #${^val} #0 #+3
+SCAT "^sec" " (64 K)"
+GOTO #+2
+SCAT "^sec" " (128 K)"
+
+#	if ( DataConfig.use_wep && DataConfig.shared_key_auth )
+#		document.write ("On");
+#	else
+#		document.write ("Off");
+EVAL ${^val} := unpack( substr( "${^data}", 47, 1 ), "C" )
+NBNE #${^val} #0 #+3
+STOR "^authentication" "Off"
+GOTO #+5
+NBNE #${^usewep} #0 #+3
+STOR "^authentication" "Off"
+GOTO #+2
+STOR "^authentication" "On"
+
+
+
+#The sprintf handles the null-terminated string
+EVAL ${^device_name} := sprintf( "%s", substr( "${^data}", 104, 32 ) )
+
+
+#Reconnect and get DataStatic
+STOR "RET" "@GET_STATIC_DATA"
+DISC @RECONNECT
+SKIP ".*"r ELSE @RECONNECT
+
+GOTO @RECONNECT
+
+@GET_STATIC_DATA:
+WAIT #30 @IDLE (idle timeout in secs)
+SEND "GET /DataStatic.js HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" ELSE #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User}${Password*}" ELSE #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+SEND "\r\n"
+DISC @DISCONNECT (disconnect handler)
+
+MTCH "HTTP/"i ELSE @UNEXPECTED_GREETING
+MTCH "200" ELSE @UNAVAIL_GET_RESPONSE
+
+STOR "^content_length" #2048
+#Scan lines for "Content-Length" or ""
+NEXT
+MTCH "Content-Length[^0-9]*([0-9]+)"ir else goto #+4
+STOR "^content_length" "${1}"
+EXPT "^$"r
+GOTO #+2
+MTCH "^$"r else goto #-5
+
+LINE #${^content_length}
+DISC @NO_MATCH
+EXPT "data=\"(.*)\""ir
+
+EVAL ${^data} := unpack( "${1}", "#~" )
+
+#	MacAddress = byteArrayToMACAddress (DataStatic.slice (28,28+6)) + ""
+EVAL ${^MAC} := sprintf( "%a", substr( "${^data}", 28, 6 ) )
+
+#Reconnect and get data from /DataMeasure.js for signal strength
+STOR "RET" "@GET_SIGNAL"
+DISC @RECONNECT
+SKIP ".*"r ELSE @RECONNECT
+
+GOTO @RECONNECT
+
+@GET_SIGNAL:
+WAIT #30 @IDLE (idle timeout in secs)
+SEND "GET /DataMeasure.js HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" ELSE #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User}${Password*}" ELSE #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+SEND "\r\n"
+DISC @DISCONNECT (disconnect handler)
+
+MTCH "HTTP/"i ELSE @UNEXPECTED_GREETING
+MTCH "200" ELSE @UNAVAIL_GET_RESPONSE
+
+STOR "^content_length" #2048
+#Scan lines for "Content-Length" or ""
+NEXT
+MTCH "Content-Length[^0-9]*([0-9]+)"ir else goto #+4
+STOR "^content_length" "${1}"
+EXPT "^$"r
+GOTO #+2
+MTCH "^$"r else goto #-5
+
+LINE #${^content_length}
+DISC @NO_MATCH
+EXPT "data=\"(.*)\""ir
+
+EVAL ${^data} := unpack( "${1}", "#~" )
+
+#	var TempNoise = "";
+#	if (byteArrayToString (DataConfig.slice (0,0+33)) == "") {
+#		document.write (""); 
+#		TempNoise = ""
+#	} else {
+#		document.write (1*(DataMeasure[9]*256 + DataMeasure[10]));	
+#		TempNoise = 1*(DataMeasure[11]*256 + DataMeasure[12])		
+#	}
+EVAL ${^val} := sprintf( "%s", substr( "${^data}", 0, 32 ) )
+SBNE "" "^val" #+4
+STOR "signal" ""
+STOR "noise" ""
+GOTO #+7
+EVAL ${quality} := unpack( substr( "${^data}", 7, 2 ), ">S" )
+EVAL ${signal} := unpack( substr( "${^data}", 9, 2 ), ">S" )
+EVAL ${noise} := unpack( substr( "${^data}", 11, 2 ), ">S" )
+SBNE "${signal}" "^[^-].*"ir #+2
+STOR "signal" "-${signal}"
+SBNE "${noise}" "^[^-].*"ir #+2
+STOR "noise" "-${noise}"
+
+@DONE:
+NBLT #${quality} #${Quality Alarm} #+3
+DONE ALRM "Poor quality: ${quality}"
+GOTO #+3
+NBLT #${quality} #${Quality Warning} #+2
+DONE WARN "Low quality: ${quality}"
+
+NBGT #${signal} #${Signal Warning} #+4
+NBGT #${signal} #${Signal Alarm} #+2
+DONE ALRM "Poor signal strength: ${signal}"
+DONE WARN "Low signal strength: ${signal}"
+DONE OKAY
+
+@NO_MATCH:
+DONE WARN "Unrecognized response from device."
+
+@RECONNECT:
+RCON
+GOTO ${RET}:
+
+@IDLE:
+DONE DOWN "No data for ${_IDLETIMEOUT} seconds. [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@UNAVAIL_GET_RESPONSE:
+MTCH "503" ELSE #+2
+GOTO @RECONNECT
+MTCH m"50[0-9]" else goto @BAD_GET_RESPONSE
+DONE DOWN "${_LINE:50}"
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "201 Created"
+MTCH "202" ELSE #+2
+DONE WARN "202 Accepted"
+MTCH "204" ELSE #+2
+DONE WARN "204 No Content"
+MTCH "301" ELSE #+2
+DONE WARN "301 Moved Permanently"
+MTCH "302" ELSE #+2
+DONE WARN "302 Moved Temporarily"
+MTCH "304" ELSE #+2
+DONE WARN "304 Not Modified"
+MTCH "400" ELSE #+2
+DONE WARN "400 Bad Request"
+MTCH "401" ELSE #+2
+DONE WARN "401 Unauthorized"
+MTCH "403" ELSE #+2
+DONE WARN "Invalid login."
+MTCH "404" ELSE #+2
+DONE WARN "Unrecognized response (404)."
+DONE ALRM "Unknown Error Code ${_LINE:4}"
+
+@DISCONNECT:
+DONE DOWN "Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+</script>
+
+<script-output>
+\B5\Tranzeo CPE-200 Statistics\P0\
+    \4\Device Name:\0\ ${^device_name}
+           \4\SSID:\0\ ${^ssid}
+        \4\Channel:\0\ ${^channel}
+        \4\Tx Rate:\3\ ${^tx_rate}
+        \4\Quality:\0\ ${quality}\3\ %
+\4\Signal strength:\0\ ${chartable:-100:+0:$signal}\3\ dBm
+          \4\Noise:\0\ ${chartable:-100:+0:$noise}\3\ dBm
+   \4\CPE MAC Adrs:\0\ ${^MAC}
+            \4\WEP:\0\ ${^sec}
+ \4\Authentication:\0\ ${^authentication}
+</script-output>

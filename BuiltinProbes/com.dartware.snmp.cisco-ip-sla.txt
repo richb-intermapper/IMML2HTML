@@ -1,0 +1,250 @@
+<!-- 
+  SNMP - Cisco IP SLA Jitter Probe (com.dartware.snmp.cisco-ip-sla)
+  Cisco IP SLA Jitter Custom SNMP Probe.
+  
+  Created by Dennis O'Reilly, University of British Columbia, February 2007
+  Used by permission.
+  
+  For support, please contact Dartware at support@intermapper.com.
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.cisco-ip-sla"
+	human_name		=	"SNMP - Cisco IP SLA Jitter Probe"
+	version			= 	"2.3"
+	address_type	= 	"IP"
+	port_number		=	"161"
+	flags			=	"SNMPv2c,NOLINKS"
+	display_name	=	"Network Devices/Cisco/Cisco - IP SLA Jitter"
+</header>
+
+
+<description>
+
+\GB\SNMP - Cisco IP SLA Jitter Probe\P\
+
+This probe extracts jitter test data from a Cisco IP SLA agent that is running on a Cisco router or switch. Typically these jitter tests are used to measure jitter, latency, and packet loss for VoIP and video conferencing applications.
+
+\i\SNMP Index\p\ is the value used on the "ip sla monitor" command when configuring the IP SLA agent in the Cisco switch or router (see example below). This value identifies the jitter test, and is the SNMP index used by Intermapper to probe the device. To probe for different instances of jitter tests on a single Cisco switch or router, create separate devices on your Intermapper map each with a different SNMP Index. 
+
+\i\Latency Alarm Threshold\p\ is the ALARM threshold for latency in milliseconds. If Average Latency value exceeds this threshold the device will enter the Alarm state.
+
+\i\Latency Warning Threshold\p\ is the WARNING threshold for latency in milliseconds. If the Average Latency value exceeds this threshold the device will enter the Warning state.
+
+\i\Jitter Alarm Threshold\p\ is the ALARM threshold for Jitter. If the Average Jitter value exceeds this threshold the device will go into the Alarm state.
+
+\i\Jitter Warning Threshold\p\ is the WARNING threshold for Jitter. If the Average Jitter value exceeds this threshold the device will go into the Warning state.
+
+\i\Packet Loss Alarm Threshold\p\ is the ALARM threshold for Packet Loss. If the Percent Packet Loss value exceeds this threshold, the device will enter the Alarm state.
+
+\i\Example\p\
+Example IOS commands for configuring an IP SLA jitter test to run on a Cisco router or switch:
+
+ip sla monitor 250
+  type jitter dest-ipaddr w.w.w.w dest-port 50505 source-ipaddr x.x.x.x num-packets 2000 interval 20
+  request-data-size 256 
+  owner yyyy
+  tag zzzz
+  exit
+
+In the above example "250" is the SNMP index to use. This can be any value as long as it is unique. "w.w.w.w" is the IP address of the remote IP SLA responder. "x.x.x.x" is the local IP address of this IP SLA agent. "yyyy" is any text information identifying the owner of the test (e.g., name of network service provider). "zzzz" is any text information identifying this particular test.
+
+To schedule the IP SLA test to run forever: 
+
+ip sla monitor schedule 66 life forever start-time now
+
+To start the IP SLA responder on the remote IP SLA responder:
+
+ip sla monitor responder
+
+In the above IOS commands the jitter test does not specify a codec type, and so ICPIF and MOS scores are not available. If the test is modified to include a codec type then minor revisions will be required to this SNMP probe. Also, some routers and switches may not support the MIB variables for ICPIF and MOS scores - this depends on the IOS train. 
+
+More information about configuring Cisco IP SLA is available on the www.cisco.com site.
+</description>
+
+<parameters>
+
+"SNMP Index"				= "100"
+"Latency Alarm Threshold"   	= "150"
+"Latency Warning Threshold" 	= "100"
+"Jitter Alarm Threshold"		= "30"
+"Jitter Warning Threshold"	= "20"
+"Packet Loss Alarm Threshold"	= "1"
+
+</parameters>
+
+<snmp-device-variables>
+	-- TYPE can be one of:  DEFAULT, PER-SECOND, PER-MINUTE, TOTAL-VALUE. 
+	-- Use DEFAULT for string and integer values.
+	
+	-- MIB Variable --		---	OID ---					--- TYPE ---	--- LEGEND ---
+	
+	
+	--Get the Avg CPU Busy for the Cisco switch or router:
+	cpmCPUTotal1min,			1.3.6.1.4.1.9.9.109.1.1.1.1.4.1,		Total-Valuation,	"Avg. CPU Busy % (1 min.)"
+
+
+	-- Get the Jitter Test Frequency, Interval, and Packets:
+	Frequency,		1.3.6.1.4.1.9.9.42.1.2.1.1.6.${SNMP Index},	DEFAULT, 	"Frequency of Tests"
+	Interval,		1.3.6.1.4.1.9.9.42.1.2.2.1.17.${SNMP Index},	DEFAULT, 	"Interval Between Packets"
+	NumPackets,	1.3.6.1.4.1.9.9.42.1.2.2.1.18.${SNMP Index},	DEFAULT, 	"# of Packets Per Test"
+	DataRequestSize,	1.3.6.1.4.1.9.9.42.1.2.2.1.3.${SNMP Index},	DEFAULT, "Packet Size"
+
+
+	-- Get Latest Round Trip Time (RTT) Test Results:
+	NumOfRTT,	1.3.6.1.4.1.9.9.42.1.5.2.1.1.${SNMP Index},	DEFAULT, 	"# Round Trips"
+	RTTSum,	1.3.6.1.4.1.9.9.42.1.5.2.1.2.${SNMP Index},	DEFAULT, 	"Sum of RTTs"
+	RTTSum2,	1.3.6.1.4.1.9.9.42.1.5.2.1.3.${SNMP Index},	DEFAULT, 	"Sum of Squared RTTs"
+	RTTMin,	1.3.6.1.4.1.9.9.42.1.5.2.1.4.${SNMP Index},	DEFAULT, 	"Min RTT "
+	RTTMax,	1.3.6.1.4.1.9.9.42.1.5.2.1.5.${SNMP Index},	DEFAULT, 	"Max RTT"
+	PacketLossSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.26.${SNMP Index},	DEFAULT, 	"# Packets Lost SD"
+	PacketLossDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.27.${SNMP Index},	DEFAULT, 	"# Packets Lost DS"
+	PacketOutOfSequence,	1.3.6.1.4.1.9.9.42.1.5.2.1.28.${SNMP Index},	DEFAULT, 	"# Packets Out Of Sequence"
+	PacketMIA,	1.3.6.1.4.1.9.9.42.1.5.2.1.29.${SNMP Index},	DEFAULT, 	"PacketMIA"
+	PacketLateArrival,	1.3.6.1.4.1.9.9.42.1.5.2.1.30.${SNMP Index},	DEFAULT, 	"# Packets Late Arrival"
+	RTTAvg,	($NumOfRTT == 0 ? 0 : ($RTTSum / $NumOfRTT)),			CALCULATION, "RTTAvg"
+	TotalPacketLoss,	 ($PacketLossSD + $PacketLossDS),			CALCULATION, "Total Packets Lost"
+
+
+	-- Compute the Percent Packet Loss:
+	PercentPacketLoss, ($NumOfRTT == 0 ? 0 : ( (($PacketLossSD + $PacketLossDS) * 100) / $NumOfRTT)), 	CALCULATION, "% Packet Loss"
+
+
+	-- Get the Latest Jitter Test Results:
+	MinOfPositivesSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.6.${SNMP Index},	DEFAULT, 	"Min +Jitter SD"
+	MaxOfPositivesSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.7.${SNMP Index},	DEFAULT, 	"Max +Jitter SD"
+	NumOfPositivesSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.8.${SNMP Index},	DEFAULT, 	"# +Jitter SD"
+	SumOfPositivesSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.9.${SNMP Index},	DEFAULT, 	"Sum of +Jitter SD"
+	Sum2PositivesSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.10.${SNMP Index},	DEFAULT, 	"Sum2 of +Jitter SD"
+	AvgPositivesSD,	($NumOfPositivesSD == 0 ? 0 : ($SumOfPositivesSD / $NumOfPositivesSD)),	CALCULATION,	"Avg +Jitter SD"
+
+	MinOfNegativesSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.11.${SNMP Index},	DEFAULT, 	"Min -Jitter SD"
+	MaxOfNegativesSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.12.${SNMP Index},	DEFAULT, 	"Max -Jitter SD"
+	NumOfNegativesSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.13.${SNMP Index},	DEFAULT, 	"# -Jitter SD"
+	SumOfNegativesSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.14.${SNMP Index},	DEFAULT, 	"Sum of -Jitter SD"
+	Sum2NegativesSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.15.${SNMP Index},	DEFAULT, 	"Sum2 pf -Jitter SD"
+	AvgNegativesSD,	($NumOfNegativesSD == 0 ? 0 : ($SumOfNegativesSD / $NumOfNegativesSD)),	CALCULATION,	"Avg -Jitter SD"
+
+	MinOfPositivesDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.16.${SNMP Index},	DEFAULT, 	"Min +Jitter DS"
+	MaxOfPositivesDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.17.${SNMP Index},	DEFAULT, 	"Max +Jitter DS"
+	NumOfPositivesDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.18.${SNMP Index},	DEFAULT, 	"# +Jitter DS"
+	SumOfPositivesDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.19.${SNMP Index},	DEFAULT, 	"Sum +Jitter DS"
+	Sum2PositivesDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.20.${SNMP Index},	DEFAULT, 	"Sum2 +Jitter DS"
+	AvgPositivesDS,	($NumOfPositivesDS == 0 ? 0 : ($SumOfPositivesDS / $NumOfPositivesDS)),	CALCULATION,	"Avg +Jitter DS"
+
+	MinOfNegativesDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.21.${SNMP Index},	DEFAULT, 	"Min -Jitter DS"
+	MaxOfNegativesDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.22.${SNMP Index},	DEFAULT, 	"Max -Jitter DS"
+	NumOfNegativesDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.23.${SNMP Index},	DEFAULT, 	"# -Jitter DS"
+	SumOfNegativesDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.24.${SNMP Index},	DEFAULT, 	"Sum -Jitter DS"
+	Sum2NegativesDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.25.${SNMP Index},	DEFAULT, 	"Sum2 -Jitter DS"
+	AvgNegativesDS,	($NumOfNegativesDS == 0 ? 0 : ($SumOfNegativesDS / $NumOfNegativesDS)),	CALCULATION,	"Avg -Jitter DS"
+
+
+	-- Compute the Average Jitter Value:
+	-- Note this is not an estimate of the statistical variance in packet 	
+	-- 		interarrival times as defined in RFC1889 - rather it is the average of 
+	-- 		the SD and DS jitter values for the latest test
+	AvgJitter, ($NumPackets == 0 ? 0 : ( ($SumOfPositivesSD + $SumOfNegativesSD + $SumOfPositivesDS + $SumOfNegativesDS) / ($NumPackets*2))),	CALCULATION,	"Avg Jitter"
+
+
+	-- Compute the Total Jitter:
+	TotalJitter,	 ($SumOfPositivesSD + $SumOfNegativesSD + $SumOfPositivesDS + $SumOfNegativesDS),	CALCULATION, "Total Jitter"
+
+
+	-- Compute the Max Jitter:
+	MaxJitter,	 (max($MaxOfPositivesSD, $MaxOfNegativesSD, $MaxOfPositivesDS, $MaxOfNegativesDS)),	CALCULATION, "Max Jitter"
+
+
+	-- Get the Latest Latency Test Results:
+	-- Note - These One Way (OW) tests rely on the accuracy of the clocks at both ends.
+	--        If the clocks are not accurate you will see that the OW values
+	--        wander, and NumofOW will drop or go to zero. This happens when
+	--        the a OW packet arrives with a sender time that is earlier than the receiver time.
+	NumOfOW,	1.3.6.1.4.1.9.9.42.1.5.2.1.41.${SNMP Index},	DEFAULT, 	"# Packets"
+
+	OWSumSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.33.${SNMP Index},	DEFAULT, 	"Sum of Latencies SD"
+	OWSum2SD,	1.3.6.1.4.1.9.9.42.1.5.2.1.34.${SNMP Index},	DEFAULT, 	"Sum2 of Latencies SD"
+	OWMinSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.35.${SNMP Index},	DEFAULT, 	"Min Latency SD"
+	OWMaxSD,	1.3.6.1.4.1.9.9.42.1.5.2.1.36.${SNMP Index},	DEFAULT, 	"Max Latency SD"
+	OWAvgSD,	($NumOfOW == 0 ? 0 : ($OWSumSD / $NumOfOW)), 			CALCULATION, 	"Avg Latency SD"
+
+	OWSumDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.37.${SNMP Index},	DEFAULT, 	"Sum of Latencies DS"
+	OWSum2DS,	1.3.6.1.4.1.9.9.42.1.5.2.1.38.${SNMP Index},	DEFAULT, 	"Sum2 of Latencies DS"
+	OWMinDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.39.${SNMP Index},	DEFAULT, 	"Min Latency DS"
+	OWMaxDS,	1.3.6.1.4.1.9.9.42.1.5.2.1.40.${SNMP Index},	DEFAULT, 	"Max Latency DS"
+	OWAvgDS,	($NumOfOW == 0 ? 0 : ($OWSumDS / $NumOfOW)), 			CALCULATION, 	"Avg Latency DS"
+
+
+	-- Compute the Average Latency:
+	AvgLatency, ($NumOfOW == 0 ? 0 : (($OWSumSD + $OWSumDS) / ($NumOfOW * 2))),		CALCULATION,	"Avg Latency"
+
+
+	-- Compute the Max Latency:
+	MaxLatency,	 (max($OWMaxSD, $OWMaxDS)),	CALCULATION, "Max Latency"
+
+
+	-- Get the Hourly Stats:
+	StatsRTTMax,	1.3.6.1.4.1.9.9.42.1.3.5.1.9.${SNMP Index},	DEFAULT, 	"60min Max RTT"
+	StatsPacketLossSD,	1.3.6.1.4.1.9.9.42.1.3.5.1.34.${SNMP Index},	DEFAULT, 	"60min Packet Loss SD"
+	StatsPacketLossDS,	1.3.6.1.4.1.9.9.42.1.3.5.1.35.${SNMP Index},	DEFAULT, 	"60min Packet Loss DS"
+	StatsMaxofPositivesSD,	1.3.6.1.4.1.9.9.42.1.3.5.1.11.${SNMP Index},	DEFAULT, 	"60min Max +Jitter SD"
+	StatsMaxofNegativesSD,	1.3.6.1.4.1.9.9.42.1.3.5.1.17.${SNMP Index},	DEFAULT, 	"60min Max -Jitter SD"
+	StatsMaxofPositivesDS,	1.3.6.1.4.1.9.9.42.1.3.5.1.23.${SNMP Index},	DEFAULT, 	"60min Max +Jitter DS"
+	StatsMaxofNegativesDS,	1.3.6.1.4.1.9.9.42.1.3.5.1.29.${SNMP Index},	DEFAULT, 	"60min Max -Jitter DS"
+
+
+	-- Trim the Leading Blanks off the Counter32 values:
+ 	OneHourPacketLossSD,	(0+ $StatsPacketLossSD),	CALCULATION,	"60min Packet Loss SD"
+	OneHourPacketLossDS,	(0+ $StatsPacketLossDS),	CALCULATION,	"60min Packet Loss DS"
+
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm: 	${AvgLatency} > ${Latency Alarm Threshold} 
+	warning: ${AvgLatency} > ${Latency Warning Threshold}
+	alarm: 	${AvgJitter} > ${Jitter Alarm Threshold}
+	warning: 	${AvgJitter} > ${Jitter Warning Threshold}
+	alarm: 	${PercentPacketLoss} > ${Packet Loss Alarm Threshold}
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Cisco IP SLA Jitter Test Information\0P\
+Probe version: Feb.1, 2007, IP SLA Agent Avg. CPU Percent over 1 min:${cpmCPUTotal1min}%
+Alarm and Warning Thresholds:\0P\
+   Latency Alarm:\0\${Latency Alarm Threshold}ms, Latency Warning:\0\${Latency Warning Threshold}ms
+   Jitter Alarm:\0\${Jitter Alarm Threshold}ms, Jitter Warning:\0\${Jitter Warning Threshold}ms
+   Packet Loss Alarm:\0\${Packet Loss Alarm Threshold}%
+Jitter Test Parameters:\0P\
+   Send ${NumPackets} ${DataRequestSize}-byte packets spaced ${Interval}ms apart every ${Frequency} seconds
+   SNMP index:\0P\${SNMP Index}
+Latest Round Trip Test Results:\0P\
+   Number of Round Trips:\0\${NumOfRTT}, Min:\0\${RTTMin}ms, Max:\0\${RTTMax}ms, Sum:\0\${RTTSum}ms, Avg:\0\${RTTAvg}ms
+   SD Packets Lost:\0\${PacketLossSD}, DS Packets Lost:\0\${PacketLossDS}
+   Out of Sequence:\0\${PacketOutOfSequence}, Late Arrival:\0\${PacketLateArrival}
+   Jitter Test Packet Loss:\0\${PercentPacketLoss}%, Total Packets Lost:\0\${TotalPacketLoss}
+Latest Jitter Test Results:\0P\
+   SD +Jitter Values #:\0\${NumOfPositivesSD}, Min:\0\${MinOfPositivesSD}ms, Max:\0\${MaxOfPositivesSD}ms, Sum:\0\${SumOfPositivesSD}ms, Avg:\0\${AvgPositivesSD}ms
+   SD -Jitter Values #:\0\${NumOfNegativesSD}, Min:\0\${MinOfNegativesSD}ms, Max:\0\${MaxOfNegativesSD}ms, Sum:\0\${SumOfNegativesSD}ms, Avg:\0\${AvgNegativesSD}ms
+   DS +Jitter Values #:\0\${NumOfPositivesDS}, Min:\0\${MinOfPositivesDS}ms, Max:\0\${MaxOfPositivesDS}ms, Sum:\0\${SumOfPositivesDS}ms, Avg:\0\${AvgPositivesDS}ms
+   DS -Jitter Values #:\0\${NumOfNegativesDS}, Min:\0\${MinOfNegativesDS}ms, Max:\0\${MaxOfNegativesDS}ms, Sum:\0\${SumOfNegativesDS}ms, Avg:\0\${AvgNegativesDS}ms
+   Average Jitter Value:\0\${chartable: #.## :$AvgJitter}ms, Total Jitter:\0\${chartable: #.## :$TotalJitter}ms, Max Jitter:\0\${chartable: #.## :$MaxJitter}ms
+Latest Latency Test Results:\0P\
+   SD Packets Sent #:\0\${NumOfOW}, Min:\0\${OWMinSD}ms, Max:\0\${OWMaxSD}ms, Sum:\0\${OWSumSD}ms, Avg:\0\${OWAvgSD}ms
+   DS Packets Rcvd #:\0\${NumOfOW}, Min:\0\${OWMinDS}ms, Max:\0\${OWMaxDS}ms, Sum:\0\${OWSumDS}ms, Avg:\0\${OWAvgDS}ms
+   Average Latency:\0\${chartable: #.## :$AvgLatency}ms, Max Latency:\0\${chartable: #.## :$MaxLatency}ms
+60min Accumulated Test Results:\0P\
+   60min Max Round Trip Time:\0\${StatsRTTMax}ms
+   60min Total SD Packets Lost:\0\${OneHourPacketLossSD}, Total DS Packets Lost:\0\${OneHourPacketLossDS}
+   60min Max SD +Jitter Value:\0\${StatsMaxofPositivesSD}ms, -Jitter, Value:\0\${StatsMaxofNegativesSD}ms
+   60min Max DS +Jitter Value:\0\${StatsMaxofPositivesDS}ms, -Jitter, Value:\0\${StatsMaxofNegativesDS}ms
+</snmp-device-display> 
+
+<datasets>
+	$cpmCPUTotal1min,	'cpupercentavg',	"percent",	"true",		"Average CPU Percent"
+	$AvgJitter,			'jitteravg',		"msec",		"true",		"Average Jitter Value"
+	$AvgLatency,		'latencymsec',		"msec",		"true",		"Average Latency"
+	$PercentPacketLoss,	'pktloss',			"percent",	"true",		"Jitter Test Packet Loss"
+</datasets>
+

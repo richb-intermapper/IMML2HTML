@@ -1,0 +1,210 @@
+<!--
+	Wireless - Tranzeo Classic (com.dartware.wrls.tranzeo.classic)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 20 Jun 2005 tex.
+
+	This probe is known to monitor System Firmware Version: 3.40.21
+-->
+
+
+<header>
+	"type"			= 	"tcp-script"
+	"package"		= 	"com.dartware"
+	"probe_name"	=	"wrls.tranzeo.classic"
+	"human_name"	=	"Wireless - Tranzeo Classic"
+	"version"		= 	"1.3"
+	"address_type"	= 	"IP"
+	"port_number"	=	"23"
+	"equiv_class"	= 	"WRLS"
+	"display_name"	=	"Wireless/Tranzeo/Tranzeo Classic"
+	"url_hint"		=	"http://${ADDRESS}"
+</header>
+
+<description>
+
+\GB\Tranzeo Classic (1000, 2000, 3000 series)\P\
+
+This probe is meant to monitor a \u2=http://www.tranzeo.com\Tranzeo\p0\ Classic.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.3 or later.
+</description>
+
+<parameters>
+	"Password*"			=		""
+</parameters>
+
+<script>
+CONN #60 "TELNET"
+FAIL @FAILED
+
+STOR "^output" ""
+
+CHCK "${Password*}" else @NO_PASSWORD
+
+#LINE ON
+WAIT #60 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+
+LINE OFF
+
+EXPT "Password:"i @UNEXPECTED_GREETING
+SEND "${Password*}\r\n"
+LINE ON
+NEXT
+EXPT "*"
+LINE OFF
+NEXT
+
+DISC @PARSING_FAILED
+
+MTCH "Password"i else goto @VALID_LOGIN
+DONE ALRM "Invalid password."
+
+@VALID_LOGIN:
+LINE ON
+NEXT
+SEND "set\r\n"
+EXPT "^-----------+$"r
+
+@SET_LOOP:
+NEXT
+MTCH "^\\s*apname\\s*(.*[^ ])\\s+.+\\s*$"ir #+3
+STOR "^device_name" "${1}"
+GOTO @SET_LOOP
+MTCH "^\\s*essid\\s*(.*[^ ])\\s+.+\\s*$"ir #+3
+STOR "^ssid" "${1}"
+GOTO @SET_LOOP
+MTCH "^\\s*channel\\s*(.*[^ ])\\s+.+\\s*$"ir #+3
+STOR "^channel" "${1}"
+GOTO @SET_LOOP
+MTCH "^\\s*mode\\s*(.*[^ ])\\s+.+\\s*$"ir #+3
+STOR "^mode" "${1}"
+GOTO @SET_LOOP
+MTCH "^-----------+$"r @SET_LOOP
+#SET output done
+
+SEND "info\r\n"
+EXPT "^\\s*MAC Address[^:]*:\\s*([0123456789ABCDEF\:]*)\\s*"ir
+#MTCH ":\\s+(.*)$"ir #+2
+STOR "^MAC" "${1}"
+NEXT
+EXPT "^\\s*System Firmware Version[^:]*:\\s*(.*)\\s*"ir
+#MTCH ":\\s+(.*)$"ir #+2
+STOR "^firmware" "${1}"
+NEXT
+EXPT "\\s*(CH0?${^channel}\\s*[0123456789]*.?Hz)\\s*"ir
+#MTCH ":\\s+(.*)$"ir #+2
+STOR "^channel" "${1}"
+NEXT
+#SKIP ".*"r
+
+#If mode == AP, then get the total number of clients connected (via 'st st')
+#Else, then get the signal level(s) (via 'st st')
+
+SEND "wep\r\n"
+EXPT "^\\s*WEP Mode:\\s*(.*)"ir
+STOR "^WEP" "${1}"
+#SKIP ".*"r
+
+SEND "auth\r\n"
+EXPT "\\s*Mode:\\s*(.*)"ir
+STOR "^authentication" "${1}"
+#SKIP ".*"r
+
+SEND "8021xcfg\r\n"
+EXPT ".*AUTH Mode[^:]*:\\s*(.*)"ir
+STOR "^8021x" "${1}"
+#SKIP ".*"r
+
+SEND "ipcfg\r\n"
+EXPT ".*netmask[^:]*:\\s*([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)"ir
+STOR "^ip_mask" "${1}"
+EXPT ".*gateway[^:]*:\\s*([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)"ir
+STOR "^ip_gateway" "${1}"
+
+SEND "debug_ps\r\n"
+EXPT ".*Uptime.*([0-9]+):([0-9]+):([0-9]+)"ir
+EVAL _uptime := ($1 * 60 + $2) * 60 + $3
+#SKIP ".*"r
+
+SEND "stat\r\n"
+SBNE "${^mode}" "^\\s*sa..?"ir @COUNT_CLIENTS
+
+#Get the signal level if mode == 'sa.*'ir
+EXPT ".*Signal Level[^:]*:\\s*([-0123456789]+)"ir
+STOR "signal" "${1}"
+
+STOR "^output" "    \\4\\Signal Level:\\0\\ $${signal}"
+
+GOTO @GET_NO_BUFFERS
+
+#Count the number of connected clients if mode != 'sa.*'ir
+@COUNT_CLIENTS:
+#Look for header
+EXPT "^-+[- ]+$"ir
+NEXT
+
+STOR "clients" "0"
+@CLIENT_COUNT_LOOP:
+MTCH "^\\s*([0-9]+)\\s*"ir #+3
+NADD "clients" #1
+GOTO #+2
+MTCH "=+[^=]+=+"ir #+2
+#Break out of the loop because we found '=== System Statistics ==='
+GOTO #+3
+NEXT
+GOTO @CLIENT_COUNT_LOOP
+
+STOR "^output" "         \\4\\Clients:\\0\\ $${clients}"
+
+@GET_NO_BUFFERS
+#SEND "stat sys\r\n"
+EXPT ".*No Buffer[^:]*:\\s*([0-9]+)"ir
+STOR "no_buffer" "${1}"
+
+SEND "exit\r\n"
+DONE OKAY
+
+@IDLE:
+DONE WARN "No data for ${_IDLETIMEOUT} seconds."
+
+@UNEXPECTED_GREETING:
+DONE ALRM "Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@DISCONNECT:
+DONE DOWN "Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+#Usually occurs because an "EXPT" statement didn't match
+@PARSING_FAILED:
+SEND "exit\r\n"
+DONE ALRM "Unable to parse data."
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+@NO_PASSWORD:
+DONE ALRM "No password specified."
+
+</script>
+
+<script-output>
+\B5\Tranzeo Statistics\P0\
+     \4\Device Name:\0\ ${^device_name}
+\4\Firmware Version:\0\ ${^firmware}
+            \4\Mode:\0\ ${^mode}
+           \4\ESSID:\0\ ${^ssid}
+         \4\Channel:\0\ ${^channel}
+     \4\MAC Address:\0\ ${^MAC}
+     \4\Subnet Mask:\0\ ${^ip_mask}
+      \4\IP Gateway:\0\ ${^ip_gateway}
+             \4\WEP:\0\ ${^WEP}
+          \4\802.1x:\0\ ${^8021x}
+  \4\Authentication:\0\ ${^authentication}
+       \4\No Buffer:\0\ ${no_buffer}
+${^output}
+</script-output>

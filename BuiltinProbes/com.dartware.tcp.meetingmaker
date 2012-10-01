@@ -1,0 +1,36 @@
+<!-- 
+	MeetingMaker (com.dartware.tcp.meetingmaker)
+	Copyright © 2002 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.meetingmaker"
+	human_name		=	"MeetingMaker"
+	version			= 	"1.4"
+	address_type	= 	"IP"
+	port_number		=	"649"
+	display_name	=	"Servers-Proprietary/MeetingMaker"
+</header>
+
+<description>
+
+\GB\MeetingMaker Probe\P\
+
+The MeetingMaker server listens on port 649. This probe attempts to connect and exits with OKAY status if it succeeds.
+
+</description>
+
+<parameters>
+
+-- No parameters.
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+DONE OKAY
+
+</script>

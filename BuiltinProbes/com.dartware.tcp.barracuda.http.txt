@@ -1,0 +1,642 @@
+<!-- 
+	Barracuda HTTP (com.dartware.tcp.barracuda.http)
+	Copyright � 2005-2007 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.barracuda.http"
+	human_name		=	"Barracuda HTTP"
+	version			= 	"2.6"
+	address_type		= 	"IP"
+	port_number		=	"8000"
+	display_name		=	"Servers-Proprietary/Barracuda/Barracuda HTTP"
+	url_hint		=	"http://${ADDRESS}:${PORT}/"
+</header>
+
+<description>
+
+\GB\Barracuda Spam Firewall (HTTP)\P0\
+
+This TCP probe queries a \U2=http://www.barracudanetworks.com/\Barracuda Spam Firewall\P0\ for various performance statistics.
+
+The BASIC->Status page of the Administrators interface is retrieved via HTTP.
+
+\i\User\p\ is the name of the administrator.
+
+\i\Password\p\ is the password for administrator.
+
+\i\Port\p\ is the Barracuda's Web Interface HTTP Port set on the BASIC->Administration page.
+
+\B\Thresholds\P\
+
+\i\In/Out Queue Size\p\: X In/ X Out - both values should be less than 100.  If either value consistently exceeds 100 for greater than 30 minutes that MAY mean there is a problem that needs to be looked at.  Sometimes the value will rise temporarily and then go back down after 10 or 15 minutes.  
+
+This is normal behavior for the Inbound Queue and can be the result of an orchestrated attack.  The Barracuda will attempt to read in as many messages as it can and that will tend to slow down the processing rate, which in turn means an increase in the queue size.  If the Outbound Queue increases that usually means that the destination server is unavailable or the local DNS is not working.
+
+Recommendation - If either queue exceeds 100 for more than 15 minutes = WARNING, if either queue exceeds 500 for more than 30 minutes = ALARM
+
+\i\Average Latency\p\: X seconds - Is the average time it takes to receive, process and deliver the last 30 messages.  It should normally be below 50 seconds.  If it is consistently over 50 seconds for greater than 30 minutes that MAY mean there is a problem that needs to be looked at.  Sometimes the value will rise temporarily and then go back down after 10 or 15 minutes.    This is normal behavior.
+
+Recommendation - If average latency exceeds 50 seconds for more than 15 minutes = WARNING, if average latency exceeds 150 seconds for more than 30 minutes = ALARM
+
+\i\Last Message\p\: X minute ago - For a busy machine this value should be low, normally less than 5 minutes.  If it is consistently over 20 minutes for greater than 30 minutes that MAY mean there is a problem
+that needs to be looked at.  Sometimes the value will rise temporarily and then go back down after 2 or 3 minutes.  This is normal behavior.
+
+Recommendation - If last message exceeds 15 minutes = WARNING, if last message exceeds 30 minutes = ALARM
+
+\i\Unique Recipients\p\: X number - This number represents the number of unique email addresses processed over the past 24 hours.
+
+Recommendation - No general rule possible.
+
+\i\CPU 1 Fan Speed\p\: X RPM - Should be between 3,000 and 5,000 RPM
+
+\i\CPU 2 Fan Speed\p\: X RPM - Should be between 3,000 and 5,000 RPM
+
+Recommendation - If either CPU fan speed is less than 2500 = WARNING, if either fan speed is less than 500 = ALARM
+
+\i\Redundancy (RAID)\p\:  Fully Operational - If this ever says that they are NOT fully operational that is a problem that needs to be looked at.
+
+Recommendation - If RAID says it is no fully operational for more than 2 hours = WARNING, if RAID says it is not fully operational for more than 48 hours = ALARM
+
+\i\Firmware Storage\p\: X % - Should be somewhere between 60 - 80%.  If it exceeds 80% that usually means that a debug file needs to be deleted.  This can be done on a non-emergency basis.
+
+Recommendation - If firmware storage exceeds 80% = WARNING, if firmware storage exceeds 90% = ALARM
+
+\i\Mail/Log Storage\p\: X % - Should be somewhere between 1 - 70%.
+
+Recommendation - If mail/log storage exceeds 70% = WARNING, if mail/log storage exceeds 80% = ALARM
+
+\I\System Load\P\: X % - Can vary wildly between 1 and 100% during normal operation.  If it stays at 100% for greater than 2 hours that MAY mean there is a problem that needs to be looked at.   Sometimes the value will rise temporarily and then go back down after 2 or 3 minutes. This is normal behavior.
+
+Recommendation - If System Load is higher than 80% for more than 1 hour = WARNING, if System Load is higher than 95% for more than 3 hours = ALARM
+
+\I\CPU Temperature\P\: Should be between 40 and 70 degrees C
+
+Recommendation - If CPU Temp is higher than 70 degrees C for more than 30 minutes = WARNING, if CPU TEMP is higher than 80 degrees C for more than 1 hour = ALARM		
+</description>
+
+<parameters>
+
+"User"				=		"admin"
+"Password*"			=		""
+
+"In Queue Warning"		=		"100"
+"In Queue Alarm"		=		"500"
+
+"Out Queue Warning"		=		"100"
+"Out Queue Alarm"		=		"500"
+
+"Latency Warning"		=		"50"
+"Latency Alarm"			=		"150"
+
+"Last Message Warning"		=		"15"
+"Last Message Alarm"		=		"30"
+
+"Firmware Storage Warning"	=		"80"
+"Firmware Storage Alarm"	=		"90"
+
+"Mail/Log Storage Warning"	=		"70"
+"Mail/Log Storage Alarm"	=		"80"
+
+"System Load Warning"		=		"80"
+"System Load Alarm"		=		"95"
+
+"Fan Speed Warning"		=		"2500"
+"Fan Speed Alarm"		=		"500"
+
+"Temperature Warning"		=		"70"
+"Temperature Alarm"		=		"80"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+FAIL @FAILED
+
+#The script should only have output if everything goes smoothly and the variables are populated
+STOR "^script-output0" ""
+STOR "^script-output1" ""
+STOR "^script-output2" ""
+
+STOR "firmware" #0
+STOR "^num_temps" "0"
+STOR "^num_fans" "0"
+STOR "^offline" "false"
+STOR "^index_url" "/cgi-bin/index.cgi"
+
+CHCK "${User}" else goto @NO_USER
+
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @FAILED (disconnect handler)
+
+@GET_INDEX_URL:
+SEND "GET ${^index_url} HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+SEND "\r\n"
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "302" else goto #+6
+EXPT "://${_REMOTEADDRESS}/(.+)\""ri
+STOR "^index_url" "/${1}"
+STOR "RET" "@GET_INDEX_URL"
+DISC if disconnected goto @RECONNECT
+GOTO @RECONNECT
+
+MTCH "200" else goto @BAD_GET_RESPONSE
+EXPT "^$"r
+DISC @NO_MATCH
+
+EXPT "name=enc_key value=([^ <>]*)"ir else goto @NO_MATCH
+STOR "enc_key" "${1}"
+STOR "pwMD5" "${_MD5:${Password*}${1}}"
+EXPT "name=et value=([^ <>]*)"ir else goto @NO_MATCH
+STOR "et" "${1}"
+
+STOR "RET" "@SEND_LOGIN"
+DISC if disconnected goto @RECONNECT
+
+EXPT "Firmware v?([0-9]+\\.[0-9a-z]+)"ir
+STOR "firmware" "${1}"
+
+#Skip GET response
+LINE OFF
+SKIP ".*"r else goto @RECONNECT
+
+#reconnect
+
+GOTO @RECONNECT
+
+@SEND_LOGIN:
+
+#if we're firmware 3.3, then send a POST
+#  else, send a GET
+
+EVAL ${^version_is_3_3} := ${firmware} > 3.1
+NBNE #0 ${^version_is_3_3} @VERSION_3_3
+
+@VERSION_3_1:
+SEND "GET /cgi-bin/index.cgi?"
+SEND "&user=${User}"
+CHCK "${pwMD5}" else goto #+2
+SEND "&password=${pwMD5}"
+CHCK "${et}" else goto #+2
+SEND "&et=${et}"
+SEND "&primary_tab=BASIC&secondary_tab=Status"
+SEND " HTTP/1.1\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "Connection: keep-alive\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+SEND "\r\n"
+
+GOTO @GET_STATS
+
+@VERSION_3_3:
+SEND "POST ${^index_url} HTTP/1.1\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+#SEND "Referer: http://${_REMOTEADDRESS}/cgi-bin/index.cgi\r\n"
+#SEND "Connection: keep-alive\r\n"
+STOR "LEN" #0
+CHCK "${User}${Password*}" else goto #+4
+STOR "FormData" "real_user=&login_state=out&locale=en_US&user=${_URLENCODE:${User}}&password=${_URLENCODE:${Password*}}&password_entry=&enc_key=${enc_key}&et=${et}&Submit=Login"
+STOR "LEN" "${_LENGTH:${FormData}}"
+SEND "Content-Type: application/x-www-form-urlencoded\r\n"
+SEND "Content-length: ${LEN}\r\n"
+SEND "\r\n"
+
+NBGT #${LEN} #0 goto #+2
+GOTO #+2
+SEND "${FormData}"
+
+@GET_STATS:
+
+LINE ON
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @BAD_GET_RESPONSE
+EXPT "^$"r
+
+DISC @NO_MATCH
+
+STOR "^firmware_5" "0"
+
+@FIRST_MATCH_LOOP:
+NEXT
+MTCH "\\s*<tr><td[^<>]*>[^<]*</td><td[^<>]*>([^:]+):.*"ir else goto #+2
+GOTO @LOOP
+#Firmware 5.0
+MTCH "\\s*<td[^<>]*><div[^<>]*><b>([^:]+):</b>.*"ir else goto #+4
+STOR "^firmware_5" "1"
+NEXT
+GOTO @LOOP
+MTCH ".*<td[^<>]*>Energize Updates:</td><td[^<>]*>.*Expired.*</td>"ir else goto #+3
+STOR "^expired_updates" "true"
+GOTO @LOOP
+MTCH "<tr><td[^<>]*><font[^<>]*>Your Barracuda Spam Firewall is currently offline."ir else goto @FIRST_MATCH_LOOP
+STOR "^offline" "true"
+
+EXPT "\\s*<tr><td[^<>]*>[^<]*</td><td[^<>]*>([^:]+):.*"ir else goto @NO_MATCH
+
+@LOOP:
+#filter out the optional <font> tag
+SBNE "${1}" "<font[^<>]*>(.*)"ir #+1
+
+SBNE "${1}" "In/Out Queue Size"i #+2
+GOTO @QUEUE_SIZE
+SBNE "${1}" "Average Latency"i #+2
+GOTO @LATENCY
+SBNE "${1}" "Last Message"i #+2
+GOTO @LAST_MSG
+SBNE "${1}" "(.*) Fan Speed"ir #+2
+GOTO @FAN
+SBNE "${1}" "(.*) Temperature"ir #+2
+GOTO @TEMP
+SBNE "${1}" "Firmware Storage"i #+2
+GOTO @FW_STORAGE
+SBNE "${1}" "Mail/Log Storage"i #+2
+GOTO @MAIL_STORAGE
+SBNE "${1}" "System Load"i #+2
+GOTO @SYS_LOAD
+
+@LOOP_NEXT:
+NEXT
+DISC LOOP_DONE
+NBNE #${^firmware_5} #0 #+3
+EXPT "\\s*<tr><td[^<>]*>[^<]*</td><td[^<>]*>([^:]+):.*"ir else goto @LOOP_DONE
+GOTO @LOOP
+EXPT "\\s*<td[^<>]*><div[^<>]*><b>([^:]+):</b>.*"ir else goto @LOOP_DONE
+NEXT
+GOTO @LOOP
+
+#parsed all input
+@LOOP_DONE:
+STOR "^script-output0" "\\B5\\Barracuda Performance Statistics\\0P\\\r      \\4\\Mail Queue: $${in_queue_size} / $${out_queue_size}  in/outbound\r \\4\\Average Latency: $${avg_latency}  sec"
+STOR "^script-output1" "\r    \\4\\Last Message: $${last_message}  minute"
+NBNE #${last_message} #1 #+2
+GOTO #+2
+SCAT "^script-output1" "s"
+SCAT "^script-output1" " ago\r"
+
+#output all fan speeds
+NBGT #1 #${^num_fans} @OUTPUT_TEMPS
+STOR "^itr" "0"
+@OUTPUT_FANS:
+STOR "^label" "${fan_${^itr}}"
+STOR "^labelLen" "${_LENGTH:${^label}}"
+EVAL ${padding} := substr( "           ", 0, 11 - ${^labelLen} )
+
+CHCK "${^label}" else #+2
+SCAT "^script-output1" "${padding}\\4\\ ${^label} Fan: $${${^label} Fan Speed} rpm\r"
+NADD "^itr" #1
+NBGT #${^num_fans} #${^itr} @OUTPUT_FANS
+
+#output all temperatures
+NBGT #1 #${^num_temps} @OUTPUT_STORAGE
+STOR "^itr" "0"
+@OUTPUT_TEMPS:
+STOR "^label" "${temp_${^itr}}"
+STOR "^labelLen" "${_LENGTH:${^label}}"
+EVAL ${padding} := substr( "           ", 0, 10 - ${^labelLen} )
+
+CHCK "${^label}" else #+2
+SCAT "^script-output1" "${padding}\\4\\ ${^label} Temp: $${${^label} Temperature} degrees C\r"
+NADD "^itr" #1
+NBGT #${^num_temps} #${^itr} @OUTPUT_TEMPS
+
+@OUTPUT_STORAGE:
+STOR "^script-output2" "\\4\\Firmware Storage: $${firmware_storage} %   "
+SCAT "^script-output2" "        \\4\\Mail/Log Storage: $${mail_storage} %\r"
+SCAT "^script-output2" "     \\4\\System Load: $${system_load} %"
+
+#Check parameter thresholds!!
+STOR "^error_level" "0"
+STOR "^error_msg" ""
+
+NBGT #${In Queue Alarm} #${in_queue_size} #+4
+NADD "^error_level" #2
+SCAT "^error_msg" "Inbound Queue is quite large!\r"
+GOTO #+4
+NBGT #${In Queue Warning} #${in_queue_size} #+3
+NADD "^error_level" #1
+SCAT "^error_msg" "Inbound Queue is large.\r"
+
+NBGT #${Out Queue Alarm} #${out_queue_size} #+4
+NADD "^error_level" #2
+SCAT "^error_msg" "Outbound Queue is quite large!\r"
+GOTO #+4
+NBGT #${Out Queue Warning} #${out_queue_size} #+3
+NADD "^error_level" #1
+SCAT "^error_msg" "Outbound Queue is large.\r"
+
+NBGT #${Latency Alarm} #${avg_latency} #+4
+NADD "^error_level" #2
+SCAT "^error_msg" "Average Latency is very high!\r"
+GOTO #+4
+NBGT #${Latency Warning} #${avg_latency} #+3
+NADD "^error_level" #1
+SCAT "^error_msg" "Average Latency is high.\r"
+
+NBGT #${Last Message Alarm} #${last_message} #+4
+NADD "^error_level" #2
+SCAT "^error_msg" "Last Message was more than ${Last Message Alarm} minutes ago!\r"
+GOTO #+4
+NBGT #${Last Message Warning} #${last_message} #+3
+NADD "^error_level" #1
+SCAT "^error_msg" "Last Message was more than ${Last Message Warning} minutes ago.\r"
+
+NBGT #${Firmware Storage Alarm} #${firmware_storage} #+4
+NADD "^error_level" #2
+SCAT "^error_msg" "Firmware Storage is nearly full!\r"
+GOTO #+4
+NBGT #${Firmware Storage Warning} #${firmware_storage} #+3
+NADD "^error_level" #1
+SCAT "^error_msg" "Firmware Storage is getting full.\r"
+
+NBGT #${Mail/Log Storage Alarm} #${mail_storage} #+4
+NADD "^error_level" #2
+SCAT "^error_msg" "Mail/Log Storage is nearly full!\r"
+GOTO #+4
+NBGT #${Mail/Log Storage Warning} #${mail_storage} #+3
+NADD "^error_level" #1
+SCAT "^error_msg" "Mail/Log Storage is getting full.\r"
+
+NBGT #${System Load Alarm} #${system_load} #+4
+NADD "^error_level" #2
+SCAT "^error_msg" "System Load is very high!\r"
+GOTO #+4
+NBGT #${System Load Warning} #${system_load} #+3
+NADD "^error_level" #1
+SCAT "^error_msg" "System Load is high.\r"
+
+#check all fan speeds
+NBGT #1 #${^num_fans} @CHECK_ALL_TEMP
+STOR "^itr" "0"
+@CHECK_FANS:
+CHCK "${${fan_${^itr}} Fan Speed}" else #+8
+NBGT #${${fan_${^itr}} Fan Speed}" #${Fan Speed Alarm} #+4
+NADD "^error_level" #2
+SCAT "^error_msg" "${fan_${^itr}} fan is very slow!\r"
+GOTO #+4
+NBGT #${${fan_${^itr}} Fan Speed} #${Fan Speed Warning} #+3
+NADD "^error_level" #1
+SCAT "^error_msg" "${fan_${^itr}} fan is slow.\r"
+NADD "^itr" #1
+NBGT #${^num_fans} #${^itr} @CHECK_FANS
+
+@CHECK_ALL_TEMP:
+#check alltemperatures
+NBGT #1 #${^num_temps} @CHECK_OFFLINE
+STOR "^itr" "0"
+@CHECK_TEMPS:
+CHCK "${${temp_${^itr}} Temperature}" else #+8
+NBGT #${Temperature Alarm} #${${temp_${^itr}} Temperature}#+4
+NADD "^error_level" #2
+SCAT "^error_msg" "${temp_${^itr}} is very hot!\r"
+GOTO #+4
+NBGT #${Temperature Warning} #${${temp_${^itr}} Temperature}#+3
+NADD "^error_level" #1
+SCAT "^error_msg" "${temp_${^itr}} is hot.\r"
+NADD "^itr" #1
+NBGT #${^num_temps} #${^itr} @CHECK_TEMPS
+
+@CHECK_OFFLINE:
+#check to see if the unit is offline
+SBNE "${^offline}" "true" @CHECK_UPDATES
+NADD "^error_level" #2
+SCAT "^error_msg" "Unit is offline.\r"
+DONE CRIT "${^error_msg}"
+
+@CHECK_UPDATES:
+#check to see if the Energize Updates have expired
+SBNE "${^expired_updates}" "true" @DONE_CHECKS
+NADD "^error_level" #2
+SCAT "^error_msg" "Energize Updates have expired.\r"
+DONE CRIT "${^error_msg}"
+
+@DONE_CHECKS:
+#strip the final \r
+#SBNE "${^error_msg}" "([a-zA-Z0-9 .?,'\";\(\)\\/!\r]*)\r$"ir #+2
+SBNE "${^error_msg}" "([\n-~]*)\r$"ir #+2
+STOR "^error_msg" "${1}"
+
+NBGT #2 #${^error_level} #+2
+DONE ALRM "${^error_msg}"
+NBGT #1 #${^error_level} #+2
+DONE WARN "${^error_msg}"
+DONE OKAY
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+@RECONNECT:
+RCON
+GOTO ${RET}:
+
+@IDLE:
+DONE DOWN "[HTTP] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[HTTP] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@NO_MATCH:
+DONE ALRM "Unable to parse page."
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "[HTTP] 201 Created"
+MTCH "202" ELSE #+2
+DONE WARN "[HTTP] 202 Accepted"
+MTCH "204" ELSE #+2
+DONE WARN "[HTTP] 204 No Content"
+MTCH "301" ELSE #+2
+DONE WARN "[HTTP] 301 Moved Permanently"
+MTCH "302" ELSE #+2
+DONE WARN "Invalid access."
+MTCH "304" ELSE #+2
+DONE WARN "[HTTP] 304 Not Modified"
+MTCH "400" ELSE #+2
+DONE WARN "[HTTP] 400 Bad Request"
+MTCH "401" ELSE #+2
+DONE WARN "[HTTP] 401 Unauthorized"
+MTCH "403" ELSE #+2
+DONE WARN "[HTTP] 403 Forbidden"
+MTCH "404" ELSE #+2
+DONE WARN "[HTTP] 404 Not Found"
+MTCH "500" ELSE #+2
+DONE ALRM "[HTTP] 500 Internal Server Error"
+MTCH "501" ELSE #+2
+DONE ALRM "[HTTP] 501 Not Implemented"
+MTCH "502" ELSE #+2
+DONE ALRM "[HTTP] 502 Bad Gateway"
+MTCH "503" ELSE #+2
+DONE ALRM "[HTTP] 503 Service Unavailable"
+DONE ALRM "[HTTP] Unknown Error Code ${_LINE:4}"
+
+@NO_USER:
+DONE ALRM "No User specified."
+
+@DISCONNECT:
+DONE DOWN "[HTTP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+@QUEUE_SIZE:
+MTCH "<a\\s+[^>]*>([0-9]+)</a>.*<a\\s+[^>]*>([0-9]+)</a>"ir ELSE #+3
+STOR "in_queue_size" "${1}"
+STOR "out_queue_size" "${2}"
+GOTO @LOOP_NEXT
+
+#LAST_MSG should be nearly the same as LATENCY
+#avg_latency now needs to be split - '# units' = # & units
+# Then, units should be used to convert # into seconds
+# '< 1' should be treated as 0
+@LATENCY:
+#firmware 5 looks like: <td align="left" style="padding-right:2px" valign="top" width="140"><div style="padding-left:2px"><font color='black'>2 seconds</font></div></td>
+MTCH "\\s*<td[^<>]*><div[^<>]*>([^:]+)</div>.*"ir ELSE #+2
+GOTO #+2
+MTCH "([^<>]+)<?[^<]*</td></tr>$"ir ELSE #+2
+#filter out <font> tags, if any
+SBNE "${1}" "^<font[^>]*>(.*)</font>"ir ELSE #+1
+#filter out " seconds" at the end and break up anything before the digits
+SBNE "${1}" "([^0-9]*)([0-9]+)\\s*([A-Z]*)"ir #+1
+#if it begins with '&lt;', then it is <1, and should be counted as 0
+SBNE "${1}" "&lt;"i #+2
+STOR "2" "0"
+
+# $2 now contains the number
+# $3 now contains the units (seconds, minutes, hours, etc.)
+
+#convert units to seconds
+SBNE "${3}" "second"i @TRANSLATE_AVG_LATENCY
+
+@STOR_AVG_LATENCY:
+STOR "avg_latency" "${2}"
+GOTO @LOOP_NEXT
+
+@TRANSLATE_AVG_LATENCY:
+STOR "1" "@TRANSLATE_INTO_SECONDS"
+GOTO @TRANSLATE_INTO_MINUTES
+@TRANSLATE_INTO_SECONDS
+#We must translate minutes into seconds!
+EVAL ${2} := ${2} * 60
+GOTO @STOR_AVG_LATENCY
+
+#last_message now needs to be split - '# units' = # & units
+# Then, units should be used to convert # into seconds
+# '< 1' should be treated as 0
+@LAST_MSG:
+#firmware 5 looks like: <td align="left" style="padding-right:2px" valign="top" width="140"><div style="padding-left:2px"><font color='black'>1 minute ago</font></div></td>
+MTCH "\\s*<td[^<>]*><div[^<>]*>([^:]+)</div>.*"ir ELSE #+2
+GOTO #+2
+MTCH "([^<>]+)<?[^<]*</td></tr>$"ir ELSE @LOOP_NEXT
+#filter out <font> tags, if any
+SBNE "${1}" "^<font[^>]*>(.*)</font>"ir #+1
+#filter out " minute ago" at the end and break up anything before the digits
+SBNE "${1}" "([^0-9]*)([0-9]+)\\s*([A-Z]*)"ir #+1
+#if it begins with '&lt;', then it is <1, and should be counted as 0
+SBNE "${1}" "&lt;"i #+2
+STOR "2" "0"
+
+# $2 now contains the number
+# $3 now contains the units (minutes, hours, etc.)
+
+#convert units to minutes
+SBNE "${3}" "minute"i @TRANSLATE_LAST_MSG_MINUTES
+
+@STOR_LAST_MSG_MINUTES:
+STOR "last_message" "${2}"
+GOTO @LOOP_NEXT
+
+@TRANSLATE_LAST_MSG_MINUTES:
+STOR "1" "@STOR_LAST_MSG_MINUTES"
+#GOTO @TRANSLATE_INTO_MINUTES
+
+# $1 should contain return address
+# $2 should contain number
+# $3 should contain units
+@TRANSLATE_INTO_MINUTES:
+SBNE "${3}" "hour"i #+3
+EVAL ${2} := ${2} * 60
+GOTO ${1}
+
+SBNE "${3}" "day"i #+3
+EVAL ${2} := ${2} * (60*24)
+GOTO ${1}
+
+SBNE "${3}" "week"i #+2
+EVAL ${2} := ${2} * (7*60*24)
+GOTO ${1}
+
+#FAN, TEMP, FW_STORAGE, MAIL_STORAGE, SYS_LOAD all require the NEXT 3(4?) lines
+# (Actually, the NEXT line can be skipped, probably)
+# Remember to handle < 1% for SYS_LOAD
+
+@FAN:
+STOR "fan_${^num_fans}" "${1}"
+EXPT "([0-9]+)\\s*RPM"ir else goto @LOOP_NEXT
+STOR "${fan_${^num_fans}} Fan Speed" "${1}"
+#ensure that we don't break older charts
+SBNE "^label" "CPU" #+2
+STOR "cpu_fan" "${1}"
+SBNE "^label" "System" #+2
+STOR "system_fan" "${1}"
+#increment fan count
+NADD "^num_fans" #1
+STOR "fan_${^num_fans}" ""
+GOTO @LOOP_NEXT
+
+@TEMP:
+# degree symbol was ascii \xB0 in firmware 3.3
+#	binary == 1011 0000
+#	UTF-8 == C2B0
+#	changed to &deg; in 3.4
+
+STOR "temp_${^num_temps}" "${1}"
+EXPT "\\+?([-]?[0-9]+\\.?[0-9]*)\\s*[\xC2\xB0&deg;]*C<"r else goto @LOOP_NEXT
+STOR "${temp_${^num_temps}} Temperature" "${1}"
+#ensure that we don't break older charts
+SBNE "temp_${^num_temps}" "CPU" #+2
+STOR "cpu_temp" "${1}"
+#increment fan count
+NADD "^num_temps" #1
+STOR "temp_${^num_temps}" ""
+GOTO @LOOP_NEXT
+
+@FW_STORAGE:
+EXPT "([0-9]+)%"ir else goto @LOOP_NEXT
+STOR "firmware_storage" "${1}"
+GOTO @LOOP_NEXT
+
+@MAIL_STORAGE:
+EXPT "([0-9]+)%"ir else goto @LOOP_NEXT
+STOR "mail_storage" "${1}"
+GOTO @LOOP_NEXT
+
+@SYS_LOAD:
+EXPT "([0-9]+)%"ir else goto @LOOP_NEXT
+STOR "system_load" "${1}"
+GOTO @LOOP_NEXT
+
+</script>
+
+<!--
+We do not want the output to show if the connection or login did not succeed, so we initialize the ^script-output# variables
+ to "" until the login has succeeded and the variables have been populated.  Then, the three different variables are required
+ because strings are limited to 255 characters.
+-->
+<script-output>
+${^script-output0}${^script-output1}${^script-output2}
+</script-output>
+
+
+<datasets>
+	$in_queue_size,		'inqueue',      "",     "true",   "Input Queue"
+	$out_queue_size,	'outqueue',     "",     "true",   "Output Queue"
+	$avg_latency,		'latencysec',	"sec",  "true",   "Average Message Latency"
+</datasets>

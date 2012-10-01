@@ -1,0 +1,35 @@
+<!-- 
+	SNMP - Karlnet Wireless (com.dartware.snmp.karlnet)
+	Copyright (c) 2002 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.karlnet"
+	human_name		=	"SNMP - Karlnet Wireless"
+	version			= 	"1.5"
+	address_type	= 	"IP,AT"
+	equiv_class		= 	"SNMP"
+	port_number		=	"161"
+	display_name	=	"Network Devices/Karlnet Wireless"
+</header>
+
+
+<description>
+
+\GB\SNMP - Karlnet Wireless\P\
+
+This probe monitors the custom MIB in a Karlnet Wiress Base Station using SNMPv1. This probe can monitor the number of clients using the base station and list each one with its signal strength.
+
+This probe uses SNMP set-requests to tell the Karlnet Base Station to periodically discover its clients and test their signal strengthes. For the set-requests to work, you must specify the read/write community name for the base station below.
+
+
+</description>
+
+<parameters>
+
+"Read/Write Community*"   	= "private"
+
+</parameters>
+

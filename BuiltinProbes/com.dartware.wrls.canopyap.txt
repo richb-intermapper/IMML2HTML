@@ -1,0 +1,87 @@
+ <!--
+	Wireless - Canopy (AP) v2c (com.dartware.wrls.canopyap)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC.	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 24 November 2003 by reb.
+	Latest revision 31 January 2005 by ics.
+	Changed comment to indicate user-thresholds are max & min 
+		acceptable values 23 Aug 2007 -reb
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.canopyap"
+	"human_name"	=	"Wireless - Canopy (AP)"
+	"display_name" 	=	"Wireless/Canopy/Canopy (AP)"
+	"version"		=	"1.8"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"flags"			= 	"SNMPv2c"
+	"equiv_class"	= 	"WRLS"
+	url_hint		=	"http://${ADDRESS}/"
+	poll_interval	=	"300"
+</header>
+
+<description>
+\GB\Canopy Access Point\P\
+
+This probe monitors a Canopy wireless access point (AP), including basic information, traffic information, and the number of clients associated. It places the device into alarm or warning when the number of clients exceeds the user-defined thresholds. 
+
+The default poll interval for this probe is 5 minutes. The default poll interval is an automatic safeguard; polling more frequently has been shown to adversely affect the device.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+	"Too many clients alarm"	=	"200"
+	"Many clients warning"		=	"150"
+	"Too few clients alarm"		=	"0"
+	"Few clients warning"		=	"0"
+</parameters>
+
+<snmp-device-variables>
+	regCount, 	1.3.6.1.4.1.161.19.3.1.7.1.0 ,		INTEGER, 	"Number of clients"
+	rfFreqCarrier,	1.3.6.1.4.1.161.19.3.1.1.2.0 ,		DEFAULT,	"RF Frequency"
+	sectorID,	1.3.6.1.4.1.161.19.3.1.1.16.0 ,		DEFAULT,	"Sector ID"
+	gpsInput,	1.3.6.1.4.1.161.19.3.1.1.1.0 ,		INTEGER,	"Sync Signal"
+	aslP1,		1.3.6.1.4.1.161.19.3.1.1.20.0 ,		DEFAULT,	"Authentication Server 1"
+	aslP2,		1.3.6.1.4.1.161.19.3.1.1.21.0 ,		DEFAULT,	"Authentication Server 2"
+	aslP3,		1.3.6.1.4.1.161.19.3.1.1.22.0 ,		DEFAULT,	"Authentication Server 3"
+	ESN,		1.3.6.1.4.1.161.19.3.3.1.3.0 ,		DEFAULT,	"ESN or MAC address"
+	colorCode,	1.3.6.1.4.1.161.19.3.3.2.2.0 ,		DEFAULT,	"Color Code"
+	boxTemp,	1.3.6.1.4.1.161.19.3.3.1.5.0,		STRING,		"Box temp, in C/F degrees"
+	tempInF,	"$boxTemp" =~ ".+/([0-9]+)&deg;F";${1}, CALCULATION,	"Box temp in Fahrenheit"
+
+
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm: 		$regCount > ${Too many clients alarm} 		"Too many clients"
+	alarm: 		$regCount < ${Too few clients alarm} 		"Too few clients"
+	warning:	$regCount > ${Many clients warning}		"Many clients"
+	warning:	$regCount < ${Few clients warning}		"Few clients"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Canopy AP Information\0P\ \U2=http://${deviceaddress}\manage\P0\
+  \4\    Num. Clients:\0\  $regCount
+  \4\    RF Frequency:\0\  ${EVAL: $rfFreqCarrier == 0 ? "Wired" : $rfFreqCarrier}
+  \4\    Sync. Signal:\0\  ${EVAL: $gpsInput == 0 ? "Self" : $gpsInput == 2 ? "Power Port" : $gpsInput == 1 ? "Timing Port" : $gpsInput}
+  \4\  Auth. Server 1:\0\  $aslP1
+  \4\  Auth. Server 2:\0\  $aslP2
+  \4\  Auth. Server 3:\0\  $aslP3
+  \4\     MAC Address:\0\  $ESN
+  \4\      Color Code:\0\  $colorCode
+  \4\       Sector ID:\0\  $sectorID
+  \4\        Box temp:\0\  $tempInF \3\F\P0M\
+</snmp-device-display>
+
+<!-- Removed variables and display:
+-->
+
+<snmp-device-properties>
+</snmp-device-properties>

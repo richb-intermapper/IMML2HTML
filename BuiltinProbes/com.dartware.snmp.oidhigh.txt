@@ -1,0 +1,89 @@
+ <!--
+	Prototype Custom SNMP Probe (com.dartware.snmp.oidhigh.txt)
+    Custom Probe for InterMapper (http://www.intermapper.com)
+    Please feel free to use this as a base for further development.
+
+	27 Mar 2007	Cloned from Prototype probe -reb
+	05 May 2008 Added autorecord section -cls
+	23 Sep 2011	Cast OID to chartable. -cls	
+	04 Sep 2012 Change autorecord to datasets section. -jpd
+	 
+	You can read the Developer Guide to learn more about InterMapper Probes. It's at:
+		http://intermapper.com/go.php?to=intermapper.devguide
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"snmp.oidhigh"
+	"human_name"	=	"SNMP - High Threshold"
+	"version"		=	"1.5"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"display_name"	=	"SNMP/High Threshold"
+	"flags"			= 	"Minimal"
+</header>
+
+<snmp-device-properties>
+	nomib2="true"
+	pdutype="get-request"
+</snmp-device-properties>
+
+<description>
+\GB\SNMP Value Too High\P\
+
+This probe retrieves a single SNMP MIB variable and compares it to the thresholds below. If the value goes above any of these thresholds, the device severity will go into the indicated state.
+
+\ib\Variable\p\ specifies the MIB name or OID for the value to retrieve. If you have imported the MIB for this device, you may enter the symbolic name for this value, otherwise, simply enter its OID here. 
+
+\bi\Critical, Alarm, and Warning\p\ are the thresholds for those severities. They may be positive or negative numbers.
+
+\bi\Legend\p\ is a text string used to identify the variable in the status window and any strip charts. If left blank, the variable's name or OID will be used.
+
+\bi\Units\p\ is a text string that will be displayed next to the value in the Status Window. You can use it for the unit of measure (packets/sec, degrees, etc.) 
+
+\bi\Tag\p\ is a short text string that identifies a particular class of dataset. Tags will be used to correlate different variables from different probes that describe the same thing, such as CPU% or temperature.
+</description>
+
+-- Parameters are user-settable values that the probe uses for its comparisons.
+-- Specify the default values here. The customer can change them and they will be retained for each device.
+
+<parameters>
+    "Critical"      =	"3" 	
+    "Alarm"      	=	"2" 	
+    "Warning"       =	"1" 
+	"Variable"		= 	"ifNumber.0"
+	"Legend"		= 	""
+	"Units"			=	""
+	"Tag"			=   "exampletag"
+</parameters>
+
+-- SNMP values to be retrieved from the device, and 
+-- Specify the variable name, its OID, a format (usually DEFAULT) and a short description.
+-- CALCULATION variables are computed from other values already retrieved from the device.
+ 
+<snmp-device-variables>
+
+    theLegend, ($Legend!="" ? "$Legend" : "$Variable"), CALCULATION, "Legend/OID"
+    theOID,      $Variable ,    DEFAULT, 	"$theLegend"
+
+</snmp-device-variables>
+
+-- Specify rules for setting the device into Alarm or Warning state
+
+<snmp-device-thresholds>
+ 	critical:	$theOID > $Critical "$theLegend > $Critical (currently $theOID)"
+ 	alarm: 		$theOID > $Alarm 	"$theLegend > $Alarm (currently $theOID)"
+ 	warning:	$theOID > $Warning  "$theLegend > $Warning (currently $theOID)"
+</snmp-device-thresholds>
+
+-- The <snmp-device-display> section specifies the text that will be appended 
+-- to the device's Staus Window. 
+
+<snmp-device-display>
+\B5\  $theLegend:\0P\  ${chartable:$theOID} \3G\$Units\mp0\
+</snmp-device-display>
+
+<datasets>
+	$theOID, "$Tag", "$Units", "true", "$Legend"
+</datasets>

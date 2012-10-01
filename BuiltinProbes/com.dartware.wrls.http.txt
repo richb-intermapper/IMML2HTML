@@ -1,0 +1,119 @@
+<!-- 
+	HTTP (com.dartware.wrls.http)
+	Copyright © 2000-2005 Dartware, LLC. All rights reserved.
+	
+	Added this to wireless bundle, so that people could monitor their wireless
+		gear without using up their "wired" license.
+	Original version modified from the built-in HTTP probe 14 Sep 2005 -reb
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"wrls.http"
+	human_name		=	"Wireless - HTTP"
+	version			= 	"1.4" 
+	address_type	= 	"IP"
+	port_number		=	"80"
+	equiv_class		= 	"WRLS"
+	
+	display_name	=	"Wireless/Other/HTTP"
+	url_hint		=	"http://${ADDRESS}:${PORT}/"
+</header>
+
+<description>
+
+\GB\Hypertext Transfer Protocol (HTTP)\P\
+
+This probe tests an HTTP server by downloading a specific web page and scanning it for a specific string of HTML.
+
+\i\URL Path\p\ is the full path of the desired file on the web server (e.g. "/index.html"). The first character must be a '/'.
+
+\i\String to verify\p\ is a string to verify in the data returned by the HTTP server.  For example, if you are retrieving a web page, you might search for "<HTML>" or "<P>" to verify that the data is HTML, or look for a unique string that's only present when the correct page is returned.
+
+\i\User ID\p\ is the user name typed into the web browser's password dialog. The default is to leave this blank. You should set this parameter if you want to test a web page that requires authentication.
+
+\i\Password\p\ is the password for the web browser's dialog. The default is to leave this blank. You should set this parameter if you want to test a web page that requires authentication.
+
+</description>
+
+<parameters>
+
+"URL Path"			=		"/"
+"String to verify"	=		"<HTML"
+"User ID"			=		""
+"Password*"			=		""
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT (disconnect handler)
+SEND "GET ${URL Path} HTTP/1.0\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User ID}${Password*}" else goto #+2
+SEND "Authorization: Basic ${_BASE64:${User ID}:${Password*}}\r\n"
+SEND "\r\n"
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @BAD_GET_RESPONSE
+EXPT "^$"r
+LINE OFF
+DISC if disconnected goto @NO_MATCH   (added line in 2.1.1b1)
+EXPT "${String to verify}"i else goto @NO_MATCH
+DONE OKAY
+
+@IDLE:
+DONE DOWN "[HTTP] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[HTTP] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@NO_MATCH:
+DONE WARN "[HTTP] \"${String to verify}\" not found in returned HTTP data."
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "[HTTP] 201 Created (${URL Path})"
+MTCH "202" ELSE #+2
+DONE WARN "[HTTP] 202 Accepted (${URL Path})"
+MTCH "204" ELSE #+2
+DONE WARN "[HTTP] 204 No Content (${URL Path})"
+MTCH "301" ELSE #+2
+DONE WARN "[HTTP] 301 Moved Permanently (${URL Path})"
+MTCH "302" ELSE #+2
+DONE WARN "[HTTP] 302 Moved Temporarily (${URL Path})"
+MTCH "304" ELSE #+2
+DONE WARN "[HTTP] 304 Not Modified (${URL Path})"
+MTCH "400" ELSE #+2
+DONE WARN "[HTTP] 400 Bad Request (${URL Path})"
+MTCH "401" ELSE #+2
+DONE WARN "[HTTP] 401 Unauthorized (${URL Path})"
+MTCH "403" ELSE #+2
+DONE WARN "[HTTP] 403 Forbidden (${URL Path})"
+MTCH "404" ELSE #+2
+DONE WARN "[HTTP] 404 Not Found (${URL Path})"
+MTCH "500" ELSE #+2
+DONE ALRM "[HTTP] 500 Internal Server Error (${URL Path})"
+MTCH "501" ELSE #+2
+DONE ALRM "[HTTP] 501 Not Implemented (${URL Path})"
+MTCH "502" ELSE #+2
+DONE ALRM "[HTTP] 502 Bad Gateway (${URL Path})"
+MTCH "503" ELSE #+2
+DONE ALRM "[HTTP] 503 Service Unavailable (${URL Path})"
+DONE ALRM "[HTTP] Unknown Error Code ${_LINE:4} (${URL Path})"
+
+@DISCONNECT:
+DONE DOWN "[HTTP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+</script>
+
+<script-output>
+
+\B5\HTTP Information\0P\
+  \4\Time to establish connection:\0\ ${_connect} msecs
+  \4\Time spent connected to host:\0\ ${_active} msecs
+
+</script-output>
+

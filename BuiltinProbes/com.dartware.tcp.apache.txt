@@ -1,0 +1,132 @@
+<!-- 
+	Apache Server Status (com.dartware.tcp.apache.txt)
+	Copyright (c) 2009 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.apache"
+	human_name		=	"Apache"
+	version			= 	"1.0"
+	address_type	= 	"IP"
+	port_number		=	"80"
+	
+	display_name	=	"Servers-Proprietary/Apache/"
+	url_hint		=	"http://${ADDRESS}:${PORT}/"
+</header>
+
+<description>
+
+\GB\Apache Server-Status (HTTP)\P\
+
+This probes monitors an Apache Web Server with the mod_status Apache module enabled. The Apache Status module allows a server administrator to find out how well their server is performing. This probe reads the HTML page provided by the Status module that presents the current server statistics.
+
+To enable status reports for this probe, add this code to the httpd.conf file on the target server:
+
+  <Location /server-status>
+    SetHandler server-status
+    Order Deny,Allow
+    Deny from all
+    Allow from \i\InterMapper-Address\p\
+  </Location>
+  
+This probe supports the Apache ExtendedStatus directive, if enabled.
+
+</description>
+
+<parameters>
+
+"Host Name"			=		""
+"URL Path"			=		"/server-status"
+"User ID"			=		""
+"Password*"			=		""
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT (disconnect handler)
+
+STOR "hits" "0"
+STOR "kbytes" "0"
+STOR "seconds" "0"
+STOR "Web Hits per minute" "0"
+STOR "Web KB per minute" "0"
+STOR "up_days" "0"
+STOR "up_hours" "0"
+STOR "up_minutes" "0"
+
+STOR "fullURL" "http://"
+CHCK "${Host Name}" else goto #+3
+SCAT "fullURL" "${Host Name}"
+GOTO #+2
+SCAT "fullURL" "${_REMOTEADDRESS}"
+SCAT "fullURL" ":${_REMOTEPORT}${URL Path}"
+
+SEND "GET ${URL Path}?auto HTTP/1.1\r\n"
+CHCK "${Host Name}" else goto #+2
+SEND "Host: ${Host Name}\r\n"
+SEND "User-Agent: curl/7.16.3\r\n"
+SEND "Accept: */*\r\n"
+CHCK "${User ID}${Password*}" else goto #+2
+SEND "Authorization: Basic ${_BASE64:${User ID}:${Password*}}\r\n"
+SEND "\r\n"
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @BAD_GET_RESPONSE
+EXPT "^$"r
+DISC if disconnected goto @BREAK
+NEXT
+
+@READY:
+MTCH m"^([^:]+): +([0-9.]+)$" else goto @BREAK
+STOR "${1}" "${2}"
+NEXT
+GOTO @READY
+
+@BREAK:
+EVAL $hits := defined("prev_accesses") ? ${Total Accesses} - $prev_accesses : "n/a" 
+EVAL $kbytes := defined("prev_kbytes") ? ${Total kBytes} - $prev_kbytes : "n/a"
+EVAL $seconds := defined("prev_time") ? time() - $prev_time : "n/a" 
+EVAL ${Web Hits per minute} := defined("prev_time") ? $hits * 60 / $seconds : "n/a"
+EVAL ${Web KB per minute} := defined("prev_time") ? $kbytes * 60 / $seconds : "n/a"
+EVAL $prev_accesses := ${Total Accesses}
+EVAL $prev_kbytes := ${Total kBytes}
+EVAL $prev_time := time()
+EVAL ${TotalWorkers} := ${BusyWorkers} + ${IdleWorkers}
+EVAL $up_days := trunc($Uptime/(24*3600))
+EVAL $up_hours := trunc(($Uptime - $up_days * 24*3600)/3600)
+EVAL $up_minutes := trunc(($Uptime - ($up_days * 24 + $up_hours)*3600)/60)
+
+EVAL $ret := (${BusyWorkers} / ${TotalWorkers}) >= 0.9
+NBNE #$ret #1 #+2
+DONE ALRM "[Apache] ${BusyWorkers} of ${TotalWorkers} total workers are busy"
+DONE OKAY
+
+@IDLE:
+DONE DOWN "[Apache] No data for ${_IDLETIMEOUT} seconds. (${fullURL})"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[Apache] Unexpected greeting from port ${_REMOTEPORT}. (${fullURL})"
+
+@BAD_GET_RESPONSE:
+DONE ALRM "[Apache] Error Code ${_LINE:4} (${fullURL})"
+
+@DISCONNECT:
+DONE DOWN "[Apache] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds. (${fullURL})"
+
+</script>
+
+<script-output>
+
+\B5\Apache Server Status\0P\
+   \4\Server Uptime:\0\ ${EVAL: sprintf("%d days, %d hours, %d minutes", $up_days, $up_hours, $up_minutes) }
+ \4\Web Hits/Minute:\0\ ${chartable: #.## : ${Web Hits per minute}}   (${chartable: #.## : ${Web KB per minute}} KB/minute)
+  \4\Total Web Hits:\0\ ${Total Accesses}  (${chartable: #.# : ${Total kBytes}/1024} MB total)
+  \4\# Busy Workers:\0\ ${BusyWorkers} of ${TotalWorkers}
+       \4\CPU Usage:\0\ ${chartable: #.### : $CPULoad} %
+  
+</script-output>
+

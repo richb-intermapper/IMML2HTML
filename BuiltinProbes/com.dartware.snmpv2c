@@ -1,0 +1,31 @@
+<!-- 
+	SNMPv2c (com.dartware.snmpv2c)
+	Copyright © 2001 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"snmpv2c"
+	human_name		=	"SNMP v2c"
+	version			= 	"1.6"
+	address_type	= 	"IP,AT"		# Can use both IP and AppleTalk
+	equiv_class		= 	"CORE"		# Core packet equivalency
+
+	# SNMP probe type supports discovery.
+	
+	flags			= 	"DISCOVERY,SNMPv2c"
+	
+	display_name	=	"Miscellaneous/Legacy/SNMP v2c"
+	port_number		=	"161"
+</header>
+
+<description>
+\GB\SNMP v2c\P\
+
+This is a legacy probe, provided for compatibility with InterMapper Traditional and older versions of InterMapper (< 4.4). If you are using InterMapper server, please use the SNMP MIB-II probe instead and set the probe's SNMP version to SNMP v2 in the Probe Info window.
+
+The SNMP v2c probe retrieves MIB-II information from the device. This includes sysLocation, sysContact, and sysUptime from the system group, and traffic (bytes/second, packets/second, errors/minute) for each of the interfaces.
+
+It also uses the 64-bit counters for interface traffic stats to provide accurate information (without rollover) on very high speed links.
+</description>

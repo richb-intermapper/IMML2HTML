@@ -1,0 +1,111 @@
+ <!--
+	Wireless - MikroTik Routerboard (com.dartware.wrls.mikrotik-routerboard)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version (from waveriderccu) 14 October 2004 jkj,
+	Modified 25 October by ics.
+	Modified 1-12 November by jkj.
+	Modified 3 December by jkj (made specific to the RouterBoard).
+	Modified 5 January by jkj (to displays temps in Celsius AND Fahrenheit)
+	Last modified 18 May 2005 by ics.
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.mt-routerboard"
+	"human_name"	=	"Wireless - MikroTik Routerboard"
+	"display_name"  =	"Wireless/MikroTik/MT Routerboard"
+	"version"		=	"1.5"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"equiv_class"	= 	"WRLS"
+</header>
+
+<description>
+\GB\MikroTik Routerboard Probe\P\
+
+This probe monitors a MikroTik Routerboard (wireless access point). It is able to monitor the general SNMP interface and traffic information, device utilization (CPU Load, Disk use, and Memory use in percentages), and the device's "health" (internal voltages and temperatures).
+
+This probe will raise an alarm in the following situations:
+-> High Use -- CPU Load, Disk use, or Memory use exceeding 90%.
+-> Unsafe Temperatures -- Safe ranges of -20°C to 50°C for Board & Sensor temps., -20°C to 70°C for CPU temp.
+-> Unsafe Voltages -- Safe deviation of -/+ 5% for 12V & 5V, +/- 3% for 3.3V and Core Voltage (either 1.8V or 2.0V). 
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+"High Use Threshold (%)"      	= "90"
+"High Temp. (CPU)"		= "70"
+"High Temp. (Board & Sensor)" 	= "50"
+"Low Temp. (all)"		= "-20"
+"High Volt. (Core, 1.8V)"	= "1.85"
+"Low Volt. (Core, 1.8V)"	= "1.75"
+"High Volt. (Core, 2.0V)"	= "2.06"
+"Low Volt. (Core, 2.0V)"	= "1.94"
+"High Volt. (3.3V)"		= "3.4"
+"Low Volt. (3.3V)"		= "3.2"
+"High Volt. (5V)"		= "5.25"
+"Low Volt. (5V)"		= "4.75"
+"High Volt. (12V)"		= "12.6"
+"Low Volt. (12V)"		= "11.4"
+</parameters>
+
+<snmp-device-variables>
+High_Use,		${High Use Threshold (%)},		CALCULATION
+totalHDD_KB,		1.3.6.1.2.1.25.2.3.1.5.1,		DEFAULT,	"Total Drive (KB)"
+usedHDD_KB,		1.3.6.1.2.1.25.2.3.1.6.1,		DEFAULT,	"Used Drive (KB)"
+totalMem_MB,		1.3.6.1.2.1.25.2.3.1.5.2,		DEFAULT,	"Total Memory (MB)"
+usedMem_MB,		1.3.6.1.2.1.25.2.3.1.6.2,		DEFAULT,	"Used Memory (MB)"
+Percent_cpuLoad, 	1.3.6.1.2.1.25.3.3.1.2.1, 		DEFAULT,	"CPU Load (%)"
+Percent_DiskUse,	${totalHDD_KB} == 0 ? 0 : ${usedHDD_KB}/${totalHDD_KB}*100,	CALCULATION,	"Drive Load (%)"
+Percent_MmryUse,	${totalMem_MB} == 0 ? 0 : ${usedMem_MB}/${totalMem_MB}*100,	CALCULATION,	"Memory Load (%)"
+
+vCore,			1.3.6.1.4.1.14988.1.1.3.1.0, 		DEFAULT 	
+v3dot3,			1.3.6.1.4.1.14988.1.1.3.2.0, 		DEFAULT 	
+v5,			1.3.6.1.4.1.14988.1.1.3.3.0, 		DEFAULT 	
+v12,			1.3.6.1.4.1.14988.1.1.3.4.0, 		DEFAULT 	
+sensor,			1.3.6.1.4.1.14988.1.1.3.5.0,		DEFAULT 	
+cpu,			1.3.6.1.4.1.14988.1.1.3.6.0,		DEFAULT 	
+board,			1.3.6.1.4.1.14988.1.1.3.7.0,		DEFAULT 	
+Volt_Core,		$vCore/100,				CALCULATION, 	"Core (1.8V / 2.0V)"
+Volt_3dot3,		$v3dot3/100,				CALCULATION, 	"3.3V"
+Volt_5,			$v5/100,				CALCULATION, 	"5V"
+Volt_12,		$v12/100,				CALCULATION, 	"12V"
+Temp_Sensor,		$sensor/10,				CALCULATION, 	"Sensor Temp. (°C)"
+Temp_Board,		$board/10,				CALCULATION, 	"Board Temp. (°C)"
+Temp_CPU,		$cpu/10,				CALCULATION, 	"CPU Temp. (°C)"
+Temp_SensorF,		$Temp_Sensor*9/5+32,			CALCULATION, 	"Sensor Temp. (°F)"
+Temp_CPUF,		$Temp_CPU*9/5+32,			CALCULATION, 	"CPU Temp. (°F)"
+Temp_BoardF,		$Temp_Board*9/5+32,			CALCULATION, 	"Board Temp. (°F)"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+   alarm: ((${Volt_Core}     > ${High Volt. (Core, 1.8V)} 	       || ${Volt_Core}   < ${Low Volt. (Core, 1.8V)}) && (${Volt_Core} > ${High Volt. (Core, 2.0V)} || ${Volt_Core} < ${Low Volt. (Core, 2.0V)})) "Unsafe Voltage: Core (1.8V or 2.0V) has deviated +/- 3%."
+   alarm: (${Volt_3dot3}     > ${High Volt. (3.3V)} 	       || ${Volt_3dot3}  < ${Low Volt. (3.3V)})	"Unsafe Voltage: 3.3V has deviated +/- 3%."
+   alarm: (${Volt_5}         > ${High Volt. (5V)}	       || ${Volt_5}      < ${Low Volt. (5V)})		"Unsafe Voltage: 5V has deviated +/- 5%."
+   alarm: (${Volt_12}        > ${High Volt. (12V)}    	       || ${Volt_12}     < ${Low Volt. (12V)})		"Unsafe Voltage: 12V has deviated +/- 5%."
+   alarm: (${Temp_Board}     > ${High Temp. (Board & Sensor)} || ${Temp_Board}  < ${Low Temp. (all)})	"Unsafe Temperature: Board is no longer -20°C to 50°C."
+   alarm: (${Temp_Sensor}    > ${High Temp. (Board & Sensor)} || ${Temp_Sensor} < ${Low Temp. (all)})	"Unsafe Temperature: Sensor is no longer -20°C to 50°C."
+   alarm: (${Temp_CPU}       > ${High Temp. (CPU)} 	       || ${Temp_CPU}    < ${Low Temp. (all)})	"Unsafe Temperature: CPU is no longer -20°C to 70°C."
+   alarm: (${Percent_cpuload} > ${High_Use})						"High Use: High CPU Load (over 90%)"
+   alarm: (${Percent_DiskUse} > ${High_Use})						"High Use: High Disk Use (over 90%)"
+   alarm: (${Percent_MmryUse} > ${High_Use}) 						"High Use: High Memory Use (over 90%)"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\MB5\MikroTik Routerboard Information \p\
+\M4\ Utilization:  ${chartable: #. : ${Percent_DiskUse}}\GI3\ % of Disk (\p\${usedHDD_KB}\I3\ of \p\${totalHDD_KB}\I3\ KB)\p\
+\M4\               ${chartable: #. : ${Percent_MmryUse}}\GI3\ % of Memory (\p\${usedMem_MB}\I3\ of \p\${totalMem_MB}\I3\ MB)\p\
+\M4\               ${chartable: #. : ${Percent_cpuLoad}}\GI3\ % of CPU\p\
+
+\M4\    Voltages:  \GI3\(Core)  \p\\M\${chartable: #.## : ${Volt_Core}}\GI3\ V;\M\ \G\(~3.3V)  \p\${chartable: #.## : ${Volt_3dot3}}\GI3\ V; 
+\M4\               \GI3\(~5V) \p\\M\ ${chartable: #.## : ${Volt_5}}\GI3\ V;\M\ \G\(~12V)   \p\${chartable: #.# : ${Volt_12}}\GI3\ V\p\
+\M4\Temperatures:  \GI3\(Board)\p\\M\  ${chartable: #.# : ${Temp_Board}}\GI3\ °C / \p\${chartable: #.# : ${Temp_BoardF}}\GI3\ °F \p\
+\M4\               \GI3\(Sensor)\p\\M\ ${chartable: #.# : ${Temp_Sensor}}\GI3\ °C / \p\${chartable: #.# : ${Temp_SensorF}}\GI3\ °F \p\
+\M4\               \GI3\(CPU)\p\\M\   ${chartable: #.# : ${Temp_CPU}}\GI3\ °C / \p\${chartable: #.# : ${Temp_CPUF}}\GI3\ °F \p\
+</snmp-device-display>

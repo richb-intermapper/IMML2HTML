@@ -1,0 +1,73 @@
+<!-- 
+	NNTP (com.dartware.tcp.nntp)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.nntp"
+	human_name		=	"NNTP"
+	version			= 	"1.6"
+	address_type	= 	"IP"
+	port_number		=	"119"
+
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8006"
+
+	display_name	=	"Servers-Standard/NNTP"
+</header>
+
+<description>
+
+\GB\Network News Transfer Protocol\P\
+
+The protocol used to read network news on TCP/IP Internets, as defined in \U2=http://www.ietf.org/rfc/rfc0977.txt\RFC 977\P0\.  The default TCP port number for NNTP connections is port 119.
+
+This script connects to the news server and uses the GROUP command to ask for information about a specific newsgroup name.  The script then issues the QUIT command to tell the server it is closing the connection.
+
+\i\Newsgroup\p\ is the name of the newsgroup that you want to verify.
+
+</description>
+
+<parameters>
+
+"Newsgroup"		=	"alt.elvis.sighting"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+EXPT "20. "r else goto @UNEXPECTED_GREETING
+SEND "GROUP ${Newsgroup}\r\n"
+MTCH "211" else goto @NO_SUCH_GROUP
+SEND "QUIT\r\n"
+MTCH "205" #+1
+DONE OKAY
+
+@DISCONNECT:
+DONE DOWN "[NNTP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[NNTP] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@NO_SUCH_GROUP:
+MTCH "411" else goto @INVALID_NAME
+SEND "QUIT\r\n"
+MTCH "205" #+1
+DONE WARN "[NNTP] No such group \"${Newsgroup}\""
+
+@INVALID_NAME:
+MTCH "501" else goto @UNEXPECTED_RESPONSE
+DONE ALRM "[NNTP] \"${Newsgroup}\" is not a valid newsgroup name."
+
+@UNEXPECTED_RESPONSE:
+DONE ALRM "[NNTP] Unexpected response to GROUP command. (${_LINE:50})"
+
+@IDLE:
+DONE DOWN "[NNTP] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+</script>

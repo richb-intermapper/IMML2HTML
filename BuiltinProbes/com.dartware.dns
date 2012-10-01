@@ -1,0 +1,46 @@
+<!-- 
+	DNS (com.dartware.dns)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"dns"
+	human_name		=	"DNS -- (A) Address"
+	version			= 	"1.8"
+	address_type	= 	"IP"
+	port_number		=	"53"
+
+	old_protocol	= 	"12"		# Backward compat. with old numbering scheme.
+	old_script		= 	"0"
+	
+	display_name	=	"Servers-Standard/Domain Name (DNS)/DNS: (A) Address"
+
+</header>
+
+
+<description>
+
+\GB\Domain Name Service (DNS): (A) Address\P\
+
+The protocol used by TCP/IP network clients to translate Internet names into IP addresses, as defined in \U2=http://www.ietf.org/rfc/rfc1034.txt\RFC 1034\p0\ and \u2=http://www.ietf.org/rfc/rfc1035.txt\RFC 1035\p0\. This probe sends a DNS request to look up the IP address for a specified domain name.
+
+\i\Domain Name\p\ is the fully qualified domain name you are attempting to resolve.
+
+\i\IP Address\p\ allows you to optionally specify an IP address the domain name should resolve to. If this parameter is non-empty, InterMapper will report a status from the specified \i\Failure Status\p\ parameter if one of the returned IP addresses doesn't match the one given here.
+
+\i\Recursion Desired\p\ tells the target DNS server whether it can ask another DNS server for help in answering the request. If the target DNS server does not know how to resolve the given domain name, and "Recursion-Desired" is true, the target DNS server may query an authoritative DNS server. To prevent other servers from becoming involved, set "Recursion Desired" to false.
+
+\i\Failure Status\p\ is the device status InterMapper should report when the IP address in a DNS response doesn't match the specified \i\IP Address\p\ parameter. You can choose to have InterMapper set the device status to Down, Alarm or Warning. The default is to report IP address mismatches as an Alarm condition, so that Down is reserved for when the DNS server fails to respond at all.
+
+</description>
+
+<parameters>
+
+"Domain Name"						=	"www.example.com"
+"IP Address"						=	""
+"Recursion Desired[True,False]"		=	"False"
+"Failure Status[DOWN,ALRM,WARN]"	=	"ALRM"
+
+</parameters>

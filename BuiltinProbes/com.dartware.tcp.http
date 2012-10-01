@@ -1,0 +1,139 @@
+<!-- 
+	HTTP (com.dartware.tcp.http)
+	Copyright © 2000-2003 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.http"
+	human_name		=	"HTTP"
+	version			= 	"2.11"
+	address_type	= 	"IP"
+	port_number		=	"80"
+	
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8000"
+
+	display_name	=	"Servers-Standard/HTTP & HTTPS/HTTP"
+	url_hint		=	"http://${ADDRESS}:${PORT}/"
+</header>
+
+<description>
+
+\GB\Hypertext Transfer Protocol (HTTP)\P\
+
+The protocol used to transfer web pages on the World Wide Web, defined in \U2=http://www.ietf.org/rfc/rfc2068.txt\RFC 2068\P0\ and \U2=http://www.ietf.org/rfc/rfc1945.txt\RFC 1945\P0\. The default TCP port number for HTTP connections is port 80.
+
+This TCP probe lets you download a specific web page and scan it for a specific string of HTML.
+
+\i\Host Name\p\ is the domain name of the web server (e.g. "www.intermapper.com"). This can be derived from the host name part of the URL that you want to test. You must enter a valid "Host Name" to test web servers which implement virtual hosts. Only add an IP address or domain name; do not add "http://".
+
+\i\URL Path\p\ is the full path of the desired file on the web server (e.g. "/index.html"). The first character must be a '/'.
+
+\i\String to verify\p\ is a string to verify in the data returned by the HTTP server.  For example, if you are retrieving a web page, you might search for "<HTML" or "<P>" to verify that the data is HTML. If this string is not found, the device will go into alarm.
+
+\i\User ID\p\ is the user name typed into the web browser's password dialog. The default is to leave this blank. You should set this parameter if you want to test a web page that requires authentication.
+
+\i\Password\p\ is the password for the web browser's dialog. The default is to leave this blank. You should set this parameter if you want to test a web page that requires authentication.
+
+</description>
+
+<parameters>
+
+"Host Name"			=		""
+"URL Path"			=		"/"
+"String to verify"	=		"<HTML"
+"User ID"			=		""
+"Password*"			=		""
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT (disconnect handler)
+
+STOR "fullURL" "http://"
+CHCK "${Host Name}" else goto #+3
+SCAT "fullURL" "${Host Name}"
+GOTO #+2
+SCAT "fullURL" "${_REMOTEADDRESS}"
+SCAT "fullURL" ":${_REMOTEPORT}${URL Path}"
+
+SEND "GET ${URL Path} HTTP/1.0\r\n"
+CHCK "${Host Name}" else goto #+2
+SEND "Host: ${Host Name}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User ID}${Password*}" else goto #+2
+SEND "Authorization: Basic ${_BASE64:${User ID}:${Password*}}\r\n"
+SEND "\r\n"
+MTCH "^HTTP/"ri else goto @UNEXPECTED_GREETING
+MTCH "^HTTP/... 200"ri else goto @BAD_GET_RESPONSE
+EXPT "^$"r
+LINE OFF
+DISC if disconnected goto @NO_MATCH   (added line in 2.1.1b1)
+EXPT "${String to verify}"i else goto @NO_MATCH
+DONE OKAY
+
+@IDLE:
+DONE DOWN "[HTTP] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". (${fullURL})"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[HTTP] Unexpected greeting from port ${_REMOTEPORT}. (${fullURL})"
+
+@NO_MATCH:
+DONE WARN "[HTTP] \"${String to verify}\" not found in ${fullURL}"
+
+@BAD_GET_RESPONSE:
+MTCH "^HTTP/... 201"ri ELSE #+2
+DONE WARN "[HTTP] 201 Created (${fullURL})"
+MTCH "^HTTP/... 202"ri ELSE #+2
+DONE WARN "[HTTP] 202 Accepted (${fullURL})"
+MTCH "^HTTP/... 204"ri ELSE #+2
+DONE WARN "[HTTP] 204 No Content (${fullURL})"
+MTCH "^HTTP/... 301"ri ELSE #+2
+DONE WARN "[HTTP] 301 Moved Permanently (${fullURL})"
+MTCH "^HTTP/... 302"ri ELSE #+2
+DONE WARN "[HTTP] 302 Moved Temporarily (${fullURL})"
+MTCH "^HTTP/... 303"ri ELSE #+2
+DONE WARN "[HTTP] 303 See Other (${fullURL})"
+MTCH "^HTTP/... 304"ri ELSE #+2
+DONE WARN "[HTTP] 304 Not Modified (${fullURL})"
+MTCH "^HTTP/... 400"ri ELSE #+2
+DONE WARN "[HTTP] 400 Bad Request (${fullURL})"
+MTCH "^HTTP/... 401"ri ELSE #+2
+DONE WARN "[HTTP] 401 Unauthorized (${fullURL})"
+MTCH "^HTTP/... 403"ri ELSE #+2
+DONE WARN "[HTTP] 403 Forbidden (${fullURL})"
+MTCH "^HTTP/... 404"ri ELSE #+2
+DONE WARN "[HTTP] 404 Not Found (${fullURL})"
+MTCH "^HTTP/... 500"ri ELSE #+2
+DONE ALRM "[HTTP] 500 Internal Server Error (${fullURL})"
+MTCH "^HTTP/... 501"ri ELSE #+2
+DONE ALRM "[HTTP] 501 Not Implemented (${fullURL})"
+MTCH "^HTTP/... 502"ri ELSE #+2
+DONE ALRM "[HTTP] 502 Bad Gateway (${fullURL})"
+MTCH "^HTTP/... 503"ri ELSE #+2
+DONE ALRM "[HTTP] 503 Service Unavailable (${fullURL})"
+DONE ALRM "[HTTP] Unknown Error Code '${_LINE:32}' (${fullURL})"
+
+@DISCONNECT:
+DONE DOWN "[HTTP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds. (${fullURL})"
+
+</script>
+
+<script-output>
+
+\B5\HTTP Information\0P\
+  \4\Time to establish connection:\0\ ${_connect} msecs
+  \4\Time spent connected to host:\0\ ${_active} msecs
+
+</script-output>
+
+<datasets>
+	$_connect,	'conntime',		"msec",		"true",		"Time to establish connection"
+	$_active,	'connactive',	"msec",		"true",		"Time spent connected to host"
+</datasets>
+

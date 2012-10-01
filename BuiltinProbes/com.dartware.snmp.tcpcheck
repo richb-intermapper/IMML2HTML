@@ -1,0 +1,60 @@
+<!-- 
+	SNMP - TCP Check (com.dartware.snmp.tcpcheck)
+	Copyright (c) 2000-2001 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.tcpcheck"
+	human_name		=	"SNMP - TCP Check"
+	version			= 	"1.5"
+	address_type	= 	"IP,AT"
+	port_number		=	"161"
+	display_name	=	"Miscellaneous/TCP Check"
+</header>
+
+
+<description>
+\GB\SNMP - TCP Check\P\
+
+This probe generates an alarm if the count of TCP connections is greater than the "Allowed TCP Connections" parameter. This probe can be used to detect people telnetting into a box that shouldn't have connections (perhaps, a router that might be attacked from outside your network).
+
+This SNMP probe retrieves the device's 'tcpCurrEstab' MIB variable and compares its value to the maximum number of TCP connections allowed. If the number of established TCP connections exceeds the limit, this probe will put the device into "Alarm" status.
+
+\i\Allowed TCP Connections\p\ is the threshold for the number of TCP connections allowed. If the number of connections exceeds this value, the device will alarm.
+
+</description>
+
+<parameters>
+
+"Allowed TCP Connections" = "0"
+
+</parameters>
+
+<snmp-device-variables>
+	-- TYPE can be one of:  DEFAULT, PER-SECOND, PER-MINUTE, TOTAL-VALUE.
+	-- Use DEFAULT for string and integer values.
+	
+	--- MIB Variable ---	--- OID ---				---TYPE --- 	---Chart Legend ---
+	tcpCurrEstab,			1.3.6.1.2.1.6.9.0, 		INTEGER, 		"Number of TCP Connections"
+
+</snmp-device-variables>
+
+
+<snmp-device-thresholds>
+
+   alarm: ${tcpCurrEstab} > ${Allowed TCP Connections}
+
+</snmp-device-thresholds>
+
+<snmp-device-display>
+
+\B5\SNMP Device Information\0P\
+  \4\Number of TCP Connections:\0\ ${tcpCurrEstab}
+
+</snmp-device-display>
+
+<datasets>
+	$tcpCurrEstab,	'numconns',	"",   "true",   "Number of TCP Connections"
+</datasets>

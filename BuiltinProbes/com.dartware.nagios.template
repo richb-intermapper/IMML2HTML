@@ -1,0 +1,50 @@
+<!-- 
+Comand Line Nagios Plug-in Example (com.dartware.nagiosx.template) 
+Copyright (c) 2010 Dartware, LLC. All rights reserved. 
+--> 
+
+<header> 
+	type			=	"cmd-line" 
+	package			=	"com.dartware" 
+	probe_name		=	"nagios.template" 
+	human_name		=	"Nagios Plugin" 
+	version			=	"1.7" 
+	address_type	=	"IP" 
+	display_name	=	"Miscellaneous/Nagios/Nagios Plugin"
+	flags			=	"NAGIOS3"
+</header> 
+
+<description> 
+\GB\Nagios Plugin\p\ 
+
+This probe lets you specify a Nagios plugin. InterMapper invokes the plugin and uses the exit value to set the condition of the device. It uses the performance data returned by the plugin to create a nice display of chartable data. The \i\Plugin\p\ parameter below should be the same command line (including arguments) you would use to test the plugin manually. You may enter \${ADDRESS} and it will be replaced with the device's IP address, and \${PORT} will be replaced by the port specified for the probe. 
+
+This probe expects the plugin to be in the Tools sub-directory of the InterMapper Settings directory. 
+
+Nagios and the Nagios logo are registered trademarks of Ethan Galstad. For more information, see \U2\http://www.nagios.org\P0\ 
+</description> 
+
+<parameters> 
+Plugin="check_ping -H ${ADDRESS} -w 100,10% -c 1000,90%" 
+</parameters> 
+
+
+<command-line> 
+-- Empty path forces the InterMapper Settings:Tools directory
+path="" 
+cmd=${Plugin} 
+</command-line> 
+
+<command-exit>
+-- These are the exit codes used by Nagios plugins
+down:${EXIT_CODE}=3 
+critical:${EXIT_CODE}=2 
+alarm:${EXIT_CODE}=1 
+okay:${EXIT_CODE}=0 
+</command-exit> 
+
+<command-display>
+
+\B5\NAGIOS Probe Performance Data: ${Plugin}\P0\
+${nagios_output}
+</command-display> 

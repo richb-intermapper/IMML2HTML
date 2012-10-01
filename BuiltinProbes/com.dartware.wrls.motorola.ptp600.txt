@@ -1,0 +1,123 @@
+<!-- 
+	Motorola  P2P Ethernet Bridge (com.dartware.wrls.motorola.ptp600)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005-2006, Dartware, LLC. 
+
+	Based on wrls.orthogon.gemini - Spectra uses same MIB as Gemini; Same variables used as well. 
+	Latest revision 4 August 2005, ics.
+	10 Aug 2006 - Incorporated RK's updates to Gemini probe of 7 Oct 2005;
+		Replaced mention of "Gemini" with the correct "Spectra"
+		Deleted params and thresholds that had been commented out. -reb
+	 5 Apr 2007 - Cloned Orthogon Spectra probe to create this one for Motorola PTP600
+	
+-->
+
+<header>
+	type				= 	"custom-snmp"
+	package				= 	"com.dartware"
+	probe_name			=	"wrls.motorola.ptp600"
+	human_name			=	"Wireless - Motorola PTP600"
+	display_name		=	"Wireless/Motorola/PTP 600 Series Bridge"
+	"version"			=	"0.7"
+	"address_type"		=	"IP,AT"
+	"port_number"		=	"161"
+	"equiv_class"		= 	"WRLS"
+	"FLAGS"				=	"SEP-IFSTATUS"
+</header>
+
+<snmp-device-properties>
+maxvars="4"
+</snmp-device-properties>
+
+<description>
+\GB\Motorola PTP 600 Series Bridge\P\
+This probe monitors a Motorola PTP600 point-to-point (P2P) Wireless Ethernet Bridge acting as a master or slave.
+
+It monitors and displays a variety of information, including mode and association, range, active channels, transmit and receive modulation mode, current and maximum transmit power, receive power, vector error, link loss, and signal-to-noise ratio. It will go into alarm and warning states based on user-specified levels for the modulation/speed mode, received power, vector error, link loss, and signal-to-noise ratio.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.4 or later.
+</description>
+
+<parameters>
+
+"Tx Modulation Mode Alarm[BPSK 1/2,QPSK 1/2,QPSK 2/3,16QAM 1/2,16QAM 3/4,64QAM 2/3,64QAM 3/4,64QAM 7/8]"		=	"Please select one..."
+"Tx Modulation Mode Warning[BPSK 1/2,QPSK 1/2,QPSK 2/3,16QAM 1/2,16QAM 3/4,64QAM 2/3,64QAM 3/4,64QAM 7/8]"		=	"Please select one..."
+"Rx Modulation Mode Alarm[BPSK 1/2,QPSK 1/2,QPSK 2/3,16QAM 1/2,16QAM 3/4,64QAM 2/3,64QAM 3/4,64QAM 7/8]"		=	"Please select one..."
+"Rx Modulation Mode Warning[BPSK 1/2,QPSK 1/2,QPSK 2/3,16QAM 1/2,16QAM 3/4,64QAM 2/3,64QAM 3/4,64QAM 7/8]"		=	"Please select one..."
+"Rx Power too low alarm"		=	"-86"
+"Rx Power low warning"			=	"-80"
+"Vector Error too high alarm"	=	"0"
+"Vector Error high warning"		=	"-5"
+"Link Loss too high alarm"		=	"162"
+"Link Loss high warning"		=	"157"
+</parameters>
+
+<snmp-device-variables>
+--- MIB Variable ---	--- OID ---				---TYPE --- 	---Chart Legend ---
+iPAddr,				1.3.6.1.4.1.17713.1.5.1.0,		DEFAULT, 	"IP Address"
+subnetMask,			1.3.6.1.4.1.17713.1.5.2.0,		DEFAULT, 	"Subnet Mask"
+gatewayIPAddr,		1.3.6.1.4.1.17713.1.5.3.0,		DEFAULT, 	"Gateway IP Address"
+targetMACAddr,		1.3.6.1.4.1.17713.1.5.4.0,		DEFAULT, 	"Target MAC Address"
+masterSlaveMode,	1.3.6.1.4.1.17713.1.5.5.0,		DEFAULT, 	"Master-Slave Mode"
+maxTxPower,			1.3.6.1.4.1.17713.1.5.6.0,		DEFAULT, 	"Maximum Tx Power"
+rawRxPower,			1.3.6.1.4.1.17713.1.12.1.0,		DEFAULT, 	"Raw Rx Power"
+rawTxPower,			1.3.6.1.4.1.17713.1.12.3.0,		DEFAULT, 	"Raw Tx Power"
+rawVectorError,		1.3.6.1.4.1.17713.1.12.2.0,		DEFAULT, 	"Raw Vector Error"
+range,				1.3.6.1.4.1.17713.1.12.4.0,		DEFAULT, 	"Range"
+rawLinkLoss,		1.3.6.1.4.1.17713.1.12.5.0,		DEFAULT, 	"Raw Link Loss"
+linkLoss,			($rawLinkLoss / 10) ,		CALCULATION,	"Link Loss"
+rxChannel,			1.3.6.1.4.1.17713.1.12.6.0,		DEFAULT, 	"Rx Channel"
+txChannel,			1.3.6.1.4.1.17713.1.12.7.0,		DEFAULT, 	"Tx Channel"
+rxModulationMode,	1.3.6.1.4.1.17713.1.12.8.0,		DEFAULT, 	"Rx Modulation Mode"
+txModulationMode,	1.3.6.1.4.1.17713.1.12.9.0,		DEFAULT, 	"Tx Modulation Mode"
+software,			1.3.6.1.4.1.17713.1.19.1.0,		DEFAULT, 	"Software Version"
+hardware,			1.3.6.1.4.1.17713.1.19.2.0,		DEFAULT, 	"Hardware Version"
+rxPower,			($rawRxPower / 10) ,		CALCULATION,	"Rx Power"
+txPower,			($rawTxPower / 10) ,		CALCULATION,	"Tx Power"
+vectorError,		($rawVectorError / 10) ,	CALCULATION,	"Vector Error"
+R,					($rxModulationMode),		CALCULATION,	"Rx Modulation Mode"
+T,					($txModulationMode),		CALCULATION,	"Tx Modulation Mode"
+M,					("${Tx Modulation Mode Alarm[BPSK 1/2,QPSK 1/2,QPSK 2/3,16QAM 1/2,16QAM 3/4,64QAM 2/3,64QAM 3/4,64QAM 7/8]}"),	CALCULATION, "Tx Modulation Mode Alarm"
+N,					("${Rx Modulation Mode Alarm[BPSK 1/2,QPSK 1/2,QPSK 2/3,16QAM 1/2,16QAM 3/4,64QAM 2/3,64QAM 3/4,64QAM 7/8]}"),	CALCULATION, "Rx Modulation Mode Alarm"
+O,					("${Tx Modulation Mode Warning[BPSK 1/2,QPSK 1/2,QPSK 2/3,16QAM 1/2,16QAM 3/4,64QAM 2/3,64QAM 3/4,64QAM 7/8]}"), CALCULATION, "Tx Modulation Mode Alarm"
+P,					("${Rx Modulation Mode Warning[BPSK 1/2,QPSK 1/2,QPSK 2/3,16QAM 1/2,16QAM 3/4,64QAM 2/3,64QAM 3/4,64QAM 7/8]}"), CALCULATION, "Rx Modulation Mode Alarm"
+txmoda,				($M == "BPSK 1/2" ? "1" : $M == "QPSK 1/2" ? "2" : $M == "QPSK 2/3" ? "3" : $M == "16QAM 1/2" ? "4" : $M == "16QAM 3/4" ? "5" : $M == "64QAM 2/3" ? "6" : $M == "64QAM 3/4" ? "7" : $M == "64QAM 7/8" ? "8" : "0"), 	CALCULATION, 	"Tx Mod Alarm"
+txmodw,				($O == "BPSK 1/2" ? "1" : $O == "QPSK 1/2" ? "2" : $O == "QPSK 2/3" ? "3" : $O == "16QAM 1/2" ? "4" : $O == "16QAM 3/4" ? "5" : $O == "64QAM 2/3" ? "6" : $O == "64QAM 3/4" ? "7" : $O == "64QAM 7/8" ? "8" : "0"), 	CALCULATION, 	"Tx Mod Warning"
+rxmoda,				($N == "BPSK 1/2" ? "1" : $N == "QPSK 1/2" ? "2" : $N == "QPSK 2/3" ? "3" : $N == "16QAM 1/2" ? "4" : $N == "16QAM 3/4" ? "5" : $N == "64QAM 2/3" ? "6" : $N == "64QAM 3/4" ? "7" : $N == "64QAM 7/8" ? "8" : "0"), 	CALCULATION, 	"Rx Mod Alarm"
+rxmodw,				($P == "BPSK 1/2" ? "1" : $P == "QPSK 1/2" ? "2" : $P == "QPSK 2/3" ? "3" : $P == "16QAM 1/2" ? "4" : $P == "16QAM 3/4" ? "5" : $P == "64QAM 2/3" ? "6" : $P == "64QAM 3/4" ? "7" : $P == "64QAM 7/8" ? "8" : "0"), 	CALCULATION, 	"Rx Mod Warning"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+alarm:		$M = "Please select one..."			"Please select Tx Modulation Mode thresholds..."
+alarm:		$O = "Please select one..."			"Please select Tx Modulation Mode thresholds..."
+alarm:		$T < $txmoda					"Tx Modulation Mode Too Low"
+alarm:		$R < $rxmoda					"Rx Modulation Mode Too Low"
+alarm:		$rxPower < ${Rx Power too low alarm}		"Rx Power too low"
+alarm:		$vectorError  > ${Vector Error too high alarm}	"Vector Error too high"
+alarm:		$linkLoss > ${Link Loss too high alarm}		"Link loss too high"
+warning:	$T < $txmodw					"Tx Modulation Mode Low"
+warning:	$R < $rxmodw					"Rx Modulation Mode Low"
+warning:	$rxPower < ${Rx Power low warning}		"Rx Power low"
+warning:	$vectorError  > ${Vector Error high warning}	"Vector Error high"
+warning:	$linkLoss > ${Link Loss high warning}		"Link loss high"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\Motorola PTP600 Bridge Information\0P\
+\4\     Software Version:\0\  ${software}
+\4\     Hardware Version:\0\  ${hardware}
+\4\           IP Address:\0\  ${iPAddr}
+\4\          Subnet Mask:\0\  ${subnetMask}
+\4\   Gateway IP Address:\0\  ${gatewayIPAddr}
+\4\   Target MAC Address:\0\  ${targetMACAddr}
+\4\    Master-Slave Mode:\0\  ${eval: $MasterSlaveMode == 0 ? "Master" : $MasterSlaveMode == 1 ? "Slave" : $MasterSlaveMode }
+\4\                Range:\0\  ${chartable: #.# : $range/10} \3IG\km  (\P0M\${chartable: #.# : ($range/10)*0.621371} \3IG\miles)\P0M\
+\4\      Active Channels:\0\  \3IG\Tx:\P0M\ ${txChannel} / \3IG\Rx:\P0M\ ${rxChannel} 
+\4\   Tx Modulation Mode:\0\  ${chartable: #.## : $T == 1 ? "BPSK 1/2" : $T == 2 ? "QPSK 1/2" : $T == 3 ? "QPSK 2/3" : $T == 4 ? "16QAM 1/2" : $T == 5 ? "16QAM 3/4" : $T == 6 ? "64QAM 2/3" : $T == 7 ? "64QAM 3/4" : $T == 8 ? "64QAM 7/8" : $T == 0 ? "[N/A]" : "Unknown" } \3IG\(\P0M\$T\3IG\)\P0M\
+\4\   Rx Modulation Mode:\0\  ${chartable: #.## : $R == 1 ? "BPSK 1/2" : $R == 2 ? "QPSK 1/2" : $R == 3 ? "QPSK 2/3" : $R == 4 ? "16QAM 1/2" : $R == 5 ? "16QAM 3/4" : $R == 6 ? "64QAM 2/3" : $R == 7 ? "64QAM 3/4" : $R == 8 ? "64QAM 7/8" : $T == 0 ? "[N/A]" : "Unknown" } \3IG\(\P0M\$R\3IG\)\P0M\
+\4\Current/Max. Tx Power:\0\  ${chartable:-100:+0: #.# : $txPower}/${chartable: #.# : $MaxTxPower} \3IG\dBm\P0M\
+\4\             Rx Power:\0\  ${chartable:-100:+0: #.# : $rxPower} \3IG\dBm\P0M\
+\4\         Vector Error:\0\  ${chartable:-100:+0: #.# : $vectorError} \3IG\dB\P0M\
+\4\            Link Loss:\0\  ${chartable: #.# : $linkLoss} \3IG\dB\P0M\
+</snmp-device-display>

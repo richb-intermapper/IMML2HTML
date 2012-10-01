@@ -1,0 +1,54 @@
+ <!--
+	Restricted Interface Custom SNMP Probe (com.dartware.snmp.restrictedint)
+    Custom Probe for InterMapper (http://www.intermapper.com)
+    Please feel free to use this as a base for further development.
+
+	Original version 17 January 2008 by wwf.
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"snmp.restrictedint"
+	"human_name"	=	"SNMP - Restricted Interface"
+	"version"		=	"0.1"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	display_name	=	"SNMP/Restricted Interface"
+</header>
+
+<snmp-device-properties>
+	
+	interface_visible = ("${Interface Description}" == "") or ("$ifDescr" =~ "${Interface Description}")
+	
+</snmp-device-properties>
+
+
+<description>
+\GB\SNMP - Restricted Interface\P\
+
+This probe is identical to the Basic SNMP Traffic probe except it restricts the visible interfaces to those that match the specified \i\interface description\p\.
+
+\b\Interface Description\p\ specifies which interfaces to display. Interfaces with a value of ifDescr that match this pattern will be visible on the map. Interfaces with non-matching ifDescr will automatically be hidden.
+
+</description>
+
+
+<parameters>
+	"Interface Description"		=	"" 
+</parameters>
+
+ 
+<snmp-device-variables>	
+</snmp-device-variables>
+
+
+<snmp-device-thresholds>
+</snmp-device-thresholds>
+
+
+<snmp-device-display>
+\B5\SNMP - Interface Filtered\0P\
+  \4\Interface Filter:\0\  ${EVAL: "${Interface Description}" == "" ? "\3i\<Empty>\P0\" : "${Interface Description}" }
+</snmp-device-display>
+

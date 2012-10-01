@@ -1,0 +1,299 @@
+<!-- 
+Command Line WMI Probe to check for folder changes (com.dartware.wmi.folder_check) 
+Copyright (c) 2010 Dartware, LLC. All rights reserved. 
+--> 
+
+<header> 
+	type			=	"cmd-line" 
+	package			=	"com.dartware" 
+	probe_name		=	"wmi.folder_check" 
+	human_name		=	"WMI Folder Check" 
+	version			=	"1.11" 
+	address_type	=	"IP"
+	display_name	=	"WMI/WMI Folder Check"
+	visible_in 		=	"Windows"
+	flags			=	"NTCREDENTIALS"	
+</header> 
+
+<description> 
+\GB\WMI Folder Check\p\ 
+
+This probe uses WMI to retrieve information about a folder on the target host.  Specifically, it queries the Win32_Directory and CIM_DataFile classes to walk the directory tree and accumulate file and folder counts and the total of file sizes.  It also notes the most recently modified file in the tree.  The target host must be running Windows 2000 or later.
+
+The Path parameter specifies the folder at the top of the tree which you wish to check.  It should include the drive and be enclosed in double-quotes if it contains spaces.
+
+Warning and Critical thresholds may be set for the number of folders, the number of files, and the total of the file sizes.
+
+The User parameter may be a local user on the target host, or may take the form of "domain\\user" for a domain login.  Leave it blank if authentication is not required, such as when the target is the localhost.
+
+InterMapper invokes the folder_chk.vbs companion script which was placed in the Tools folder of the InterMapper Settings folder when this probe was loaded.  It compares the number of files, folders, and the total size against your criteria to set the condition of the device.
+
+</description> 
+
+<parameters>
+	Path="C:\"
+	"Warning Folders"=""
+	"Critical Folders"=""
+	"Warning Files"=""
+	"Critical Files"=""
+	"Warning Size"=""
+	"Critical Size"=""
+	User=""
+	"Password*"=""
+	"Timeout (sec)"="60"
+</parameters> 
+
+
+<command-line> 
+	-- Empty path forces the InterMapper Settings:Tools directory
+	path="" 
+	cmd="${CSCRIPT} folder_chk.vbs"
+	arg="-h ${address} -d ${Path} -w ${Warning Folders},${Warning Files},${Warning Size} -c ${Critical Folders},${Critical Files},${Critical Size}"
+	input = "${User} ${Password*}"
+	timeout = ${Timeout (sec)}
+</command-line> 
+
+<command-exit>
+	down:${EXIT_CODE}=3 
+	critical:${EXIT_CODE}=2 
+	alarm:${EXIT_CODE}=1 
+	okay:${EXIT_CODE}=0 
+</command-exit> 
+
+<command-display>
+${^stdout}
+</command-display> 
+
+<tool:folder_chk.vbs>
+'Command Line WMI Probe to check for folder changes (to be used with com.dartware.wmi.file_check)
+'Copyright (c) 2009 Dartware, LLC. All rights reserved. 
+
+On Error Resume Next
+
+' get args up to next switch in case there are spaces in list
+FUNCTION GetNextArg(j, nargs)
+	arg = ""
+	do until (j = nargs-1)
+		if (instr(wscript.arguments(j+1), "-") = 1) then
+			exit do
+		else
+			arg = arg & wscript.arguments(j+1)
+			j = j + 1
+		end if
+	loop
+	GetNextArg = arg
+END FUNCTION
+
+FUNCTION CheckError(reasonStr)
+	if (err.number <> 0) then
+		reasonStr = vbNewLine & reasonStr & "Error #" & CStr(Err.Number) & " " & Err.Description
+		wscript.echo "\{reason:=""" & reasonStr & """}"
+		wscript.quit(3)
+	end if
+END FUNCTION
+
+' Collect our arguments
+host = ""
+user = ""
+pass = ""
+crit = ""
+warn = ""
+path = ""
+verbose = False		' for testing only
+
+numargs = wscript.arguments.count
+for i=0 to numargs-1
+	test = wscript.arguments(i)
+	if (test = "-v") then verbose = True
+	if (test = "-host") OR (test = "-h") then
+		host = GetNextArg(i, numargs)
+	end if
+	if (test = "-user") OR (test = "-u") then
+		user = GetNextArg(i, numargs)
+	end if
+	if (test = "-pass") OR (test = "-p") then
+		pass = GetNextArg(i, numargs)
+	end if
+	if (test = "-dir") OR (test = "-d") then
+		path = GetNextArg(i, numargs)
+	end if
+	if (test = "-warn") OR (test = "-w") then
+		warn = GetNextArg(i, numargs)
+	end if
+	if (test = "-crit") OR (test = "-c") then
+		crit = GetNextArg(i, numargs)
+	end if
+next
+
+' Read username and password from stdin
+if  not WScript.StdIn.AtEndOfStream then
+	inpStr = WScript.StdIn.ReadLine
+end if
+if verbose then wscript.echo "stdin: " & inpStr
+
+dim cred
+cred = split(inpStr, " ")
+user = cred(0)
+pass = cred(1) 
+
+if (host = "" or path = "" or (crit = "" and warn = "")) then
+	Err.Raise vbObjectError + 1, "", "Error processing arguments"
+	CheckError("")
+end if
+
+dim warning
+dim critical
+
+warning = split(warn,",")		' folders, files, size
+critical = split(crit,",")		' folders, files, size
+
+' separate drive from path
+lc = instr(path, ":")
+if (lc > 0) then 
+	drive = left(path, lc)
+	dpath = right(path, len(path)-lc)
+end if
+
+' strip trailing backslash.
+if (right(dpath, 2) = "\\") then dpath = left(dpath, len(dpath)-2)
+if (dpath = "") then 
+	dirName = drive & "\\"
+else
+	dirName = drive & dpath
+end if
+
+' Build query
+query = "Select * from Win32_Directory WHERE Drive = '" & drive & "' AND (Name = '" & dirName & "' OR Name Like '" & drive & dpath & "\\%')"
+
+Set objSWbemDateTime = CreateObject("WbemScripting.SWbemDateTime")
+CheckError("")
+
+if (verbose) then wscript.echo "query = " & query
+
+' Connect with target via WMI
+strComputer = host
+Set objSWbemLocator = CreateObject("WbemScripting.SWbemLocator")
+CheckError("")
+
+if (user = "") or (lcase(user) = "none") then		' no authentication needed
+	Set objWMIService = GetObject("winmgmts:" & "{impersonationLevel=impersonate}!\\" & strComputer & "\root\cimv2") 
+	CheckError("")
+else						' authenticate with user/pass
+	user = Replace(user,"\\","\")
+	Set objWMIService = objSWbemLocator.ConnectServer (strComputer, "\root\cimv2", user, pass)
+	CheckError("")
+	objWMIService.Security_.ImpersonationLevel = 3
+end if
+
+' Execute query
+Set colFolders = objWMIService.ExecQuery(query,,48)
+CheckError("")
+
+numFolders = -1		' don't count root folder
+numFiles = 0
+sizeFiles = 0
+latestMod = 0
+
+For Each objFolder in colFolders
+	numFolders = numFolders + 1
+	
+	dirPath = Replace(Mid(objFolder.Name,3,Len(objFolder.Name)),"\","\\")
+	if (dirPath <> "\\") then dirpath = dirPath & "\\"
+	query = "SELECT * FROM CIM_DataFile WHERE Drive = '" & drive & "' " & "AND Path = '" & dirPath & "'"
+	if (verbose) then wscript.echo "query = " & query
+	Set colFiles = objWMIService.ExecQuery(query)
+	
+	For Each objFile in colFiles
+		numFiles = numFiles + 1
+		sizeFiles = sizeFiles + cdbl(objFile.Filesize)
+		if objFile.LastModified > latestMod then latestMod = objFile.LastModified
+		
+		if (verbose) then 
+			objSWbemDateTime.Value = objFile.LastModified
+			WScript.Echo "File: " & objFile.Name & "   " & objSWbemDateTime.GetVarDate(True) & "   " & objFile.Filesize
+		end if
+	Next
+Next
+CheckError("")
+
+' Evaluate criteria to set returncode
+criticalreason = ""
+warningreason = ""
+returncode = 0
+
+Set objSWbemDateTime2 = CreateObject("WbemScripting.SWbemDateTime")
+
+if (verbose) then 
+	WScript.Echo "Warning: " & "|" & cstr(warning(0)) & "|" & cstr(warning(1)) & "|" & cstr(warning(2)) & "|"
+	WScript.Echo "Critical: " & "|" & len(critical(0)) & "|" & cstr(critical(1)) & "|" & len(critical(2)) & "|"
+	WScript.Echo "Number of folders:   " & numFolders
+	WScript.Echo "Number of files:     " & numFiles
+	WScript.Echo "Total folder size:   " & sizeFiles & " bytes"
+	objSWbemDateTime2.Value = latestMod
+	WScript.Echo "Latest modification: " & objSWbemDateTime2.GetVarDate(True)
+end if
+
+if (numFolders = -1) then
+	criticalreason = "The specified path was not found."
+	numFolders = 0
+end if
+
+if (len(critical(0)) > 0) then
+	if (numFolders > cint(critical(0))) then 
+		criticalreason = criticalreason & vbNewLine & "Number of folders is above " & critical(0) & "."
+	end if
+end if
+if (len(warning(0)) > 0) then
+	if (numFolders > cint(warning(0))) then 
+		warningreason = warningreason & vbNewLine & "Number of folders is above " & warning(0) & "."
+	end if
+end if
+
+if (len(critical(1)) > 0) then 
+	if (numFiles > cint(critical(1))) then 
+		criticalreason = criticalreason & vbNewLine & "Number of files is above " & critical(1) & "."
+	end if
+end if
+if (len(warning(1)) > 0) then
+	if (numFiles > cint(warning(1))) then 
+		warningreason = warningreason & vbNewLine & "Number of folders is above " & warning(1) & "."
+	end if
+end if
+
+if (len(critical(2)) > 0) then
+	if (sizeFiles > cdbl(critical(2))) then 
+		criticalreason = criticalreason & vbNewLine & "Total file size is above " & critical(2) & " bytes."
+	end if
+end if
+if (len(warning(2)) > 0) then
+	if (sizeFiles > cdbl(warning(2))) then 
+		warningreason = warningreason & vbNewLine & "Total file size is above " & warning(2) & " bytes."
+	end if
+end if
+
+if (criticalreason <> "") then
+	reason = criticalreason
+	returncode = 2
+elseif (warningreason <> "") then
+	reason = warningreason
+	returncode = 1
+end if
+
+' Build data output
+output= "\{"
+output = output & "NumFolders:=" & formatnumber(numFolders,0,vbTrue,vbFalse,vbFalse) & ","
+output = output & "NumFiles:=" & formatnumber(numFiles,0,vbTrue,vbFalse,vbFalse) & ","
+output = output & "SizeFiles:=" & formatnumber(sizeFiles,0,vbTrue,vbFalse,vbFalse) & ","
+output = output & "reason:=""" & reason & """}"
+
+wscript.echo output & "\B5\WMI Folder Check\P\ for " & path & "\0\"
+wscript.echo "      \4\Number of Folders:\0\   $NumFolders"
+wscript.echo "      \4\Number of Files:\0\     $NumFiles"
+wscript.echo "      \4\Total File Size:\0\     $SizeFiles bytes"
+Set objSWbemDateTime2 = CreateObject("WbemScripting.SWbemDateTime")
+objSWbemDateTime2.Value = latestMod
+wscript.echo "      \4\Last Modification:\0\   " & objSWbemDateTime2.GetVarDate(True)
+
+' Done
+wscript.quit(returncode)
+</tool:folder_chk.vbs>

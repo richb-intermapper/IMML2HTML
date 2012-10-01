@@ -1,0 +1,34 @@
+<!-- 
+	BlitzWatch (com.dartware.blitzwatch)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"blitzwatch"
+	human_name		=	"BlitzWatch"
+	version			= 	"1.5"
+	address_type	= 	"IP"
+	port_number		= 	"2153"
+	
+	old_protocol	= 	"15"		# Backward compat. with old numbering scheme.
+	old_script		= 	"0"
+	
+	display_name	= "Servers-Proprietary/BlitzWatch"
+
+</header>
+
+<description>
+
+\GB\BlitzWatch\P\
+
+The protocol used to monitor the performance of a \u2\BlitzMail\p0\ server. BlitzMail is a TCP/IP-based client-server electronic mail system developed at Dartmouth College. In the BlitzMail system, all mail and mail preferences are stored on one or more BlitzMail servers, thus giving a user access to their email from anywhere. The BlitzWatch probe provides a simple view into the current state of a single BlitzMail server in terms of simultaneous user count, CPU utilization, and disk transfer statistics.
+
+</description>
+
+<parameters>
+
+-- No parameters
+
+</parameters>

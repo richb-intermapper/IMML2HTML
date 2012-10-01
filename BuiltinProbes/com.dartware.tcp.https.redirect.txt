@@ -1,0 +1,125 @@
+<!-- 
+	HTTP (Redirect) (com.dartware.tcp.http.redirect)
+	Copyright © 2000-2011 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.https.redirect"
+	human_name		=	"HTTPS (Redirect)"
+	version			= 	"1.4"
+	address_type	= 	"IP"
+	port_number		=	"443"
+	display_name	=	"Servers-Standard/HTTP & HTTPS/HTTPS (Redirect)"
+	url_hint		=	"https://${ADDRESS}:${PORT}/"
+</header>
+
+<description>
+
+²GB³Hypertext Transfer Protocol (HTTPs) - Redirect²P³
+
+The protocol used to transfer web pages on the World Wide Web, defined in ²U2=http://www.ietf.org/rfc/rfc2068.txt³RFC 2068²P0³ and  ²U2=http://www.ietf.org/rfc/rfc1945.txt³RFC 1945²P0³. The default TCP port number for HTTP connections is port 80.
+
+This TCP probe lets you test that a web server is redirecting certain URL's to a specific URL.
+
+²i³Host Name²p³ is the domain name of the web server (e.g. "www.intermapper.com"). This can be derived from the host name part of the URL that you want to test. 
+
+²i³URL Path²p³ is the full path of the desired file on the web server (e.g. "/index.html"). The first character must be a '/'.
+
+²i³Redirect URL²p³ is the complete URL that the given URL Path is redirected to. The URL should begin with "http://".
+
+²i³User ID²p³ is the user name typed into the web browser's password dialog. The default is to leave this blank. You should set this parameter if you want to test a web page that requires authentication.
+
+²i³Password²p³ is the password for the web browser's dialog. The default is to leave this blank. You should set this parameter if you want to test a web page that requires authentication.
+
+</description>
+
+<parameters>
+
+"Host Name"			=		""
+"URL Path"			=		"/"
+"Redirect URL"		=		"http://"
+"User ID"			=		""
+"Password"			=		""
+
+</parameters>
+
+<script>
+
+CONN #60 "SECURE" (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT (disconnect handler)
+SEND "GET ${URL Path} HTTP/1.0\r\n"
+CHCK "${Host Name}" else goto #+2
+SEND "Host: ${Host Name}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User ID}${Password}" else goto #+2
+SEND "Authorization: Basic ${_BASE64:${User ID}:${Password}}\r\n"
+SEND "\r\n"
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH m"30[123]" else goto @BAD_GET_RESPONSE
+EXPT "Location:"i else goto @NO_LOCATION
+MTCH "${Redirect URL}"i else goto @NO_MATCH
+DONE OKAY
+
+@IDLE:
+DONE DOWN "[HTTP (Redirect)] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[HTTP (Redirect)] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@NO_MATCH:
+DONE WARN "[HTTP (Redirect)] \"${Redirect URL}\" not found in \"${_LINE:100}\"."
+
+@NO_LOCATION:
+DONE WARN "[HTTP (Redirect)] No location."
+
+@BAD_GET_RESPONSE:
+MTCH "200" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 200 Okay. No redirect for \"${URL Path}\""
+MTCH "201" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 201 Created (${URL Path})"
+MTCH "202" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 202 Accepted (${URL Path})"
+MTCH "204" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 204 No Content (${URL Path})"
+MTCH "301" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 301 Moved Permanently (${URL Path})"
+MTCH "302" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 302 Moved Temporarily (${URL Path})"
+MTCH "303" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 303 See Other (${URL Path})"
+MTCH "304" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 304 Not Modified (${URL Path})"
+MTCH "400" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 400 Bad Request (${URL Path})"
+MTCH "401" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 401 Unauthorized (${URL Path})"
+MTCH "403" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 403 Forbidden (${URL Path})"
+MTCH "404" ELSE #+2
+DONE WARN "[HTTP (Redirect)] 404 Not Found (${URL Path})"
+MTCH "500" ELSE #+2
+DONE ALRM "[HTTP (Redirect)] 500 Internal Server Error (${URL Path})"
+MTCH "501" ELSE #+2
+DONE ALRM "[HTTP (Redirect)] 501 Not Implemented (${URL Path})"
+MTCH "502" ELSE #+2
+DONE ALRM "[HTTP (Redirect)] 502 Bad Gateway (${URL Path})"
+MTCH "503" ELSE #+2
+DONE ALRM "[HTTP (Redirect)] 503 Service Unavailable (${URL Path})"
+DONE ALRM "[HTTP (Redirect)] Unknown Error Code ${_LINE:4} (${URL Path})"
+
+@DISCONNECT:
+DONE DOWN "[HTTP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+</script>
+
+<script-output>
+
+²B5³HTTP Information²0P³
+  ²4³Time to establish connection:²0³ ${_connect} msecs
+  ²4³Time spent connected to host:²0³ ${_active} msecs
+
+</script-output>
+

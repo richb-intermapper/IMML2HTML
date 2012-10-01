@@ -1,0 +1,65 @@
+ <!--
+	Wireless - Alvarion B-14 & B-28 (RB) (wrls.alvarion.b14.master)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Based on "Wireless - Alvarion BreezeACCESS VL (SU)"
+	Latest revision 13 July 2005 by ics.
+-->
+
+<header>
+	"type"			=	"custom-snmp"
+	"package"		=	"com.dartware"
+	"probe_name"	=	"wrls.alvarion.b14.slave"
+	"human_name"	=	"Wireless - Alvarion B-14 & B-28 (RB)"
+	"display_name" 	=	"Wireless/Alvarion/Alvarion B-14 & B-28 (RB)"
+	"version"		=	"0.4"
+	"address_type"	=	"IP,AT"
+	"port_number"	=	"161"
+	"equiv_class"	= 	"WRLS"
+</header>
+
+<description>
+\GB\Alvarion B-14 & B-28 (Slave)\P\
+
+This probe monitors an \u2=http://www.alvarion.com\Alvarion\p0\ B-14 or B-28 remote bridge (RB) unit. It retrieves and displays the radio band, operating frequency, average received signal to noise ratio, and the MAC address of the associated base unit (BU). It will go into alarm or warning states based on user-defined parameters for a low signal to noise ratio or high traffic on a specified interface.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+	"Avg Receive SNR too low alarm"		=	"1"
+	"Avg Receive SNR low warning"		=	"1"
+	"High Traffic Bytes alarm"		=	"100000000"
+	"High Traffic Bytes warning"		=	"90000000"
+	"High Traffic Interface Number"		=	"1"
+</parameters>
+
+<snmp-device-variables>
+	ifDescr,	1.3.6.1.2.1.2.2.1.2.${High Traffic Interface Number} , 		DEFAULT,	"Description"
+	ifInOctets,	1.3.6.1.2.1.2.2.1.10.${High Traffic Interface Number} , 	PER-SECOND, 	"Bytes In"
+	brzaccVLRadioBand,		 	1.3.6.1.4.1.12394.1.1.1.15.0 ,	 	DEFAULT, 	"Radio Band"
+	brzaccVLCurrentSUOperatingFrequency, 	1.3.6.1.4.1.12394.1.1.6.12.9.0 , 	DEFAULT, 	"Operating Frequency"
+	brzaccVLAverageReceiveSNR,	 	1.3.6.1.4.1.12394.1.1.11.1.0 ,	 	DEFAULT, 	"Average Receive SNR"
+	brzaccVLAssociatedAU, 			1.3.6.1.4.1.12394.1.1.1.10.0 , 		DEFAULT, 	"Associated AU MAC Address"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm:		$brzaccVLAverageReceiveSNR < ${Avg Receive SNR too low alarm} 		"Avg Receive SNR too low"
+	alarm:		$ifInOctets > ${High Traffic Bytes alarm}	 			"Traffic Too High"
+	warning:	$ifInOctets > ${High Traffic Bytes warning} 				"Traffic High"
+	warning:	$brzaccVLAverageReceiveSNR < ${Avg Receive SNR low warning} 		"Avg Receive SNR low"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\B-14 or B-28 RB Information\0P\
+ \4\          Radio Band:\0\ $brzaccVLRadioBand
+ \4\ Operating Frequency:\0\ ${chartable: # : $brzaccVLCurrentSUOperatingFrequency} \3IG\MHz\P0M\
+ \4\ Average Receive SNR:\0\ $brzaccVLAverageReceiveSNR
+ \4\       Associated BU:\0\ $brzaccVLAssociatedAU
+\B5\Interface Information:\0P\
+ \4\         Description:\0\ $ifDescr
+ \4\          Traffic In:\0\$ifInOctets \3IG\Bytes per sec.\P0M\
+</snmp-device-display>

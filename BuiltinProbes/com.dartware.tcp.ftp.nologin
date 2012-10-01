@@ -1,0 +1,74 @@
+<!-- 
+	FTP (No Login) (com.dartware.tcp.http)
+	Copyright � 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.ftp.nologin"
+	human_name		=	"FTP (No Login)"
+	version			= 	"1.8"
+	address_type	= 	"IP"
+	port_number		=	"21"
+	
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8005"
+
+	display_name	=	"Servers-Standard/FTP/FTP (No Login)"
+	url_hint		=	"ftp://${ADDRESS}:${PORT}"
+</header>
+
+<description>
+
+\GB\File Transfer Protocol (No Login)\P\
+
+The standard protocol for transferring files on TCP/IP internets, as defined in \U2=http://www.ietf.org/rfc/rfc0959.txt\RFC 959\P0\.  The default TCP port number for FTP control connections is port 21.
+
+This TCP script connects to the FTP server's control port (21), and issues a NOOP command without logging in.  The script concludes by issuing the QUIT command.
+
+Note:  Use this script if you are going to be frequently probing the FTP server, so it doesn't fill your log files with user logins and logouts.
+
+</description>
+
+<parameters>
+
+-- No parameters.
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+MTCH "220" else goto @UNEXPECTED_GREETING
+EXPT "220 " else goto @DISCONNECT
+SEND "NOOP\r\n"
+MTCH "[25][0-9][0-9]"r else goto @BAD_NOOP_RESPONSE
+EXPT "[25][0-9][0-9] "r else goto @DISCONNECT
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+DONE OKAY
+
+@UNEXPECTED_GREETING:
+STAT DOWN "[FTP] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+EXIT
+
+@BAD_NOOP_RESPONSE:
+STAT ALRM "[FTP] Unexpected response to NOOP command. (${_LINE:50})"
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+EXIT
+
+@IDLE:
+DONE DOWN "[FTP] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@DISCONNECT:
+DONE DOWN "[FTP] Connection disconnected while expecting \"${_STRINGTOMATCH}\"."
+
+</script>

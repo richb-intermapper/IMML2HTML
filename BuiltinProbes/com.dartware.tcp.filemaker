@@ -1,0 +1,36 @@
+<!-- 
+	FileMaker Pro Database Server (com.dartware.tcp.filemaker)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.filemaker"
+	human_name		=	"FileMaker Pro"
+	version			= 	"1.6"
+	address_type	= 	"IP"
+	port_number		=	"5003"
+	display_name	=	"Servers-Proprietary/FileMaker Pro"
+</header>
+
+<description>
+
+\GB\FileMaker Pro Server Probe\P\
+
+The FileMaker Pro database server listens on port 5003. This probe attempts to connect and exits with OKAY status if it succeeds.
+
+</description>
+
+<parameters>
+
+-- No parameters.
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+DONE OKAY
+
+</script>

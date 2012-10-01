@@ -1,0 +1,85 @@
+<!-- 
+	SSH (com.dartware.tcp.ssh)
+	Copyright © 2005-2006 Dartware, LLC. All rights reserved.
+	
+	See RFC 4253 for protocol information.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.ssh"
+	human_name		=	"SSH"
+	version			= 	"1.3"
+	address_type		= 	"IP"
+	port_number		=	"22"
+	display_name		=	"Servers-Standard/SSH"
+</header>
+
+<description>
+
+\GB\Secure Shell (SSH)\P\
+
+The protocol used for secure remote login. The default TCP port number for SSH connections is port 22.
+
+This TCP probe opens a connection to the specified port and looks for the identification string that indicates an SSH server as specified in \U2=http://www.ietf.org/rfc/rfc4253.txt\RFC 4253\P0\.
+
+</description>
+
+<parameters>
+
+"Require SSH 2.0[true,false]"	=	"false"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+FAIL @INIT_VARS
+
+STOR "^protocol_version" ""
+STOR "^vendor_version" ""
+
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT (disconnect handler)
+
+EXPT "SSH-([^\\s-]+)-(.*)\s*"r else goto @NO_MATCH
+STOR "^protocol_version" "${1}"
+STOR "^vendor_version" "${2}"
+SEND "SSH-${1}-InterMapper${_VERSION} InterMapper SSH Probe\r\n"
+
+SBNE "${Require SSH 2.0[true,false]}" "true" @OK
+#test the protocol_version
+EVAL ${^protocol_version} =~ "([0-9]+)\..*"
+NBNE #${1} #2 #+2
+GOTO @OK	//version == 2.x
+NBGT #${1} #2 @OK
+
+DONE ALRM "[SSH] This server does not require SSH 2.0."
+
+@OK:
+DONE OKAY
+
+@IDLE:
+DONE DOWN "[SSH] No data for ${_IDLETIMEOUT} seconds."
+
+@NO_MATCH:
+DONE WARN "[SSH] SSH identification string not found in returned data."
+
+@DISCONNECT:
+DONE DOWN "[SSH] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+#If we fail to connect, still initialize these variables so that they do not display (NOT FOUND: ...)
+@INIT_VARS:
+STOR "^protocol_version" ""
+STOR "^vendor_version" ""
+DONE DOWN
+
+</script>
+
+<script-output>
+\B5\SSH Information\0P\
+  \4\Protocol Version:\0\ ${^protocol_version}
+  \4\Software Version:\0\ ${^vendor_version}
+</script-output>
+

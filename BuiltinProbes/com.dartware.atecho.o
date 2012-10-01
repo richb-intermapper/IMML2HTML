@@ -1,0 +1,27 @@
+<!-- 
+	AppleTalk Echo (com.dartware.atecho)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"atecho"
+	human_name		=	"AppleTalk Echo"
+	version			= 	"1.4"
+	address_type	= 	"AT"
+	equiv_class		= 	"CORE"		# Core packet equivalency
+
+	flags			= 	"INVISIBLE"	# not visible in probe type menu
+	
+	old_protocol	= 	"5"			# Backward compat. with old numbering scheme.
+	old_script		= 	"0"
+	
+	# Refer lookups for "com.dartware.atecho" to "com.dartware.ping"...
+	
+	referto			= 	"com.dartware.ping"
+	
+	display_name	=	"Generic/AppleTalk Echo"
+
+</header>
+

@@ -1,0 +1,89 @@
+<!-- 
+	Telnet (com.dartware.tcp.telnet)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.telnet"
+	human_name		=	"Telnet"
+	version			= 	"1.7"
+	address_type	= 	"IP"
+	port_number		=	"23"
+	display_name	=	"Servers-Standard/Telnet"
+	url_hint		=	"telnet://${ADDRESS}:${PORT}"
+
+</header>
+
+<description>
+
+\GB\Telnet Protocol\P\
+
+The protocol used for terminal-to-terminal communication and distributed computation as described in \u2=http://www.ietf.org/rfc/rfc0854.txt\RFC 854\p0\. The default TCP port number for Telnet connections is port 23.
+
+This probe lets you Telnet to a device, login with a name and password, and optionally enter a command. This probe is specifically designed to reject any Telnet options proffered by the Telnet server; the TCP connection always remains in the base "network virtual terminal" state. This probe lets you enter data at up to three prompts.
+
+\i\Intro String to Match\p\ is a string to match in the welcome banner sent by the Telnet server when you first connect. Leave this parameter blank if you want to match anything in the welcome banner.
+
+\i\First Prompt\p\ is the string to match in the first prompt. (e.g. "Login:")
+
+\i\Reply #1\p\ is your reply to the first prompt. (i.e. your response to the "Login:" prompt)
+
+\i\Second Prompt\p\ is the string to match in the second prompt. (e.g. "Password:") If this parameter is empty, the probe ignores the prompt string and it does not send its reply.
+
+\i\Reply #2\p\ is your reply to the second prompt. (i.e. your response to the "Password:" prompt.)
+
+\i\Third Prompt\p\ is the string to match in the third prompt. If this parameter is empty, the probe ignores the prompt string and its reply.
+
+\i\Reply #3\p\ is your reply to the third prompt.
+
+</description>
+
+<parameters>
+
+"Intro String to Match"			= ""
+"First Prompt"					= "Login:"
+"Reply #1"						= "intermapper"
+"Second Prompt"					= "Password:"
+"Reply #2"						= "intermapper"
+"Third Prompt"					= ""
+"Reply #3"						= ""
+"Final String to Match"			= "incorrect"
+
+</parameters>
+
+<script>
+
+CONN #60 "TELNET"
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+EXPT "${Intro String to Match}"i else goto @UNEXPECTED_INTRO
+
+LINE OFF
+CHCK "${First Prompt}" else #+3
+EXPT "${First Prompt}"i
+SEND "${Reply #1}\r\n"
+CHCK "${Second Prompt}" else #+3
+EXPT "${Second Prompt}"i
+SEND "${Reply #2}\r\n"
+CHCK "${Third Prompt}" else #+3
+EXPT "${Third Prompt}"i
+SEND "${Reply #3}\r\n"
+LINE ON
+
+EXPT "${Final String to Match}"
+DONE OKAY
+
+
+@UNEXPECTED_INTRO:
+STAT DOWN "[TELNET] Unexpected introduction from port ${_REMOTEPORT}. (${_LINE:50})"
+EXIT
+
+@IDLE:
+DONE DOWN "[TELNET] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@DISCONNECT:
+DONE DOWN "[TELNET] Connection disconnected while expecting \"${_STRINGTOMATCH}\"."
+
+</script>

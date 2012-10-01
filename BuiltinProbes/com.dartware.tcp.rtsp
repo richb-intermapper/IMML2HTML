@@ -1,0 +1,150 @@
+<!-- 
+	RTSP (com.dartware.tcp.rtsp)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.rtsp"
+	human_name		=	"RTSP"
+	version			= 	"2.1"
+	address_type	= 	"IP"
+	port_number		=	"554"
+	
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8115"
+
+	display_name	=	"Servers-Standard/Multimedia/RTSP"
+</header>
+
+<description>
+
+\GB\RealTime Streaming Protocol (RTSP)\P\
+
+The protocol used to control real-time streams, defined in \U2=http://www.ietf.org/rfc/rfc2326.txt\RFC 2326\P0\ and \U2=http://www.ietf.org/rfc/rfc1889.txt\RFC 1889\P0\.  The default TCP port number for RTSP connections is port 554.
+
+This TCP probe lets you check that the server is up and responding.
+
+The specifics of the commands that the probe must send to the server vary somewhat depending upon the version of RFC2326 that the server implements. If the server you're monitoring implements RFC2326bis-02 or later, then set \B\RFC2326bis-02 or later\P\ to "Yes". If you're not sure, leave it set to "No". If the device goes into warning with the reason set to "[RTSP] Unexpected response to PLAY command. (RTSP/1.0 460 Only Aggregate Option Allowed)", then set it to "Yes".
+
+</description>
+
+<parameters>
+
+"Movie Name"						=	"Beige.mov"
+"Seconds to play"					=	"5"
+"RFC2326bis-02 or later[Yes,No]"	=	"No"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in seconds)
+WAIT #30 @IDLE (idle timeout in seconds)
+DISC @DISCONNECT (disconnect handler)
+
+-- Send an OPTIONS command to the server. We do this to verify that we are
+-- in fact communicating with an RTSP server. The first line returned should
+-- match "RTSP/... 200"
+
+SEND "OPTIONS rtsp://${_REMOTEADDRESS}/${Movie Name} RTSP/1.0\r\n"
+SEND "CSeq: 1\r\n\r\n"
+MTCH m"^RTSP/... +200"i else @BAD_OPTIONS_RESPONSE
+EXPT m"^$" (match blank line)
+
+-- Send a DESCRIBE command to the server.
+
+SEND "DESCRIBE rtsp://${_REMOTEADDRESS}/${Movie Name} RTSP/1.0\r\n"
+SEND "CSeq: 2\r\n\r\n"
+MTCH m"^RTSP/... +200"i else @BAD_DESCRIBE_RESPONSE
+EXPT m"^Content-length: *(#+)$"i
+EXPT m"^$" (match blank line)
+
+NBGT #${1} #16384 else @DESCRIBE_TOO_BIG
+LINE #${1}
+MTCH m"a=control:([A-Z]+ID=#+)"i
+STOR "TRACK_ID" "${1}"
+
+-- What we want to send to the PLAY, PAUSE, and TEARDOWN commands depends
+-- on the RFC the server implements.
+
+SBNE "${RFC2326bis-02 or later[Yes,No]}" "Yes" @NOT_AGGREGATE
+STOR "TRACK_ID2" ""
+GOTO @SETUP
+@NOT_AGGREGATE:
+STOR "TRACK_ID2" "${1}"
+
+-- Send a SETUP command to the server.
+
+@SETUP:
+RTPO "UDP_RTP" #7970
+
+SEND "SETUP rtsp://${_REMOTEADDRESS}/${Movie Name}/${TRACK_ID} RTSP/1.0\r\n"
+SEND "Transport: RTP/AVP/UDP;unicast;client_port=${UDP_RTP};mode=play\r\n"
+SEND "CSeq: 3\r\n\r\n"
+MTCH "^RTSP/... +200"ri else goto @BAD_SETUP_RESPONSE
+EXPT "^Session: ([A-Z0-9]+)"ri else goto @NO_SESSION>  ($1 is the saved session id)
+EXPT "^$"r else goto @DISCONNECT (matches blank line)
+STOR "SESSION_ID" "${1}"
+
+SEND "PLAY rtsp://${_REMOTEADDRESS}/${Movie Name}/${TRACK_ID2} RTSP/1.0\r\n"
+SEND "CSeq: 4\r\n"
+SEND "Session: ${SESSION_ID}\r\n\r\n"
+MTCH m"^RTSP/... +200"ri else goto @BAD_PLAY_RESPONSE
+EXPT "^$"r else goto @DISCONNECT (matches blank line)
+
+WAIT #${Seconds to play} (set idle timeout to n seconds)
+EXPT "MATCH NOTHING" else #+1 (abuse EXPT cmd to wait for n seconds)
+WAIT #30 seconds else goto @IDLE if disconnected goto @DISCONNECT (restore previous timeouts)
+
+SEND "PAUSE rtsp://${_REMOTEADDRESS}/${Movie Name}/${TRACK_ID2} RTSP/1.0\r\n"
+SEND "CSeq: 5\r\n"
+SEND "Session: ${SESSION_ID}\r\n\r\n"
+MTCH "^RTSP/... +200"ri else goto @BAD_PAUSE_RESPONSE
+EXPT "^$"r else goto @DISCONNECT (matches blank line)
+
+SEND "TEARDOWN rtsp://${_REMOTEADDRESS}/${Movie Name}/${TRACK_ID2} RTSP/1.0\r\n"
+SEND "CSeq: 6\r\n"
+SEND "Session: ${SESSION_ID}\r\n\r\n"
+MTCH "^RTSP/... +200"ri else goto @BAD_TEARDOWN_RESPONSE
+EXPT "^$"r else goto @DISCONNECT (matches blank line)
+
+DONE OKAY
+
+@DISCONNECT:
+DONE DOWN "[RTSP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+@IDLE:
+DONE DOWN "[RTSP] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@BAD_OPTIONS_RESPONSE:
+DONE ALRM "[RTSP] Unexpected response to OPTIONS command. (${_LINE:50})"
+
+@BAD_DESCRIBE_RESPONSE:
+MTCH m"^RTSP/... +404"i else @UNKNOWN_DESCRIBE_RESPONSE
+DONE WARN "[RTSP] Movie Name \"${Movie Name}\" not found. (${_LINE:50})"
+
+@UNKNOWN_DESCRIBE_RESPONSE:
+DONE WARN "[RTSP] Unexpected response to DESCRIBE command. (${_LINE:50})"
+
+@DESCRIBE_TOO_BIG:
+DONE WARN "[RTSP] DESCRIBE response is too big for InterMapper (> 16384 bytes)."
+
+@BAD_SETUP_RESPONSE:
+MTCH m"^RTSP/... +461"i else @UNKNOWN_SETUP_RESPONSE
+DONE WARN "[RTSP] Server doesn't support RTP/UDP transport. (${_LINE:50})"
+
+@UNKNOWN_SETUP_RESPONSE:
+DONE WARN "[RTSP] Unexpected response to SETUP command. (${_LINE:50})"
+
+@BAD_PLAY_RESPONSE:
+DONE WARN "[RTSP] Unexpected response to PLAY command. (${_LINE:50})"
+
+@BAD_PAUSE_RESPONSE:
+DONE WARN "[RTSP] Unexpected response to PAUSE command. (${_LINE:50})"
+
+@BAD_TEARDOWN_RESPONSE:
+DONE WARN "[RTSP] Unexpected response to TEARDOWN command. (${_LINE:50})"
+
+</script>

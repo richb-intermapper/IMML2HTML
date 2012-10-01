@@ -1,0 +1,91 @@
+<!-- 
+	SNMP - Cisco (com.dartware.snmp.cisco)
+	Copyright (c) 2005 Dartware, LLC. All rights reserved.
+
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.cisconewmib"
+	human_name		=	"SNMP - Cisco - Process and Memory Pool"
+	version			= 	"1.8"
+	address_type		= 	"IP"
+	port_number		=	"161"
+	display_name	=	"Network Devices/Cisco/Cisco - Process and Memory Pool"
+</header>
+
+
+<description>
+
+\GB\SNMP - Cisco\P\
+
+This probe monitors the CPU and Memory utilization of a Cisco router using variables from CISCO-MEMORY-POOL-MIB and CISCO-PROCESS-MIB. 
+
+\i\CPU Busy - Alarm\p\ is the ALARM threshold for CPU utilization. If the average percentage of CPU usage over a 1 minute interval exceeds this threshold, the device will enter the Alarm state.
+
+\i\CPU Busy - Warning\p\ is the WARNING threshold for CPU utilization. If the average percentage CPU usage over a 1 minute interval exceeds this threshold, the device will enter the Warning state.
+
+\i\Low Memory - Alarm\p\ is the ALARM threshold for the amount of free memory remaining (in bytes). If the free memory drops below this threshold, the device will enter the Alarm state.
+
+\i\Low Memory - Warning\p\ is the WARNING threshold for the amount of free memory remaining (in bytes). If the free memory drops below this threshold, the device will enter the Warning state.
+
+</description>
+
+<parameters>
+
+"CPU Busy - Alarm"   	= "90"
+"CPU Busy - Warning" 	= "80"
+"Low Memory - Alarm"	= "1000"
+"Low Memory - Warning"	= "5000"
+
+</parameters>
+
+<snmp-device-variables>
+	-- TYPE can be one of:  DEFAULT, PER-SECOND, PER-MINUTE, TOTAL-VALUE. 
+	-- Use DEFAULT for string and integer values.
+	
+	-- MIB Variable --		---	OID ---					--- TYPE ---	--- LEGEND ---
+	
+	-- Reference: CISCO-PROCESS-MIB. Note that this is actually a table, we are only retrieving the values for 1st cpu
+
+	lcpu.busyPer,		1.3.6.1.4.1.9.9.109.1.1.1.1.3+,		INTEGER, 		"CPU Busy % (For last 5 Seconds in Scheduler)"
+	lcpu.avgBusy1, 		1.3.6.1.4.1.9.9.109.1.1.1.1.4+, 	INTEGER, 		"1 Minute Average of CPU Busy %"
+	lcpu.avgBusy5,		1.3.6.1.4.1.9.9.109.1.1.1.1.5+,		INTEGER,		"5 Minute Average of CPU Busy %"
+
+	-- Reference: CISCO-MEMORY-POOL-MIB, this is also a table, we are only using the first two entries.
+	ciscoMemoryPoolFree1,     	1.3.6.1.4.1.9.9.48.1.1.1.6.1, 		DEFAULT,	"Free Memory in Bytes"
+	ciscoMemoryPoolFree2,     	1.3.6.1.4.1.9.9.48.1.1.1.6.2, 		DEFAULT,	"Free Memory in Bytes"
+	ciscoMemoryPoolName1,     	1.3.6.1.4.1.9.9.48.1.1.1.2.1, 		STRING,		"Memory pool 1 desc"
+	ciscoMemoryPoolName2,     	1.3.6.1.4.1.9.9.48.1.1.1.2.2, 		STRING,		"Memory pool 2 desc"
+
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+
+	alarm:		defined("lcpu.avgBusy1") && (${lcpu.avgBusy1} > ${CPU Busy - Alarm})
+	alarm:		defined("ciscoMemoryPoolFree1") && (${ciscoMemoryPoolFree1} < ${Low Memory - Alarm})
+	alarm:		defined("ciscoMemoryPoolFree2") && (${ciscoMemoryPoolFree2} < ${Low Memory - Alarm} && "$ciscoMemoryPoolName2" != "")
+	warning:	defined("lcpu.avgBusy1") && (${lcpu.avgBusy1} > ${CPU Busy - Warning})
+	warning:	defined("ciscoMemoryPoolFree1") && (${ciscoMemoryPoolFree1} < ${Low Memory - Warning})
+	warning:	defined("ciscoMemoryPoolFree2") && (${ciscoMemoryPoolFree2} < ${Low Memory - Warning} && "$ciscoMemoryPoolName2" != "")
+</snmp-device-thresholds>
+
+<snmp-device-display>
+
+\B5\Cisco Device Information\0P\
+  \4\CPU Percent Busy:\0\ ${lcpu.busyPer} % \3IG\(of last 5 seconds)\P0M\
+  \4\Avg. CPU Percent:\0\ ${lcpu.avgBusy1} % \3IG\(1 min.)\P0M\, ${lcpu.avgBusy5} % \3IG\(5 min.)\P0M\
+  \4\Available ${ciscoMemoryPoolName1} Memory:\0\ ${ciscoMemoryPoolFree1} bytes
+  \4\Available ${ciscoMemoryPoolName2} Memory:\0\ ${ciscoMemoryPoolFree2} bytes
+
+</snmp-device-display>
+
+<datasets>
+  $lcpu.busyPer,         'cpupercent',    "percent", "true",  "CPU Percent Busy"
+  $lcpu.avgBusy1,        'cpupercentavg', "percent", "true",  "Avg. CPU Percent over 1 min"
+  $lcpu.avgBusy5,        'cpupercentavg', "percent", "false", "Avg. CPU Percent over 5 min"
+  $ciscoMemoryPoolFree1, 'freemem',       "bytes",   "true",  "Available Memory #1"
+  $ciscoMemoryPoolFree2, 'freemem',       "bytes",   "false", "Available Memory #2"
+</datasets>
+

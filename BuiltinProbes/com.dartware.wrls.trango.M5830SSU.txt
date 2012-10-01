@@ -1,0 +1,158 @@
+ <!--
+        Wireless - Trango M5830S SU (Subscriber Unit) (com.dartware.wrls.trangoM5830SSU)
+        Probe for InterMapper (http://www.intermapper.com)
+
+        Copyright (c) 2005, Dartware, LLC.      This probe is part of Dartware's InterMapper
+        Wireless Add-on package and should not be be distributed or used without license.
+
+        Original version 28 September 2005 -Tex
+        Updates:
+           28 Sep 2005 Updated comments, file/probe name/etc -reb
+            6 Oct 2005 Updated description to discuss bogus data rates. -reb
+	   16 Nov 2005 Added workaround for a bug that reports the rf_rx/rf_tx rate as erroneously large. -Tex
+          Oct 2005 Mat <mat@datamoco.com> indicates that he wants -78dBm as warning and -80dBm as alarm thresholds.
+                   He'd also like thresholds on traffic -reb
+-->
+
+<header>
+	"type"		= 	"tcp-script"
+	"package"	= 	"com.dartware"
+	"probe_name"	=	"wrls.trango.M5830SSU"
+	"human_name"	=	"Wireless - Trango M5830S SU"
+	"display_name"  =	"Wireless/Trango/Trango M5830S (SU)"
+	"version"	= 	"1.1"
+	"address_type"	= 	"IP"
+	"port_number"	=	"23"
+	"equiv_class"	= 	"WRLS"
+	"url_hint"	=	"telnet://${ADDRESS}:${PORT}"
+</header>
+
+<description>
+\GB\Trango M5830S Subscriber Unit\P\
+
+This probe monitors a \u2=http://www.trangobroadband.com/\Trango M5830S SU\p0\ Subscriber Unit.
+
+You must enter the \i\password\p\ for the subscriber unit to retrieve the information.
+
+\i\Note:\p\ Occasionally, these Subscriber Units report extremely high data rates. These rates - in the range of millions of kbps - are seen both by this probe and in the Web interface. To keep the strip charts accurate, we recommend you turn off the Auto-adjust feature for the chart. 
+
+</description>
+
+<parameters>
+	"Password*"			=		""
+</parameters>
+
+<script>
+CONN #60 "TELNET"
+FAIL @FAILED
+
+CHCK "${Password*}" else @NO_PASSWORD
+
+WAIT #60 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+
+LINE OFF
+
+EXPT "Password:"i @UNEXPECTED_GREETING
+SEND "${Password*}\r\n"
+
+DISC @PARSING_FAILED
+
+MTCH "Password incorrect"i else goto @VALID_LOGIN
+DONE ALRM "Invalid password."
+
+@VALID_LOGIN:
+LINE ON
+NEXT
+SEND "sysinfo\r\n"
+
+@SET_LOOP:
+NEXT
+MTCH "^\\s*\\[Hardware Version\\]\\s*([0-9]+)\\s*$"ir #+3
+STOR "^hardware_version" "${1}"
+GOTO @SET_LOOP
+MTCH "^\\s*\\[Firmware Version\\]\\s*([^\\[\\]]+)"ir #+3
+STOR "^firmware_version" "${1}"
+GOTO @SET_LOOP
+MTCH "^\\s*\\[Device ID\\]\\s*([0-9a-z ]+)\\s+\\[Base ID\\]\\s*([0-9]+)\\s*\\[AP ID\\]\\s*([0-9]+)\\s*\\[SU ID\\]\\s*([0-9]*)$"ir #+6
+STOR "^device_id" "${1}"
+STOR "^base_id" "${2}"
+STOR "^ap_id" "${3}"
+STOR "^su_id" "${4}"
+GOTO @SET_LOOP
+MTCH "^\\s*\\[System Up Time\\]\\s*([0-9]+)\\s*day\\(s\\)\\s*([0-9]+):([0-9]+):([0-9]+)\\s*$"ir #+3
+EVAL _uptime := ((($1 * 24) + $2) * 60 + $3) * 60 + $4
+GOTO @SET_LOOP
+MTCH "^\\s*\\[Radio Temperature\\]\\s*([0-9]+)"ir #+3
+STOR "temperature" "${1}"
+GOTO @SET_LOOP
+MTCH "^\\s*\\[Active Channel\\]\\s*(.+)\\s*$"ir #+3
+STOR "^channel" "${1}"
+GOTO @SET_LOOP
+MTCH "^\\s*\\[RF Rx\\]\\s*([0-9]+)\\s*kbps\\s+\\[RF Tx\\]\\s*([0-9]*)"ir #+4
+STOR "rf_rx_tmp" "${1}"
+STOR "rf_tx_tmp" "${2}"
+GOTO @SET_LOOP
+MTCH "^Success\.$"r @SET_LOOP
+
+DISC @DONE
+
+SEND "rssi\r\n"
+NEXT
+EXPT "^\\s*rssi\\s*=\\s*(-[0-9]+)"ir @DONE
+STOR "rssi" "${1}"
+
+@DONE:
+SEND "logout\r\n"
+
+#check RF kpbs rates.  According to Rich, there is a bug in the device that will report very large numbers that are incorrect.
+# See:
+# From: Richard.E.Brown@DARTWARE.COM (Richard E. Brown)
+# Date: November 11, 2005 2:07:54 PM EST
+# To: Adam.N.Clayton@DARTWARE.COM (Adam N. Clayton)
+# Subject: Use Previous Value or NaN in a tcp-script probe?
+
+NBGT #${rf_rx_tmp} #10000 #+2
+STOR "rf_rx" "${rf_rx_tmp}"
+NBGT #${rf_tx_tmp} #10000 #+2
+STOR "rf_tx" "${rf_tx_tmp}"
+
+DONE OKAY
+
+@IDLE:
+DONE DOWN "No data for ${_IDLETIMEOUT} seconds. [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE ALRM "Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@DISCONNECT:
+DONE DOWN "Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+#Usually occurs because an "EXPT" statement didn't match
+@PARSING_FAILED:
+SEND "logout\r\n"
+DONE ALRM "Unable to parse data."
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+@NO_PASSWORD:
+DONE ALRM "No password specified."
+
+</script>
+
+<script-output>
+\B5\Trango Statistics\P0\
+ \4\Hardware version:\0\ ${^hardware_version}
+ \4\Firmware version:\0\ ${^firmware_version}
+        \4\Device ID:\0\ ${^device_id}
+          \4\Base ID:\0\ ${^base_id}
+            \4\AP ID:\0\ ${^ap_id}
+            \4\SU ID:\0\ ${^su_id}
+\4\Radio Temperature:\0\ ${temperature} C
+   \4\Active Channel:\0\ ${^channel}
+            \4\RF Rx:\0\ ${rf_rx} kbps
+            \4\RF Tx:\0\ ${rf_tx} kbps
+             \4\RSSI:\0\ ${chartable:-100:-20:$rssi} dBm
+</script-output>

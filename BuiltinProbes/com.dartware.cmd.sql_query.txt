@@ -1,0 +1,263 @@
+<!-- 
+Command Line WMI Probe to query SQL Server (com.dartware.wmi.sql_query) 
+Copyright (c) 2010 Dartware, LLC. All rights reserved. 
+--> 
+
+<header> 
+	type			=	"cmd-line" 
+	package			=	"com.dartware" 
+	probe_name		=	"cmd.sql_query" 
+	human_name		=	"SQL Query" 
+	version			=	"1.3" 
+	address_type	=	"IP"
+	display_name	=	"Servers-Proprietary/Microsoft/SQL Server Query"
+	visible_in 		=	"Windows"
+	flags			=	"NTCREDENTIALS"	
+</header> 
+
+<description> 
+\GB\SQL Query\p\ 
+
+This probe establishes an ADO connection to Microsoft SQL Server running on the target host.  It issues the query you specify and displays the returned fields.  If no records are returned the status of the device is set to Critical.
+
+The Query parameter is the SQL query you wish to perform.  It should be enclosed in double-quotes.  Using the "TOP" keyword in your query will likely make it return faster.  You may wish to specify specific columns in your query and include a "WHERE" or an "ORDER BY" clause.
+
+The Rows and Columns parameters allow you to limit the output of your query to the first "Columns" fields of the first "Rows" records returned.
+
+The Instance parameter specifies the SQL Server instance you wish to query on the target host.  If you wish to query the default instace you should leave this blank.
+
+The Database parameter specifies the database on the target instance to be queried.
+
+The User parameter may be a SQL Server user on the target host, or may take the form of "domain\\user" for a domain login.  Leave it blank if integrated authentication is desired.  The user must have been granted dbreader privilege to the database.
+
+The Timeout (sec) parameter allows you to override the timeout set on the device.
+
+InterMapper invokes the sql_query.vbs VB script which must reside in the Tools sub-directory of the InterMapper Settings directory.
+
+</description> 
+
+<parameters>
+	Query=""
+	Rows="5"
+	Columns="5"
+	Instance=""
+	Database="AdventureWorks"
+	User=""
+	"Password*" = ""
+	"Timeout (sec)"=""
+</parameters> 
+
+<command-line> 
+	-- Empty path forces the InterMapper Settings:Tools directory
+	path="" 
+	cmd="${CSCRIPT} sql_query.vbs"
+	arg="-h ${address} -u ${User} -p ${Password*} -i ${Instance} -d ${Database} -q ${Query} -r ${Rows} -c ${Columns}"
+	timeout = ${Timeout (sec)}
+</command-line> 
+
+<command-exit>
+	down:${EXIT_CODE}=3 
+	critical:${EXIT_CODE}=2 
+	alarm:${EXIT_CODE}=1 
+	okay:${EXIT_CODE}=0 
+</command-exit> 
+
+<command-display>
+${^stdout}
+</command-display> 
+
+<tool:sql_query.vbs>
+'Command Line Probe to query a SQL database (to be used with com.dartware.wmi.sql_query) 
+'Copyright (c) 2009 Dartware, LLC. All rights reserved. 
+
+Const adOpenStatic = 3
+Const adLockOptimistic = 3
+Const adUseClient = 3
+
+' get args up to next switch in case there are spaces in list
+FUNCTION GetNextArg(j, nargs)
+	arg = ""
+	do until (j = nargs-1)
+		if (instr(wscript.arguments(j+1), "-") = 1) then
+			exit do
+		else
+			arg = arg & wscript.arguments(j+1)
+			j = j + 1
+		end if
+	loop
+	GetNextArg = arg
+END FUNCTION
+
+FUNCTION CheckError(reasonStr)
+	if (err.number <> 0) then
+		reasonStr = vbNewLine & reasonStr & "Error #" & CStr(Err.Number) & " " & Err.Description
+		wscript.echo "\{reason:=""" & reasonStr & """}"
+		wscript.quit(3)
+	end if
+END FUNCTION
+
+FUNCTION SpaceOut(item, width)
+	SpaceOut = item & space(width-len(item))
+END FUNCTION
+
+On Error Resume Next
+
+' Collect our arguments
+host = ""
+inst = ""
+db = ""
+user = ""
+pass = ""
+query = ""
+rows = ""
+cols = ""
+
+numargs = wscript.arguments.count
+for i=0 to numargs-1
+	test = wscript.arguments(i)
+	if (test = "-v") then verbose = True
+	if (test = "-host") OR (test = "-h") then
+		host = GetNextArg(i, numargs)
+	end if
+	if (test = "-user") OR (test = "-u") then
+		user = GetNextArg(i, numargs)
+	end if
+	if (test = "-pass") OR (test = "-p") then
+		pass = GetNextArg(i, numargs)
+	end if
+	if (test = "-inst") OR (test = "-i") then
+		inst = GetNextArg(i, numargs)
+	end if
+	if (test = "-db") OR (test = "-d") then
+		db = GetNextArg(i, numargs)
+	end if
+	if (test = "-query") OR (test = "-q") then
+		query = GetNextArg(i, numargs)
+	end if
+	if (test = "-rows") OR (test = "-r") then
+		rows = GetNextArg(i, numargs)
+		if (rows <> "") then rows = ccur(rows)
+	end if
+	if (test = "-columns") OR (test = "-c") then
+		cols = GetNextArg(i, numargs)
+		if (cols <> "") then cols = ccur(cols)
+	end if
+next
+
+if (host = "" or query = "" or db = "") then
+	Err.Raise vbObjectError + 1, "", "Error processing arguments"
+	CheckError("")
+end if
+
+' Connection string.
+'strCon = "Provider=sqloledb;Data Source=192.168.1.114;Initial Catalog=AdventureWorks;User Id=foobar;Password=foobar"
+strCon = "Provider=sqloledb;Data Source=" & host
+if (inst <> "") then strCon = StrCon & "\" & inst
+strCon = strCon & ";Initial Catalog=" & db
+if (user = "") or (lcase(user) = "none") then		' no authentication needed
+	strCon = StrCon & ";Integrated Security=SSPI"
+else
+	user = Replace(user,"\\","\")
+	strCon = StrCon & ";User Id=" & user & ";Password=" & pass
+end if
+
+if verbose then wscript.echo strCon
+   
+' Create the required ADO objects.
+Set conn = CreateObject("ADODB.Connection")
+Set rs = CreateObject("ADODB.recordset")
+CheckError("")
+	   
+' Open the connection.
+conn.Open strCon
+CheckError("")
+
+' Retrieve some records.
+'strSQL = "Select FirstName, MiddleName, LastName from HumanResources.vEmployee"
+strSQL = query
+
+if verbose then wscript.echo strSQL
+   
+rs.CursorLocation = adUseClient
+rs.Open strSQL, conn, adOpenStatic, adLockOptimistic
+CheckError("")
+
+' Disconnect the recordset.
+Set rs.ActiveConnection = Nothing
+	
+' Release the connection.
+conn.Close
+Set conn = Nothing
+CheckError("")
+
+dim width()
+dim result()
+
+redim width(cols)
+redim result(rows,cols)
+
+rn = 0
+cn = 0
+if (cols > rs.Fields.Count) then cols = rs.Fields.Count
+
+For Each field in rs.Fields
+	if (cn = cols) then exit for
+	result(rn,cn) = field.Name
+	if (len(result(rn,cn)) > width(cn)) then width(cn) = len(result(rn,cn))
+	cn = cn + 1
+Next
+rn = rn + 1
+CheckError("")
+
+Do While Not rs.EOF
+	if (rn = rows+1) then exit do
+	For cn = 0 to cols-1
+		value = rs(cint(cn))
+		if verbose then wscript.echo rn & ":" & cn & ":"  & value & "  " & Typename(value)
+		if (isNull(value)) then value = ""
+		result(rn,cn) = value
+		if (len(value) > width(cn)) then width(cn) = len(value)
+	Next
+	rn = rn + 1
+	rs.MoveNext
+Loop
+rowsFound = rs.RecordCount
+rows = rn -1
+
+' Release the recordset.
+rs.Close
+Set rs = Nothing
+
+CheckError("")
+
+' Evaluate criteria to set returncode
+ reason = ""
+ returncode = 0
+if (rowsFound = 0) then 
+	returncode = 2
+	reason = "\{reason:=""No records were returned by the SQL query.""}"
+end if
+ 
+' Build data output
+ 
+if (inst = "") then
+	wscript.echo output & "\B5\SQL Server Query (MSSQLSERVER)\0P\"
+else
+	wscript.echo output & "\B5\SQL Server Query (" & Replace(inst,"$","\$") & ")\0P\"
+end if
+ 
+For rn = 0 to rows
+	row = "  "
+	For cn = 0 to cols-1
+		row = row & SpaceOut(result(rn,cn), width(cn)+4)
+	Next
+	if (rn = 0) then
+		wscript.echo "\B4\" & row & "\P0\"
+	else
+		wscript.echo row
+	end if
+Next
+
+' Done
+wscript.quit(returncode)
+</tool:sql_query.vbs>

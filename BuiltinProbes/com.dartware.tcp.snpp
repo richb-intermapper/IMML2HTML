@@ -1,0 +1,71 @@
+<!-- 
+	Simple Network Paging Protocol - SNPP (com.dartware.tcp.snpp)
+	Copyright (c) 2001 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.snpp"
+	human_name		=	"SNPP"
+	version			= 	"1.5"
+	address_type	= 	"IP"
+	port_number		=	"444"
+	display_name	=	"Servers-Standard/SNPP"
+
+</header>
+
+<description>
+
+\GB\Simple Network Paging Protocol\P\
+
+This protocol transfers pager information across the Internet, as defined in \u2=http://www.ietf.org/rfc/rfc1861.txt\RFC 1861\p0\.  The default TCP port number for SMTP connections is port 444.
+
+This SNPP probe verifies that a specified SNPP server is working by connecting to it, then issuing a PAGE <pagerid> command. If it gets back a valid response, code, the probe issues a QUIT command and exits, marking the device in the OK state.
+
+If an "Invalid Pager ID" response comes back, the probe issues a QUIT command and exits, marking the device in the Alarm state.
+
+If no connection was made, or if unexpected responses come back, the device is marked as being down.
+</description>
+
+<parameters>
+
+"PagerID"		=	"your-id"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+MTCH "220" else goto @UNEXPECTED_GREETING
+EXPT "220 " else goto @DISCONNECT
+SEND "PAGE ${PagerID}\r\n"
+MTCH "250" else goto @BAD_PAGE_RESPONSE
+EXPT "250 " else goto @DISCONNECT
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+DONE OKAY
+
+@UNEXPECTED_GREETING:
+STAT DOWN "[SNPP] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+EXIT
+
+@BAD_PAGE_RESPONSE:
+STAT ALRM "[SNPP] Unexpected response to PAGE command. (${_LINE:50})"
+SEND "QUIT\r\n"
+MTCH "221" #+2
+EXPT "221 " #+1
+EXIT
+
+@IDLE:
+DONE DOWN "[SNPP] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@DISCONNECT:
+DONE DOWN "[SNPP] Connection disconnected while expecting \"${_STRINGTOMATCH}\"."
+
+</script>

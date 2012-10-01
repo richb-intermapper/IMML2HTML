@@ -1,0 +1,37 @@
+<!-- 
+	NTP (com.dartware.ntp)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"ntp"
+	human_name		=	"Network Time"
+	version			= 	"1.5"
+	address_type	= 	"IP"
+	port_number		= 	"123"
+	
+	old_protocol	= 	"16"		# Backward compat. with old numbering scheme.
+	old_script		= 	"0"
+
+	display_name	=	"Servers-Standard/Network Time"
+
+</header>
+
+<description>
+
+\GB\Network Time Protocol - Version 2 (NTP)\P\
+
+The protocol used to synchronize time between computers, defined in \u2=http://www.ietf.org/rfc/rfc1119.txt\RFC 1119\p0\. 
+
+This probe sends a client-mode request to the NTP server asking for the current time. By default, NTP requests are sent to UDP port 123.
+
+</description>
+
+<parameters>
+
+# No Parameters
+
+</parameters>
+

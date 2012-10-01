@@ -1,0 +1,117 @@
+<!--
+    BestPower UPS (com.dartware.ups.bestpower)
+    Custom Probe for InterMapper (http://www.intermapper.com)
+    Please feel free to use this as a base for further development.
+    Part of the UPS Probe Bundle -- Current Version: 2.4 / 31 August 2005.
+    Bugs or Requests? Please contact us: upsbundle@intermapper.com.
+
+    Revisions: (Probe Version reflects version of UPS Probe Bundle)
+    Original Version 1 May 2004 -reb
+    Updated to use 22 May 2004 -reb
+    Changed Time On Battery to reflect actual units (seconds) 25May2004 -reb
+    Fixed error in output voltage/current/freq. readings - 2 June 2004 -reb
+    Added to UPS Probe Bundle (was "com.dartware.snmp.bestpowerups") - 7 July 2005 by jkj.
+    Updated for Category (IM 4.4) - 8 July 2005 by jkj.
+    Updated for "display_name" change (IM 4.4) - 31 August 2005 by jkj.
+    Added autorecord section for IM 5.0 - 05 May 2008 by cls.
+    Added parseable units for Reports - 4 Mar 2011 by jpd.
+-->
+
+<header>
+    "type"          =  "custom-snmp"
+    "package"       =  "com.dartware"
+    "probe_name"    =  "ups.bestpower"
+    "human_name"    =  "BestPower UPS"
+    "version"       =  "2.10"
+    "address_type"  =  "IP,AT"
+    "port_number"   =  "161"
+    "display_name"  =  "Network Devices/UPS/BestPower UPS"
+</header>
+
+<snmp-device-properties>
+     pdutype="get-request"
+</snmp-device-properties>
+
+<description>
+\g0i++\For BestPower UPS devices.\p--\
+\b++\A. Probed MIB(s)\p--\
+\i\This probe works best with devices which have implemented the listed MIB(s).\p\
+(1 of 1) \b\BestPower MIB \p\ [... enterprises.bestPower.bestLink / ... 1.2947.1]
+
+\b++\B. Displayed Values\p--\
+vendor, model, firmware version, VA Rating, time on battery, time remaining, (\i\input & output:\p\ voltage, current, frequency), output power, internal temperature.
+
+\b++\C. Alarms & Warnings\p--\
+(1 of 2) Warning: If UPS loses AC power.
+(2 of 2) Alarm: If minutes of battery life remaining is less than specified threshold.
+
+\b++\D. Parameters\p--\
+(1 of 1) \i\BatteryRemainingAlarm\p\: Threshold for alarm state (see above).
+
+\bG3\Bugs or Requests? \p\\iU=mailto:upsbundle@intermapper.com\Please contact us.\p\
+</description>
+
+<parameters>
+      "BatteryRemainingAlarm"  =  "5"
+</parameters>
+
+<snmp-device-variables>
+upsIdentUpsName,            1.3.6.1.4.1.2947.1.1.1.0, DEFAULT, 
+upsIdentModel,              1.3.6.1.4.1.2947.1.1.2.0, DEFAULT, 
+upsIdentVARating,           1.3.6.1.4.1.2947.1.1.3.0, DEFAULT, 
+upsIdentUpsSerialNumber,    1.3.6.1.4.1.2947.1.1.5.0, DEFAULT, 
+upsIdentFirmwareRevision,   1.3.6.1.4.1.2947.1.1.7.0, DEFAULT, 
+
+upsBatteryStatus,           1.3.6.1.4.1.2947.1.2.1.0, INTEGER, "1-Normal;2-UPSOnBattery"
+upsBatteryTimeOnBattery,    1.3.6.1.4.1.2947.1.2.2.0, INTEGER, "Time Left on Battery (sec)"
+upsBatteryRuntimeRemaining, 1.3.6.1.4.1.2947.1.2.3.0, INTEGER, "Runtime Remaining (min)"
+upsBatteryTemperature,      1.3.6.1.4.1.2947.1.2.6.0, INTEGER, "Raw Internal Temperature"
+upsBatteryLastReplaceDate,  1.3.6.1.4.1.2947.1.2.7.0, DEFAULT, "Battery Replacement Date"
+
+upsInputFrequency,          1.3.6.1.4.1.2947.1.3.2.0, INTEGER, "Raw Input Frequency"
+upsInputVoltage,            1.3.6.1.4.1.2947.1.3.3.0, INTEGER, "Raw Input Voltage"
+upsInputCurrent,            1.3.6.1.4.1.2947.1.3.4.0, DEFAULT, "Raw Input Current"
+
+upsOutputFrequency,         1.3.6.1.4.1.2947.1.4.3.0, INTEGER, "Raw Output Frequency"
+upsOutputVoltage,           1.3.6.1.4.1.2947.1.4.4.0, INTEGER, "Raw Output Voltage"
+upsOutputCurrent,           1.3.6.1.4.1.2947.1.4.5.0, INTEGER, "Raw Output Current"
+upsOutputTruePower,         1.3.6.1.4.1.2947.1.4.6.0, INTEGER, "Raw Output True Power"
+upsOutputApparentPower,     1.3.6.1.4.1.2947.1.4.7.0, INTEGER, "Raw Output Apparent Power"
+
+<!-- Calculated Values -->
+cInputFrequency,            (${upsInputFrequency}/10),       CALCULATION, "Input Frequency"
+cInputVoltage,              (${upsInputVoltage}/10),         CALCULATION, "Input Voltage"
+cInputCurrent,              (-${upsInputCurrent}/10),        CALCULATION, "Input Current"
+cOutputFrequency,           (${upsOutputFrequency}/10),      CALCULATION, "Output Frequency"
+cOutputVoltage,             (${upsOutputVoltage}/10),        CALCULATION, "Output Voltage"
+cOutputCurrent,             (${upsOutputCurrent}/10),        CALCULATION, "Output Current"
+cOutputTruePower,           (${upsOutputTruePower}/100),     CALCULATION, "Output True Power"
+cOutputApparentPower,       (${upsOutputApparentPower}/100), CALCULATION, "Output Apparent Power"
+cTimeOnBattery,             (${upsBatteryTimeOnBattery}/60), CALCULATION, "Time Left on Battery (min)"
+cIntTempC,                  (${upsBatteryTemperature}/10),   CALCULATION, "Internal Temperature (C)"
+cIntTempF,                  (32+${cIntTempC} * 9/5),         CALCULATION, "Internal Temperature (F)"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+alarm:    ${upsBatteryRuntimeRemaining} < ${BatteryRemainingAlarm} "Battery almost used up"
+warning:  ${upsBatteryStatus} = 2                                  "Running on battery"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\${upsIdentUpsName} ${upsIdentModel} ${upsIdentVARating} Firmware ${upsIdentFirmwareRevision}\0P\
+ \4\Time on Battery:\0\ ${chartable: ###.#: $cTimeOnBattery} \3IG\minutes\P0M\
+ \4\ Time Remaining:\0\ ${upsBatteryRuntimeRemaining} \3IG\minutes\P0M\
+ \4\ Internal Temp.:\0\ ${chartable: ##.#: $cIntTempC} \3IG\degrees C  (${chartable: ##.#: $cIntTempF}\3IG\ degrees F)\P0M\
+ \4\          Input:\0\ ${chartable: ###.#: $cInputVoltage} \3IG\VAC\P0M\ ${chartable:##.#: $cInputCurrent} \3IG\Amps\P0M\ ${chartable:##.#: $cInputFrequency} \3IG\Hz\P0M\ 
+ \4\         Output:\0\ ${chartable: ###.#: $cOutputVoltage} \3IG\VAC\P0M\ ${chartable:##.#: $cOutputCurrent} \3IG\Amps\P0M\ ${chartable:##.#: $cOutputFrequency} \3IG\Hz\P0M\ 
+ \4\   Output Power:\0\ True: ${chartable: ###.#: $cOutputTruePower} \3IG\Watts\P0M\ Apparent: ${chartable: ###.#: $cOutputApparentPower} \3IG\VA\P0M\ 
+
+\p\\bG3\Bugs or Requests? \p\\iG3\\U=mailto:upsbundle@intermapper.com\Please contact us.\p\\pM0\
+</snmp-device-display>
+
+
+<datasets>
+	$cTimeOnBattery,	'batttimeleft',	"min",			"true",		"Time Left on Battery (min)"
+	$cInputVoltage,		'involts',		"volts",		"true",		"Input Voltage"
+	$cIntTempC,			'temperature',	"degrees C",	"true",		"Internal Temperature (C)"
+</datasets>

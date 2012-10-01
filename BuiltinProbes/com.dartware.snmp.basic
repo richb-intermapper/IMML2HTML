@@ -1,0 +1,54 @@
+<!-- 
+	SNMP - Basic OID (com.dartware.snmp.basic)
+	Copyright © 2001-2007 Dartware, LLC. All rights reserved.
+	
+	11 May 2007  Moved to Miscellaneous/Legacy category, then moved back to SNMP -reb
+-->
+
+<header>
+	type			= 	"custom-snmp"
+	package			= 	"com.dartware"
+	probe_name		=	"snmp.basic"
+	human_name		=	"SNMP - Basic OID"
+	version			= 	"0.7"
+	address_type	= 	"IP,AT"
+	port_number		=	"161"
+	display_name	=	"SNMP/Basic OID"
+</header>
+
+
+<description>
+
+\GB\SNMP - Basic OID\P\
+
+This probe lets you monitor a single, user-defined MIB variable.
+
+\i\Object Name\p\ is the name of the value that you want to monitor. This parameter is optional; the "object name" value only customizes the display in the popup window and chart legend.
+
+\i\Object ID\p\ is the object identifier (OID) of the value that you want to monitor. If you wish to retrieve the value of a MIB variable that is not in a table, the OID must end with ".0" (e.g. "1.3.6.1.2.1.1.1.0").
+
+This probe retrieves a lot of SNMP information from the device, including the MIB-II system group and the interfaces table. If you only want to monitor a single SNMP variable, you can use the SNMP/Single OID probe. 
+</description>
+
+<parameters>
+
+"Object Name" 	= "sysDescr.0"
+"Object ID"		= "1.3.6.1.2.1.1.1.0"
+
+-- No parameters...
+
+</parameters>
+
+<snmp-device-variables>
+
+	oidValue,		${Object ID}, 	DEFAULT, 	"${Object Name} for ${DEVICENAME}"
+	
+</snmp-device-variables>
+
+<snmp-device-display>
+
+\B5\SNMP - Basic OID Results\0P\
+  \4\${Object Name}:\0\  ${oidValue}
+ 	
+</snmp-device-display>
+

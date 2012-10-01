@@ -1,0 +1,110 @@
+<!-- 
+	Subversion standalone svnserve probe (com.dartware.tcp.svn.svnserve)
+	Copyright © 2006 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.svn.svnserve"
+	human_name		=	"SVN (svnserve)"
+	version			= 	"1.0"
+	address_type	= 	"IP"
+	port_number		=	"3690"
+	display_name	=	"Servers-Standard/Subversion/SVN (Svnserve)"
+
+</header>
+
+<description>
+
+\GB\Subversion Standalone Server (svnserve)\P\
+
+This probe tests a stand-alone svnserve Subversion server. It connects to the svnserve using its default port 3690. The server returns a response to indicate it is running. If a repository location is specified, the probe then tries to connect to that repository. If a username is specified, the probe will try to authenticate using CRAM-MD5, otherwise it will connect anonymously.
+
+\i\Repository\p\ is the subversion repository path (e.g. "svn/experimental").  It should not begin with a '/'.
+
+\i\User ID\p\ is the user name used by the subversion server for authentication, if required.
+
+\i\Password\p\ is the password used by the subversion server for authentication, if required.
+
+Subversion is a version control system intended as a replacement for CVS. The software is released under an Apache/BSD style open-source license. The project can be found at \U2=http://subversion.tigris.org\http://subversion.tigris.org\P0\.
+
+A description of the custom protocol used by svnserve can be found at \U2=http://svn.collab.net/repos/svn/trunk/subversion/libsvn_ra_svn/protocol\http://svn.collab.net/repos/svn/trunk/subversion/libsvn_ra_svn/protocol\P0\.
+
+</description>
+
+<parameters>
+
+"Repository"		=		""
+"User ID"			=		""
+"Password*"			=		""
+
+</parameters>
+
+<script>
+
+STOR "svnrepo" "${Repository}"
+STOR "svnuser" "${User ID}"
+STOR "svnpass" "${Password*}"
+
+CONN #60 (idle timeout in seconds)
+WAIT #30 @IDLE @DISCONNECT
+LINE OFF
+
+<!-- Default response required to get the ALRM level -->
+
+MTCH "\\( success \\( #+ #+ \\( [^)]+ \\) \\( [^)]*\\) \\) \\) "r else goto @NOSERVER
+
+<!-- If a repository is specified, try to connect -->
+
+CHCK "${svnrepo}" else goto @SUCCESS
+STOR "svnpath" "svn://${_REMOTEADDRESS}/${svnrepo}"
+SEND "( 2 ( edit-pipeline ) ${_LENGTH:${svnpath}}:${svnpath} ) "
+
+<!-- If CRAM-MD5 is supported and a username is specified, try to authenticate -->
+
+CHCK "${svnuser}" else goto @AUTHANON
+MTCH "\\( success \\( \\([^)]+CRAM-MD5[^)]+\\) ${_LENGTH:${svnrepo}}:${svnrepo} \\) \\) "r else goto @AUTHANON
+
+SEND "( CRAM-MD5 ( ) ) "
+MTCH "\\( step \\( #+:([^ ]+) \\) \\) "r else goto @UNKNOWN
+STOR "svnhmac" "${svnuser} ${_HMAC:${svnpass}:${1}}"
+SEND "${_LENGTH:${svnhmac}}:${svnhmac} "
+MTCH "\\( success \\(.*"r else goto @FAILMD5
+DONE OKAY
+
+<!-- If no username is given or MD5 is not present, try to connect anonymously -->
+
+@AUTHANON:
+MTCH "\\( success \\( \\([^)]+ANONYMOUS[^)]+\\) ${_LENGTH:${svnrepo}}:${svnrepo} \\) \\) "r else goto @NOAUTH
+
+SEND "( ANONYMOUS ( ) ) "
+MTCH "\\( success \\(.*"r else goto @UNKNOWN
+DONE OKAY
+
+<!-- Probe exit and failure/warning labels -->
+
+@SUCCESS:
+DONE OKAY
+
+@FAILMD5:
+MTCH "\\( failure \\(.*"r else goto @UNKNOWN
+DONE WARN "[svnserve] Username or password are incorrect."
+
+@NOAUTH:
+DONE ALRM "[svnserve] Repository does not exist, or has no supported authentication methods."
+
+@UNKNOWN:
+DONE CRIT "[svnserve] Unknown response from the SVN server: ${_LINE:50}."
+
+@NOSERVER:
+DONE CRIT "[svnserve] Unknown response not matching known SVN servers: ${_LINE:50}."
+
+@IDLE:
+DONE DOWN "[svnserve] No response for ${_IDLETIMEOUT} seconds."
+
+@DISCONNECT:
+DONE DOWN "[svnserve] Unexpectedly disconnected."
+
+</script>

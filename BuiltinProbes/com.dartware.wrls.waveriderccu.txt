@@ -1,0 +1,150 @@
+ <!--
+	Wireless - WaveRider (CCU) (com.dartware.wrls.waveridereum)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 30 August 2004 ics,
+	 10/24/2004 ics
+         10/21/2005 rk  Added interface_visible directive to show the wireless interface (tested on S/W ver 6.3 build 4)
+
+Notes (ics'):
+	Wireless interface # appears to be 3
+	Ethernet interface # appears to be 2
+	(Loopback appears to be 1)
+-->
+
+<!--
+Had some trouble with Software Version and Serial Number.
+Using a get request fixed Serial Number.
+Asking for the Software Version first fixed that.
+-->
+
+<header>
+	"type"				=	"custom-snmp"
+	"package"			=	"com.dartware"
+	"probe_name"		=	"wrls.waveriderccu"
+	"human_name"		=	"Wireless - WaveRider CCU"
+	"display_name" 		=	"Wireless/WaveRider/CCU"
+	"version"			=	"1.0"
+	"address_type"		=	"IP,AT"
+	"port_number"		=	"161"
+	"equiv_class"		= 	"WRLS"
+</header>
+
+<snmp-device-properties>
+   pdutype="get-request"
+   maxvars="4"
+   interface_visible=("$ifDescr" =~ "rdr1")
+</snmp-device-properties>
+
+
+<description>
+\GB\WaveRider CCU Probe\P\ - Beta
+
+This probe monitors a WaveRider CCU (access point). It retrieves and displays a number of variables for basic, traffic, and wireless information. It will go into alarm and warning states based on user-defined parameters for radio frequency, percentage of payloads not needing a retry, percentage of payloads sent as broadcast, percentage of payloads discarded, percentage of payloads "Rx PER", percentage of payloads with HCRC errors, "Rx No-Match" errors, and high traffic incoming on the wireless interface. It will also go into an alarm based on the global status indicator.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+	"Expected Frequency"				=	"Please select a radio frequency..."
+	"No Retry percentage too low alarm"		=	"90"
+	"No Retry percentage low warning"		=	"95"
+	"Broadcast percentage too high alarm"		=	"5"
+	"Broadcast percentage high warning"		=	"4"
+	"Discard percentage too high alarm"		=	"1"
+	"Discard percentage high warning"		=	"1"
+	"Rx PER percentage too high alarm"		=	"1"
+	"Rx PER percentage high warning"		=	"1"
+	"HCRC percentage too high alarm"		=	"1"
+	"HCRC percentage high warning"			=	"1"
+	"Rx No-Match too high alarm"			=	"50"
+	"Rx No-Match high warning"			=	"45"
+	"High Traffic Bytes alarm"			=	"100000000"
+	"High Traffic Bytes warning"			=	"90000000"
+</parameters>
+
+<snmp-device-variables>
+	ccuGlobalSoftwareVersion,	1.3.6.1.4.1.2979.11.1.2.0 ,		DEFAULT,	"Software Version"
+	ifInOctets,			1.3.6.1.2.1.2.2.1.10.2 , 		DEFAULT, 	"RF In Octets"
+	ccuGlobalSerialNumber,		1.3.6.1.4.1.2979.11.1.1.0 ,		DEFAULT,	"Serial Number"
+	ccuGlobalStatus,		1.3.6.1.4.1.2979.11.1.5.0 ,		INTEGER,	"Global Status"
+	ccuRadioConfigFrequency,	1.3.6.1.4.1.2979.11.2.3.0 ,		INTEGER,	"Raw Frequency"
+	txPayloadBCast,			1.3.6.1.4.1.2979.11.3.3.37.0 ,		PER-MINUTE,	"A Tx Payload BCast"
+	txPayloads1OK,			1.3.6.1.4.1.2979.11.3.3.38.0 ,		PER-MINUTE,	"B Payloads 1 OK"
+	txPayloads2OK,			1.3.6.1.4.1.2979.11.3.3.39.0 ,		PER-MINUTE,	"C Payloads 2 OK"
+	txPayloads3OK,			1.3.6.1.4.1.2979.11.3.3.40.0 ,		PER-MINUTE,	"D Payloads 3 OK"
+	txPayloads4OK,			1.3.6.1.4.1.2979.11.3.3.41.0 ,		PER-MINUTE,	"E Payloads 4 OK"
+	txPayloadsFailRetry,		1.3.6.1.4.1.2979.11.3.3.42.0 ,		PER-MINUTE,	"F Payloads Fail Retry"
+	rxPktsDirected,			1.3.6.1.4.1.2979.11.3.3.20.0 ,		DEFAULT,	"P Rx Packets Directed"
+	rxPktNoMatch,			1.3.6.1.4.1.2979.11.3.3.22.0 ,		PER-MINUTE,	"Rx Packets No-Match"
+	rxPktsHCRCFail,			1.3.6.1.4.1.2979.11.3.3.26.0 ,		DEFAULT,	"Q Rx Packets HCRC Fail"
+	rxPktsFCSFail,			1.3.6.1.4.1.2979.11.3.3.28.0 ,		DEFAULT,	"R Rx Packets FCS Fail"
+	replyOrRssiTimeout,		1.3.6.1.4.1.2979.11.3.3.50.0 ,		DEFAULT,	"S Reply or RSSI Timeout"
+	ccRegistrationCount,		1.3.6.1.4.1.2979.11.5.1.1.0 ,		DEFAULT,	"Current Registered EUMs"
+	ccAuthorizationCount,		1.3.6.1.4.1.2979.11.5.2.1.0 ,		DEFAULT,	"Total Authorized EUMs"
+
+	A,				($txPayloadBCast) ,			CALCULATION,	"Tx Payloads BCast"
+	B,				($txPayloads1OK) ,			CALCULATION,	"Tx Payloads 1 Ok"
+	C,				($txPayloads2OK) ,			CALCULATION,	"Tx Payloads 2 Ok"
+	D,				($txPayloads3OK) ,			CALCULATION,	"Tx Payloads 3 Ok"
+	E,				($txPayloads4OK) ,			CALCULATION,	"Tx Payloads 4 Ok"
+	F,				($txPayloadsFailRetry) ,		CALCULATION,	"Tx Payloads Fail Retry"
+	P,				($rxPktsDirected) ,			CALCULATION,	"Rx Packets Directed"
+	Q,				($rxPktsHCRCFail) ,			CALCULATION,	"Rx Packets HCRC Fail"
+	R,				($rxPktsFCSFail) ,			CALCULATION,	"Rx Packets FCS Fail"
+	S,				($replyOrRssiTimeout) ,			CALCULATION,	"Reply or RSSI Timeout"
+
+	Broadcast,			($A == 0 ? "0" : (100*($A/($A+$B+$C+$D+$E+$F)))) ,			CALCULATION,	 "Broadcast Percentage"
+	Retries,			(($B+$C+$D+$E+$F) == 0 ? "0" : (100-(100*$B/($B+$C+$D+$E+$F)))) ,	CALCULATION,	 "Retry Percentage"
+	NoRetry,			(($B+$C+$D+$E+$F) == 0 ? "100" : (100*$B/($B+$C+$D+$E+$F))) ,		CALCULATION,	 "No Retry Percentage"
+	Discard,			(($B+$C+$D+$E+$F) == 0 ? "0" : (100*$F/($B+$C+$D+$E+$F))) ,		CALCULATION,	 "Discard Percentage"
+	RxPER,				(($P+$Q+$S) == 0 ? "0" : (100*($Q+$R+$S)/($P+$Q+$S))) ,			CALCULATION,	 "Rx PER Percentage"
+	HCRC,				(($P+$S) == 0 ? "0" : (100*$Q/($P+$Q))) ,				CALCULATION,	 "HCRC Error Percentage"
+
+	realFrequency,			($ccuRadioConfigFrequency/10) ,		CALCULATION,	"Radio Frequency"
+</snmp-device-variables>
+
+<snmp-device-thresholds>
+	alarm:		${Expected Frequency} = "Please select a radio frequency..."	"Please select a radio frequency..."
+	alarm:		$realFrequency <> ${Expected Frequency}				"Radio Frequency not as Expected"
+	alarm:		$ccuGlobalStatus = 2						"Global Status: Dead"
+	alarm:		$ifInOctets > ${High Traffic Bytes alarm}	 		"RF In Traffic Too High"
+	alarm:		$NoRetry < ${No Retry percentage too low alarm}			"No Retry percentage too low"
+	alarm:		$Broadcast > ${Broadcast percentage too high alarm}		"Broadcast percentage too high"
+	alarm:		$Discard > ${Discard percentage too high alarm}			"Discard percentage too high"
+	alarm:		$RxPER > ${Rx PER percentage too high alarm}			"Rx PER percentage too high"
+	alarm:		$HCRC > ${HCRC percentage too high alarm}			"HCRC percentage too high"
+	alarm:		$rxPktNoMatch > ${Rx No-Match too high alarm}			"Rx No-Match too high"
+	warning:	$ifInOctets > ${High Traffic Bytes warning} 			"RF In Traffic High"
+	warning:	$ccuGlobalStatus = 4						"Global Status: Suspect"
+	warning:	$NoRetry < ${No Retry percentage low warning}			"No Retry percentage low"
+	warning:	$Broadcast > ${Broadcast percentage high warning}		"Broadcast percentage high"
+	warning:	$Discard > ${Discard percentage high warning}			"Discard percentage high"
+	warning:	$RxPER > ${Rx PER percentage high warning}			"Rx PER percentage high"
+	warning:	$HCRC > ${HCRC percentage high warning}				"HCRC percentage high"
+	warning:	$rxPktNoMatch > ${Rx No-Match high warning}			"Rx No-Match high"
+</snmp-device-thresholds>
+
+<snmp-device-display>
+\B5\WaveRider CCU Information\0P\
+    \4\Software Version:\0\     $ccuGlobalSoftwareVersion
+    \4\   Global Status:\0\     ${eval: $ccuGlobalStatus == 1 ? "Startup" : $ccuGlobalStatus == 2 ? "Dead" : $ccuGlobalStatus == 3 ? "Okay" : $ccuGlobalStatus == 4 ? "Suspect" : $ccuGlobalStatus}
+    \4\    Tx Broadcast:\0\$txPayloadBCast \3IG\Payloads/min\P0M\ \3IG\(\P0M\$Broadcast\3IG\%)\P0M\
+    \4\   Transmit 1 OK:\0\$txPayloads1OK \3IG\Payloads/min\P0M\
+    \4\   Tx Fail Retry:\0\$txPayloadsFailRetry \3IG\Payloads/min\P0M\
+    \4\   Tx No Retry %:\0\     $NoRetry\3IG\%\P0M\ \3IG\(\P0M\${Retries}% \3IG\Retries)\P0M\
+    \4\     Tx Discards:\0\     $Discard\3IG\%\P0M\
+    \4\     Rx Directed:\0\$rxPktsDirected \3IG\Packets/sec\P0M\
+    \4\     Rx No-Match:\0\$rxPktNoMatch \3IG\Packets/min\P0M\
+    \4\  Rx HCRC Failed:\0\$rxPktsHCRCFail \3IG\Packets/sec\P0M\
+    \4\   Rx FCS Failed:\0\$rxPktsFCSFail \3IG\Packets/sec\P0M\
+    \4\Reply or Timeout:\0\$replyOrRssiTimeout \3IG\Packets/sec\P0M\
+    \4\        Rx PER %:\0\     $RxPER\3IG\%\P0M\
+    \4\    HCRC Error %:\0\     $HCRC\3IG\%\P0M\
+    \4\ Radio Frequency:\0\     ${chartable: #.# : $realFrequency} \3IG\MHz\P0M\
+    \4\   Serial Number:\0\     $ccuGlobalSerialNumber
+    \4\ Reg./Auth. EUMs:\0\     $ccRegistrationCount / $ccAuthorizationCount
+</snmp-device-display>

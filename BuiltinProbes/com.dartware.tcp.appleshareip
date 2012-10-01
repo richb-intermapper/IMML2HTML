@@ -1,0 +1,58 @@
+<!-- 
+	AppleShareIP (com.dartware.tcp.appleshareip)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.appleshareip"
+	human_name		=	"AppleShareIP"
+	version			= 	"1.5"
+	address_type	= 	"IP"
+	port_number		= 	"548"
+	
+	old_protocol	= 	"8"			# Backward compat. with old numbering scheme.
+	old_script		= 	"8010"
+	
+	display_name	=	"Servers-Proprietary/Apple/AppleShareIP"
+</header>
+
+<description>
+
+\GB\AppleShareIP\P\
+
+The file-sharing protocol used by Apple computers over TCP/IP.  The default TCP port number for AppleShareIP connections is port 548.
+
+This TCP probe connects to the AppleShareIP port and issues a "Get Server Info" request. The probe succeeds if the server returns a reply with no error.
+
+This probe does not actually create an AppleShare session.
+
+</description>
+
+<parameters>
+
+-- No Parameters
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+WAIT #30 @IDLE (idle timeout in secs)
+LINE OFF
+SEND "\x00\x03\x00\x00" -- flag=Request(00), cmd=DSIGetStatus(03), id=0
+SEND "\x00\x00\x00\x00" -- error code=0
+SEND "\x00\x00\x00\x00" -- total data length=0
+SEND "\x00\x00\x00\x00" -- reserved=0
+MTCH "\x01\x03\x00\x00\x00\x00\x00\x00" else goto @NO_MATCH
+EXPT "AFP"i else goto @NO_MATCH
+DONE OKAY
+
+@NO_MATCH:
+DONE DOWN "[AppleShareIP] Unexpected response to FPGetSrvrInfo() from port ${_REMOTEPORT}."
+
+@IDLE:
+DONE DOWN "[AppleShareIP] No data for ${_IDLETIMEOUT} seconds.  [Line ${_IDLELINE}]"
+
+</script>

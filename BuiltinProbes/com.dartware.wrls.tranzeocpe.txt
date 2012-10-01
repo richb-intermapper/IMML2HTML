@@ -1,0 +1,364 @@
+<!--
+	Wireless - Tranzeo TR-CPE (com.dartware.wrls.tranzeocpe)
+	Probe for InterMapper (http://www.intermapper.com)
+
+	Copyright (c) 2004, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Original version 21 May 2004 tex,
+	Latest revision 9 July 2004 by tex/ics.
+-->
+
+
+<header>
+	"type"			= 	"tcp-script"
+	"package"		= 	"com.dartware"
+	"probe_name"	=	"wrls.tranzeocpe"
+	"human_name"	=	"Wireless - Tranzeo TR-CPE"
+	"version"		= 	"1.2"
+	"address_type"	= 	"IP"
+	"port_number"	=	"80"
+	"equiv_class"	= 	"WRLS"
+	"display_name"	=	"Wireless/Tranzeo/Tranzeo TR-CPE"
+	"url_hint"		=	"http://${ADDRESS}"
+</header>
+
+<description>
+
+²GB³Tranzeo TR-CPE²P³
+
+This probe is meant to monitor a \u2=http://www.tranzeo.com\Tranzeo\p0\ TR-CPE.
+
+It will give a warning at a user-definable threshold for low signal, and an alarm when signal strength is "poor". You will need to enter as parameters your web admin username and password, as well as the SSID of the connection you want information on.
+
+This probe is part of the InterMapper Wireless Probe Bundle, and requires InterMapper 4.2.1 or later.
+</description>
+
+<parameters>
+	"User"				=		""
+	"Password*"			=		""
+	"SSID"				=		""
+	"Warning Threshold"		=		"-72"
+</parameters>
+
+<script>
+CONN #60
+FAIL @FAIL_INIT
+
+STOR "RET" "@START"
+GOTO #+2
+
+@FAIL_INIT:
+STOR "RET" "@FAILED"
+
+GOTO @INIT_VARS
+
+@START:
+
+WAIT #60 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+
+SEND "POST /cgi-bin/login_post HTTP/1.1\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+#SEND "Referer: http://${_REMOTEADDRESS}/index1.htm\r\n"
+#SEND "Connection: keep-alive\r\n"
+STOR "LEN" #0
+CHCK "${User}${Password*}" else goto #+4
+STOR "FormData" "username=${User}&passwd=${Password*}"
+STOR "LEN" "${_LENGTH:${FormData}}"
+SEND "Content-Type: application/x-www-form-urlencoded\r\n"
+SEND "Content-length: ${LEN}\r\n"
+SEND "\r\n"
+
+NBGT #${LEN} #0 goto #+2
+GOTO #+2
+SEND "${FormData}"
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @UNAVAIL_GET_RESPONSE
+
+#LINE ON
+STOR "RET" "@SEND_GET_ABOUT"
+DISC if disconnected goto @RECONNECT
+#Skip POST response
+SKIP ".*"r else goto @RECONNECT
+
+#reconnect
+
+GOTO @RECONNECT
+
+@SEND_GET_ABOUT:
+SEND "GET /about.htm HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+2
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+#SEND "Connection: keep-alive\r\n"
+#SEND "Referer: http://${_REMOTEADDRESS}/cgi-bin/login_post\r\n"
+
+SEND "\r\n"
+
+DISC if disconnected goto @NO_MATCH
+
+LINE ON
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @UNAVAIL_GET_RESPONSE
+
+#find first <table> tag
+EXPT "<table"i else goto @NO_MATCH
+NEXT
+
+#skip to "Name of your TR-CPE"
+EXPT "Name of your TR-CPE"i else goto @NO_MATCH
+NEXT
+MTCH "<[^<]*>\\s*([^<]*)\\s*</[a-z]+>"ir else goto @END_ROW
+STOR "^name" "${1}"
+
+#skip to "MAC Address"
+EXPT "MAC Address"i else goto @NO_MATCH
+NEXT
+MTCH "<[^<]*>\\s*([^<]*)\\s*</[a-z]+>"ir else goto @END_ROW
+STOR "^MAC" "${1}"
+
+#skip to "Firmware Version"
+EXPT "Firmware Version"i else goto @NO_MATCH
+NEXT
+MTCH "<[^<]*>\\s*([^<]*)\\s*</[a-z]+>"ir else goto @END_ROW
+STOR "^firmware" "${1}"
+
+#skip to "RTS threshold"
+EXPT "RTS threshold"i else goto @NO_MATCH
+NEXT
+MTCH "<[^<]*>\\s*([^<]*)\\s*</[a-z]+>"ir else goto @END_ROW
+STOR "^rts" "${1}"
+
+SCAT "^about-output" "²B5³Tranzeo CPE Information²0P³\r   ²4³Name of your TR-CPE:²0P³  ${^name}\r       ²4³CPE MAC Address:²0P³  ${^MAC}\r      ²4³Firmware Version:²0P³  ${^firmware}\r         ²4³RTS Threshold:²0P³  ${^rts}\r"
+
+STOR "RET" "@SEND_GET_WLAN"
+DISC if disconnected goto @RECONNECT
+#Skip rest of response
+SKIP ".*"r else goto @RECONNECT
+
+#reconnect
+
+GOTO @RECONNECT
+
+@SEND_GET_WLAN:
+SEND "GET /wlan.htm HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+2
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+#SEND "Connection: keep-alive\r\n"
+#SEND "Referer: http://${_REMOTEADDRESS}/cgi-bin/login_post\r\n"
+
+SEND "\r\n"
+
+DISC if disconnected goto @NO_MATCH
+
+LINE ON
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @UNAVAIL_GET_RESPONSE
+
+#find first <table> and skip it
+EXPT "<table"i else goto @NO_MATCH
+NEXT
+
+EXPT "<table"i else goto @NO_MATCH
+NEXT
+
+#skip column header (first row)
+EXPT "<tr>"i else goto @NO_MATCH
+EXPT "</tr>"i else goto @PARSED_TABLE
+NEXT
+
+@TABLE_LOOP:
+#find start of row
+MTCH "</table>"i else goto #+2
+GOTO @PARSED_TABLE
+@ROW_LOOP:
+MTCH "<tr>"i else goto @PARSED_TABLE
+NEXT
+#ignore first column
+STOR "RET" "@COLUMN_1"
+GOTO @IGNORE_COLUMN
+
+@COLUMN_1:
+STOR "RET" "@COLUMN_1_MATCH"
+GOTO @COLUMN_MATCH
+@COLUMN_1_MATCH:
+MTCH "<[^<]*>\&nbsp;\\s*([^<]*)</[a-z]+>"ir else goto @END_ROW
+#Now ${1} contains something like "intermapper"
+SBNE "${SSID}" "${1}" @IGNORE_ROW
+STOR "foundSSID" "found"
+STOR "^ssid_val" "${1}"
+
+STOR "RET" "@COLUMN_2_MATCH"
+GOTO @COLUMN_MATCH
+@COLUMN_2_MATCH:
+MTCH "<[^<]*>\&nbsp;\\s*([^<]*)</[a-z]+>"ir else goto @END_ROW
+STOR "^bssid" "${1}"
+
+STOR "RET" "@COLUMN_3_MATCH"
+GOTO @COLUMN_MATCH
+@COLUMN_3_MATCH:
+MTCH "<[^<]*>\&nbsp;\\s*([^<]*)</[a-z]+>"ir else goto @END_ROW
+STOR "^channel" "${1}"
+
+STOR "RET" "@COLUMN_4_MATCH"
+GOTO @COLUMN_MATCH
+@COLUMN_4_MATCH:
+MTCH "<[^<]*>\&nbsp;\\s*([^<]*)\\s+dbm</[a-z]+>"ir else goto @END_ROW
+STOR "signal" "${1}"
+
+STOR "RET" "@COLUMN_5_MATCH"
+GOTO @COLUMN_MATCH
+@COLUMN_5_MATCH:
+MTCH "<[^<]*>\&nbsp;\\s*([^<]*)</[a-z]+>"ir else goto @END_ROW
+STOR "^security" "${1}"
+
+@END_ROW:
+#if this row was not the one we're looking for, then keep looping on the rows
+SBNE "$SSID" "${^ssid_val}" @ROW_LOOP
+#else we're done
+STOR "foundSSID" "found"
+GOTO @DONE_PARSING
+
+@COLUMN_MATCH:
+NEXT
+MTCH "<td"i else goto @END_ROW
+MTCH "</td>"i else goto #+2
+GOTO #+3
+NEXT
+MTCH "</td>"i else goto @END_ROW
+GOTO $RET
+
+@IGNORE_ROW:
+EXPT "</tr>"i else goto @PARSED_TABLE
+NEXT
+GOTO @ROW_LOOP
+
+@PARSED_TABLE:
+#if we did not find the SSID, then SSID_NOT_FOUND
+SBNE "$foundSSID" "found" @SSID_NOT_FOUND
+#else we're done
+GOTO @DONE_PARSING
+
+@DONE_PARSING:
+STOR "^script-output" "²4³AP MAC Address (BSSID):²0P³  ${^bssid}\r               ²4³Channel:²0P³  ${^channel}"
+STOR "^script-output1" "\r       ²4³Signal Strength:²0P³  $${signal} dbm\r              ²4³Security:²0P³  ${^security}"
+NBNE #${Warning Threshold} #${signal} goto #+2
+GOTO @CHECK_STRENGTH
+NBGT #${Warning Threshold} #${signal} goto @CHECK_STRENGTH
+DONE OKAY
+
+@CHECK_STRENGTH:
+#check signal strength
+SBNE "${signal}" "poor" goto @DONE_WARN
+DONE ALRM "Poor signal strength."
+
+@DONE_WARN:
+DONE WARN "Low signal strength: ${signal}"
+
+@SSID_NOT_FOUND:
+DONE ALRM "SSID \"${SSID}\" not found."
+
+
+@NO_MATCH:
+DONE WARN "Unrecognized response from device."
+
+@IDLE:
+DONE DOWN "No data for ${_IDLETIMEOUT} seconds. [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@UNAVAIL_GET_RESPONSE:
+MTCH m"50[0-9]" else goto @BAD_GET_RESPONSE
+DONE DOWN "${_LINE:50}"
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "201 Created"
+MTCH "202" ELSE #+2
+DONE WARN "202 Accepted"
+MTCH "204" ELSE #+2
+DONE WARN "204 No Content"
+MTCH "301" ELSE #+2
+DONE WARN "301 Moved Permanently"
+MTCH "302" ELSE #+2
+DONE WARN "302 Moved Temporarily"
+MTCH "304" ELSE #+2
+DONE WARN "304 Not Modified"
+MTCH "400" ELSE #+2
+DONE WARN "400 Bad Request"
+MTCH "401" ELSE #+2
+DONE WARN "401 Unauthorized"
+MTCH "403" ELSE #+2
+DONE WARN "Invalid login."
+MTCH "404" ELSE #+2
+DONE WARN "Unrecognized response (404)."
+MTCH "500" ELSE #+2
+DONE ALRM "500 Internal Server Error"
+MTCH "501" ELSE #+2
+DONE ALRM "501 Not Implemented"
+MTCH "502" ELSE #+2
+DONE ALRM "502 Bad Gateway"
+MTCH "503" ELSE #+2
+DONE ALRM "503 Service Unavailable"
+DONE ALRM "Unknown Error Code ${_LINE:4}"
+
+@DISCONNECT:
+DONE DOWN "Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+#@FAIL_INIT:
+#STOR "RET" "@FAILED"
+#GOTO @INIT_VARS
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+@RECONNECT:
+DISC if disconnected goto @DISCONNECT
+RCON
+GOTO ${RET}:
+
+#subroutine to initialize the variables
+@INIT_VARS:
+#variables from /about.htm
+STOR "^name" ""
+STOR "^MAC" ""
+STOR "^firmware" ""
+STOR "^rts" ""
+
+#variables from /wlan.htm
+STOR "signal" ""
+STOR "^ssid_val" ""
+STOR "^bssid" ""
+STOR "^channel" ""
+STOR "^security" ""
+
+#flag- set to "found" if the SSID was found
+STOR "foundSSID" ""
+
+#output of the script
+STOR "^about-output" ""
+STOR "^script-output" ""
+STOR "^script-output1" ""
+GOTO ${RET}
+
+
+#subroutine to skip the next column and return
+@IGNORE_COLUMN:
+EXPT "td>"i else goto ${RET}
+MTCH "</td>"i ELSE #+2
+GOTO ${RET}
+NEXT
+GOTO @IGNORE_COLUMN
+
+</script>
+
+<script-output>
+${^about-output}${^script-output}${^script-output1}
+</script-output>

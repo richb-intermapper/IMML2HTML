@@ -1,0 +1,31 @@
+<!-- 
+	Flow Exporter Status (com.dartware.flow.exporter.status)
+	Copyright © 2010 Dartware, LLC. All rights reserved.
+
+	02 Feb 2010: 1.0 -- Initial creation. CLS.
+	03 Feb 2010: 1.1 -- Wording tweak and cleanup. CLS.
+	19 May 2010: 1.2 -- Fixed line breaks -reb
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"flow.exporter.status"
+	human_name		=	"Flow Exporter Status"
+	version			= 	"1.2"
+	address_type	= 	"IP"
+	display_name	=	"Experimental/Flow Exporter Status"
+
+</header>
+
+<description>
+\GB\Flow Exporter Status\P\
+
+The Flow Exporter Status probe monitors a Flow Exporter and reports statistics about the Flow activity. It does this by retrieving information from the InterMapper Flows server.
+
+The normal state of the device is UP/OKAY. There are two error conditions:
+
+* If the device being monitored does not appear to be a Flow Exporter (that is, if it is not listed by InterMapper Flows), the status of the device will be CRITICAL.  
+
+* If the InterMapper Flows server has not received any flow records during a poll interval, the status of the device will be DOWN.
+</description>

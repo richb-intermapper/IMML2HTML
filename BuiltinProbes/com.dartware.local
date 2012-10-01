@@ -1,0 +1,22 @@
+<!-- 
+	Local (com.dartware.local)
+	Copyright © 2000 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"built-in"
+	package			= 	"com.dartware"
+	probe_name		=	"local"
+	human_name		=	"Local"
+	version			= 	"1.4"
+	address_type	= 	"IP,AT"		# Can use both IP and AppleTalk
+
+	flags			= 	"INVISIBLE"	# Not visible in probe type menu
+
+	old_protocol	= 	"6"			# Backward compat. with old numbering scheme.
+	old_script		= 	"0"
+
+	display_name	=	"Generic/Local"
+
+</header>
+

@@ -1,0 +1,2258 @@
+<!-- 
+	Xserve G5 (com.dartware.tcp.xserve.g5)
+	Copyright © 2004-2005 Dartware, LLC. All rights reserved.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"tcp.xserve.g5"
+	human_name		=	"Xserve G5"
+	version			= 	"1.7"
+	address_type		= 	"IP"
+	port_number		=	"311"
+	display_name		=	"Servers-Proprietary/Apple/Xserve/Xserve G5"
+</header>
+
+<description>
+
+\GB\Xserve G5 Probe\P\
+
+This TCP probe queries an \U2=http://www.apple.com/xserve/\Xserve G5\P0\ for various details using the Server Monitor port and protocol.
+
+A request for status information is made via an HTTPS post to the Server Monitor port. The server responds with XML data that is then parsed by the probe.
+
+\i\User\p\ is the name of any user on the specified server.
+
+\i\Password\p\ is the password for the user specified in \i\User\p\.
+
+The remaining options allow you to display or ignore the corresponding data. These options correspond to the tabs in the Server Monitor application on Mac OS X Server.
+
+\i\Info\p\ is general information about the server, such as amount of RAM and OS name and version.
+
+\i\Drives\p\ is information about the various drives installed on the server. This information includes the manufacturer, model, and capacity of each drive.
+
+\i\Power\p\ is information pertaining to the power supply.
+
+\i\Network\p\ information includes the hardware address, IP address, traffic information, and type of each interface.
+
+\i\Temperature\p\ is the ambient temperature of the server.
+
+\i\Blowers\p\ is information on the speed of the server's cooling fans.
+
+\i\Security\p\ monitors the state of the security lock and the enclosure.
+
+\i3\Note: The implementation of this probe uses OpenSSL on MacOSX.\p0\
+
+</description>
+
+<parameters>
+
+	"User"				=		""
+	"Password*"			=		""
+	"Info[true,false]"		=		"true"
+	"Drives[true,false]"		=		"true"
+	"Power[true,false]"		=		"true"
+	"Network[true,false]"		=		"true"
+	"Temperature[true,false]"	=		"true"
+	"Blowers[true,false]"		=		"true"
+	"Security[true,false]"		=		"true"
+
+</parameters>
+
+<script>
+CONN #60 "SECURE"
+FAIL @FAIL_INIT
+
+STOR "RET" "@START"
+GOTO #+2
+
+@FAIL_INIT:
+STOR "RET" "@FAILED"
+
+GOTO @INIT_VARS
+
+@START:
+
+
+WAIT #30 @IDLE (idle timeout in secs)
+DISC @DISCONNECT
+
+STOR "URL" "/commands/servermgr_xserve"
+STOR "FormData1" "input=%3C?xml%20version=%221.0%22%20encoding=%22UTF-8%22?%3E%0A%3C!DOCTYPE%20plist%20PUBLIC%20%22-%2F%2FApple%20Computer"
+STOR "FormData2" "%2F%2FDTD%20PLIST%201.0%2F%2FEN%22%20%22http:%2F%2Fwww.apple.com%2FDTDs%2FPropertyList-1.0.dtd%22%3E%0A%3Cplist%20version"
+STOR "FormData3" "=%221.0%22%3E%0A%3Cdict%3E%0A%09%3Ckey%3Ecommand%3C%2Fkey%3E%0A%09%3Cstring%3Estatus%3C%2Fstring%3E%0A%3C%2Fdict%3E%0A%3C%2Fplist%3E%0A"
+
+SEND "POST ${URL} HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" else goto #+2
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+#	SEND "Content-type: text/xml\r\n"
+STOR "LEN" "${_LENGTH:${FormData1}}"
+NADD "LEN" #${_LENGTH:${FormData2}}
+NADD "LEN" #${_LENGTH:${FormData3}}
+SEND "Content-Length: ${LEN}\r\n"
+CHCK "${User}${Password*}" else goto #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+SEND "${FormData1}"
+SEND "${FormData2}"
+SEND "${FormData3}"
+
+MTCH "HTTP/"i else goto @UNEXPECTED_GREETING
+MTCH "200" else goto @UNAVAIL_GET_RESPONSE
+LINE HTML
+DISC if disconnected goto @NO_MATCH
+EXPT "<key>"i else goto @NO_MATCH
+
+#a switch...case structure here should search for all known keys
+#		(Email, Status)
+@ROOT_SWITCH:
+MTCH "<key>Email</key>"i ELSE #+2
+GOTO @EMAIL
+MTCH "<key>Status</key>"i ELSE #+2
+GOTO @STATUS
+MTCH "<key>error</key>"i ELSE #+4
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir ELSE #+2
+DONE WARN "[Xserve] Error: ${2}"
+#fallthrough to @NO_MATCH
+
+@NO_MATCH:
+DONE WARN "[Xserve] Improperly formed data in response."
+
+@IDLE:
+DONE DOWN "[Xserve] No data for ${_IDLETIMEOUT} seconds. [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[Xserve] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@UNAVAIL_GET_RESPONSE:
+MTCH m"50[0-9]" else goto @BAD_GET_RESPONSE
+DONE DOWN "[Xserve] ${_LINE:50} (${URL})"
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "[Xserve] 201 Created (${URL})"
+MTCH "202" ELSE #+2
+DONE WARN "[Xserve] 202 Accepted (${URL})"
+MTCH "204" ELSE #+2
+DONE WARN "[Xserve] 204 No Content (${URL})"
+MTCH "301" ELSE #+2
+DONE WARN "[Xserve] 301 Moved Permanently (${URL})"
+MTCH "302" ELSE #+2
+DONE WARN "[Xserve] 302 Moved Temporarily (${URL})"
+MTCH "304" ELSE #+2
+DONE WARN "[Xserve] 304 Not Modified (${URL})"
+MTCH "400" ELSE #+2
+DONE WARN "[Xserve] 400 Bad Request (${URL})"
+MTCH "401" ELSE #+2
+DONE WARN "[Xserve] 401 Unauthorized (${URL})"
+MTCH "403" ELSE #+2
+DONE WARN "[Xserve] 403 Forbidden (${URL})"
+MTCH "404" ELSE #+2
+DONE WARN "[Xserve] 404 Not Found (${URL})"
+MTCH "405" ELSE #+2
+DONE WARN "[Xserve] 405 Method Not Allowed (${URL})"
+MTCH "500" ELSE #+2
+DONE ALRM "[Xserve] 500 Internal Server Error (${URL})"
+MTCH "501" ELSE #+2
+DONE ALRM "[Xserve] 501 Not Implemented (${URL})"
+MTCH "502" ELSE #+2
+DONE ALRM "[Xserve] 502 Bad Gateway (${URL})"
+MTCH "503" ELSE #+2
+DONE ALRM "[Xserve] 503 Service Unavailable (${URL})"
+DONE ALRM "[Xserve] Unknown Error Code ${_LINE} (${URL})"
+
+@DISCONNECT:
+DONE DOWN "[Xserve] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+
+#@FAIL_INIT:
+#STOR "RET" "@FAILED"
+#GOTO @INIT_VARS
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+#subroutine to initialize the variables
+@INIT_VARS:
+#get the time delta:
+EVAL $new_time := time()
+CHCK "$time" #+2
+EVAL $time_delta := $new_time - $time
+STOR "time" "${new_time}"
+
+#init lots of variables- initially, I was under the impression that variables were initialized as the empty string...
+STOR "^interface0" "0"
+STOR "^interface1" "1"
+STOR "^interface2" "2"
+STOR "^interface3" "3"
+STOR "^network0" ""
+STOR "^network0_overflow" ""
+STOR "^network1" ""
+STOR "^network1_overflow" ""
+STOR "^network2" ""
+STOR "^network2_overflow" ""
+STOR "^network3" ""
+STOR "^network3_overflow" ""
+
+STOR "^drivebay_0" "1"
+STOR "^drivebay_1" "2"
+STOR "^drivebay_2" "3"
+STOR "^drivebay_3" "4"
+STOR "^drives0" ""
+STOR "^drives0_overflow" ""
+STOR "^drives1" ""
+STOR "^drives1_overflow" ""
+STOR "^drives2" ""
+STOR "^drives2_overflow" ""
+STOR "^drives3" ""
+STOR "^drives3_overflow" ""
+
+STOR "^temperature_title" ""
+STOR "^temperature" ""
+STOR "^temperature_overflow" ""
+
+STOR "^power_title" ""
+STOR "^power" ""
+STOR "^power_overflow" ""
+
+STOR "^blowers_title" ""
+STOR "^blowers" ""
+STOR "^blowers_overflow" ""
+
+STOR "^security" ""
+STOR "^lock_status" "Unknown"
+
+STOR "^identity" ""
+STOR "^identity_overflow" ""
+
+STOR "ERROR_MESSAGE" ""
+STOR "ERROR_LEVEL" "0"
+
+#STOR "INTERFACES_SEEN" "-1"
+#STOR "CONN_SUMMARY_LOOP_COUNT" "0"
+#STOR "DRIVES_SEEN" "-1"
+#STOR "DRIV_SUMMARY_LOOP_COUNT" "0"
+GOTO ${RET}
+
+
+
+#ignore the mail segment for now
+@EMAIL:
+NEXT
+#find the matching </dict> tag at end of EMAIL value
+EXPT "</dict>"i else goto @NO_MATCH
+#parse the rest of the root <dict> element
+NEXT
+GOTO @ROOT_SWITCH
+
+#use switch...case structures for all known status keys
+#		(Connectivity,Drives,Enclosure,Fan,Identity,Power,Temperature)
+@STATUS:
+NEXT
+@STATUS_1:
+EXPT "<key>([^<]+)</key>"ir else goto @ROOT_SWITCH
+SBNE "${1}" "Connectivity"i #+4
+SBNE "${Network[true,false]}" "false"i #+2
+GOTO @SKIP_DICT
+GOTO @CONNECTIVITY
+SBNE "${1}" "Drives"i ELSE #+4
+SBNE "${Drives[true,false]}" "false"i #+2
+GOTO @SKIP_DICT
+GOTO @DRIVES
+SBNE "${1}" "Enclosure"i ELSE #+4
+SBNE "${Security[true,false]}" "false"i #+2
+GOTO @SKIP_DICT
+GOTO @ENCLOSURE
+SBNE "${1}" "Identity"i ELSE #+2
+GOTO @IDENTITY
+
+#<key>Fan</key> is non-existent in G5 Xserve information
+SBNE "${1}" "Fan"i ELSE #+4
+SBNE "${Blowers[true,false]}" "false"i #+2
+GOTO @SKIP_DICT
+GOTO @FAN
+SBNE "${1}" "Controls"i ELSE #+4
+SBNE "${Blowers[true,false]}" "false"i #+2
+GOTO @SKIP_ARRAY
+GOTO @FAN
+
+#Sensors holds the Temperature and Power data
+SBNE "${1}" "Sensors"i ELSE #+5
+#If ignoring Temperature
+SBNE "${Temperature[true,false]}" "false"i #+3
+#  and ignoring Blowers
+SBNE "${Power[true,false]}" "false"i #+2
+#  then we can skip this <array>
+GOTO @SKIP_ARRAY
+GOTO @SENSORS
+
+#<key>Power</key> is empty in G5 Xserve information
+SBNE "${1}" "Power"i ELSE #+2
+GOTO @SKIP_DICT
+
+#Ignore <key>Memory</key> for now
+SBNE "${1}" "Memory"i ELSE #+2
+GOTO @SKIP_ARRAY
+
+#<key>Temperature</key> is non-existent in G5 Xserve information
+SBNE "${1}" "Temperature"i ELSE #+2
+GOTO @SKIP_DICT
+
+#check ERROR_LEVEL
+NBNE #${ERROR_LEVEL} #0 @DONE_ERROR
+DONE OKAY
+
+@DONE_ERROR:
+NBNE #${ERROR_LEVEL} #1 #+3
+STOR "ERROR_STR" "WARN"
+GOTO @DONE_MSG
+NBGT #${ERROR_LEVEL} #2 #+3
+STOR "ERROR_STR" "ALRM"
+GOTO @DONE_MSG
+STOR "ERROR_STR" "DOWN"
+#fallthrough
+
+@DONE_MSG:
+DONE ${ERROR_STR} "${ERROR_MESSAGE}"
+
+@SKIP_DICT:
+NEXT
+STOR "XML_STACK" "0"
+
+@SKIP_DICT_LOOP:
+#find the next <dict> tag or the matching </dict> tag
+EXPT "dict>"i else goto @STATUS
+MTCH "</dict>"i ELSE #+2
+#We add -2, then fall through to the ELSE and add 1, to have a net effect of adding -1
+#	(It was easier than a bunch of GOTO statements and an extra label or two...)
+NADD "XML_STACK" #-2
+
+# else assume it's a <dict> tag
+NADD "XML_STACK" #1
+
+NEXT
+NBGT #${XML_STACK} #0 @SKIP_DICT_LOOP
+GOTO @STATUS
+
+#subroutine to skip an array and return
+@SKIP_ARRAY:
+NEXT
+#find the matching </array> tag
+EXPT "</array>"i else goto @NO_MATCH
+GOTO @STATUS
+
+#subroutine to skip an array or dict or line and return
+@IGNORE:
+NEXT
+#figure out what kind of tag it is
+MTCH "<([a-z]+)>"ir else GOTO ${RET}
+STOR "TAG" "${1}"
+STOR "XML_STACK" "0"
+
+@IGNORE_LOOP:
+EXPT "${TAG}>"i else goto ${RET}
+MTCH "</${TAG}>"i ELSE #+2
+#We add -2, then fall through to the ELSE and add 1, to have a net effect of adding -1
+#	(It was easier than a bunch of GOTO statements and an extra label or two...)
+NADD "XML_STACK" #-2
+
+# else assume it's a <${TAG}> tag
+NADD "XML_STACK" #1
+
+NEXT
+NBGT #${XML_STACK} #0 @IGNORE_LOOP
+GOTO ${RET}
+
+
+@IDENTITY:
+NEXT
+EXPT "<dict>"i else goto @STATUS
+EXPT "<key>([^<]+)</key>"ir else goto @STATUS
+SCAT "^identity_overflow" "\r  ²5³Identity²0P³"
+
+#loop on every <key> in the <dict>
+@INFO_DICT:
+MTCH "</dict>"i ELSE #+5
+SBNE "${Info[true,false]}" "false"i #+3
+STOR "^identity_overflow" ""
+STOR "^identity" ""
+GOTO @STATUS
+
+MTCH "<key>([^<]+)</key>"ir else goto @STATUS
+SBNE "${1}" "KeySwitch"i @SERVICE_ID
+NEXT
+MTCH "<([^<]+)/>"ir else goto @INFO_DICT
+NEXT
+SBNE "${2}" "true" #+3
+STOR "^lock_status" "Locked"
+GOTO @INFO_DICT
+#See Bug 52551 - the lock status may be "1" instead of "true"
+SBNE "${2}" "1" #+3
+STOR "^lock_status" "Locked"
+GOTO @INFO_DICT
+STOR "^lock_status" "Unlocked"
+GOTO @INFO_DICT
+
+#skip the ServiceID
+@SERVICE_ID:
+SBNE "${1}" "ServiceID"i @UPTIME
+NEXT
+#force the next line to load by using a MTCH
+MTCH "<([^<]+)/>"ir else goto @INFO_DICT
+NEXT
+GOTO @INFO_DICT
+
+
+@UPTIME:
+SBNE "${1}" "Uptime"i @INFO_DICT_LOOP
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @INFO_DICT
+NEXT
+STOR "_uptime" "${2}"
+GOTO @INFO_DICT
+
+
+@INFO_DICT_LOOP:
+STOR "STRING" "^identity"
+MTCH "<key>([A-Z][A-Z0-9])([A-Z][a-z][a-z]+)</key>"r #+2
+STOR "1" "${1} ${2}"
+STOR "OVERFLOW_RET" "@INFO_DICT_OVERFLOW_RET"
+@INFO_DICT_OVERFLOW_RET:
+SCAT "^identity_overflow" "\r    ²4³${1}:²0³ " @OVERFLOW
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @INFO_DICT
+STOR "OVERFLOW_RET" "@INFO_DICT_OVERFLOW_RET_1"
+@INFO_DICT_OVERFLOW_RET_1:
+SCAT "^identity_overflow" "${2}" @OVERFLOW
+NEXT
+GOTO @INFO_DICT
+
+#Each Status key except Identity has three arrays- Detail, Info, Summary
+#	Detail and Info are arrays of <dict> elements
+#	Summary is an array of <integer> elements
+
+@CONNECTIVITY:
+NEXT
+@CONNECTIVITY_1:
+EXPT "<key>([^<]+)</key>"ir else goto @STATUS
+SBNE "${1}" "Detail"i ELSE #+2
+GOTO @CONN_DETAIL
+SBNE "${1}" "Info"i ELSE #+2
+GOTO @CONN_INFO
+SBNE "${1}" "Summary"i ELSE #+2
+GOTO @CONN_SUMMARY
+GOTO @STATUS_1
+
+@CONN_DETAIL:
+STOR "INTERFACES_SEEN" "-1"
+NEXT
+@CONN_DETAIL_1:
+EXPT "<dict"i else goto @CONNECTIVITY
+#we could have matched <dict> or <dict/>
+#  if the line is <dict/>, then it's an empty tag
+#  else, parse the <dict> element
+NADD "INTERFACES_SEEN" #1
+STOR "STRING" "^network${INTERFACES_SEEN}"
+MTCH "<dict/>"i else goto #+3
+NEXT
+GOTO @CONN_DETAIL_1
+
+EXPT "<key>([^<]+)</key>"ir else goto @CONNECTIVITY
+SCAT "^network${INTERFACES_SEEN}_overflow" "\r  ²5³Interface $${^interface${INTERFACES_SEEN}}²0P³"
+
+#loop on every <key> in the <dict>
+@CONN_DETAIL_DICT:
+MTCH "</dict>"i ELSE #+4
+NEXT
+MTCH "</array>"i ELSE @CONN_DETAIL_1
+GOTO @CONNECTIVITY
+
+MTCH "<key>([^<]+)</key>"ir else goto @CONNECTIVITY
+@CONN_DETAIL_DICT_LOOP:
+STOR "INTERFACE_VAR_NAME" "${1}"
+MTCH "<key>(.+)([A-Z][a-z]+)</key>"r #+4
+STOR "first_word" "${1}"
+STOR "1" "${1} ${2}"
+GOTO #+2
+STOR "first_word" "${1}"
+STOR "id" "${INTERFACE_VAR_NAME} ${INTERFACES_SEEN}"
+STOR "OVERFLOW_RET" "@CONN_DETAIL_DICT_OVERFLOW_RET"
+@CONN_DETAIL_DICT_OVERFLOW_RET:
+SCAT "^network${INTERFACES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @OVERFLOW
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @CONNECTIVITY_1
+SBNE "${1}" "integer"i @CONN_DETAIL_DICT_LOOP_1
+#convert to unsigned
+EVAL $2 := sprintf( "%u", $2)
+STOR "${id}" "${2}"
+STOR "2" "$${${id}}"
+
+@CONN_DETAIL_DICT_LOOP_1:
+STOR "OVERFLOW_RET" "@CONN_DETAIL_DICT_LOOP_1"
+SCAT "^network${INTERFACES_SEEN}_overflow" "${2}" @OVERFLOW
+NEXT
+
+#If $first_word is 'Bytes' or 'Packets'
+# then, calculate a delta.
+SBNE "${first_word}" "Bytes"i #+2
+GOTO @BYTES
+SBNE "${first_word}" "Packets"i #+2
+GOTO @PACKETS
+GOTO @CONN_DETAIL_DICT
+
+#Bytes:
+#first, convert Bytes to kbits:
+#	strip the last three characters off (equivalent to / 1000)
+@BYTES:
+STOR "value" "${${id}}"
+EVAL $value := substr( "${value}", 0, -3 )
+#	if the string is now empty, it is 0
+SBNE "" "${value}" #+3
+STOR "value" "0"
+GOTO #+2
+#	multiply the result by 8
+EVAL $value := $value * 8
+
+@DELTA_CALCULATION:
+CHCK "${last_${id}}" #+2
+GOTO #+3
+STOR "last_${id}" "${value}"
+GOTO @CONN_DETAIL_DICT
+
+#then, calculate rate:
+#	subtract last value from this value (currentKBits - lastKBits)
+STOR "last_value" "${last_${id}}"
+EVAL $rate_delta := $value - $last_value
+STOR "last_${id}" "${value}"
+
+#If the rate is negative, then the counter has probably rolled over.
+#  Skip this one and try again next poll.
+NBNE #${rate_delta} #0 #+2		-- rate_delta != 0
+GOTO #+3
+NBGT #${rate_delta} #0 #+2		-- rate_delta > 0
+GOTO @CONN_DETAIL_DICT
+
+#if (time_delta <= 0), then return
+NBGT #${time_delta} #0 #+2
+GOTO @CONN_DETAIL_DICT
+
+#	divide by the time delta ($time)
+EVAL $value := round( $rate_delta / $time_delta )
+
+#write the rate
+STOR "${id} rate" "${value}"
+@CONN_DETAIL_DICT_OVERFLOW_RET_2:
+STOR "OVERFLOW_RET" "@CONN_DETAIL_DICT_OVERFLOW_RET_2"
+SCAT "^network${INTERFACES_SEEN}_overflow" "  $${${id} rate} " @OVERFLOW
+
+@CONN_DETAIL_DICT_OVERFLOW_RET_3:
+STOR "OVERFLOW_RET" "@CONN_DETAIL_DICT_OVERFLOW_RET_3"
+#write the units
+#If $first_word is 'Bytes' or 'Packets'
+# then, calculate a delta.
+SBNE "${first_word}" "Bytes"i #+3
+SCAT "^network${INTERFACES_SEEN}_overflow" "kbits/sec" @OVERFLOW
+GOTO #+3
+SBNE "${first_word}" "Packets"i #+2
+SCAT "^network${INTERFACES_SEEN}_overflow" "packets/sec" @OVERFLOW
+
+GOTO @CONN_DETAIL_DICT
+
+#Packets:
+#	subtract the last value from this value (currentPackets - lastPackets)
+#	divide by the time delta ($time)
+#This is done in DELTA_CALCULATION for us
+@PACKETS:
+STOR "value" "${${id}}"
+GOTO @DELTA_CALCULATION
+
+#things to verify:
+#	Packets subtraction doesn't overflow
+#	time delta calculation doesn't overflow
+#	Handle roll-over (do the packets or bytes counters roll-over once they hit 2^32?)
+#	Some variables will not be initialized the first time the probe runs.
+#	Deltas are not shown or calculated the first time the probe runs.
+
+@CONN_INFO:
+STOR "INTERFACES_SEEN" "-1"
+NEXT
+@CONN_INFO_1:
+EXPT "<dict"i else goto @CONNECTIVITY
+#we could have matched <dict> or <dict/>
+#  if the line is <dict/>, then it's an empty tag
+#  else, parse the <dict> element
+NADD "INTERFACES_SEEN" #1
+STOR "STRING" "^network${INTERFACES_SEEN}"
+MTCH "<dict/>"i else goto #+3
+NEXT
+GOTO @CONN_INFO_1
+
+#if the output for ^network${INTERFACES_SEEN} is empty, then skip this <dict>
+CHCK "${^network${INTERFACES_SEEN}}" #+2
+GOTO #+5
+CHCK "${^network${INTERFACES_SEEN}_overflow}" #+2
+GOTO #+3
+EXPT "</dict>"i else goto @CONNECTIVITY
+GOTO @CONN_INFO_1
+
+EXPT "<key>([^<]+)</key>"ir else goto @CONNECTIVITY
+
+#loop on every <key> in the <dict>
+@CONN_INFO_DICT:
+MTCH "</dict>"i ELSE #+4
+NEXT
+MTCH "</array>"i ELSE @CONN_INFO_1
+GOTO @CONNECTIVITY
+
+MTCH "<key>([^<]+)</key>"ir else goto @CONNECTIVITY
+SBNE "${1}" "UserDefinedName"i @CONN_INFO_DICT_LOOP
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @CONNECTIVITY_1
+STOR "^interface${INTERFACES_SEEN}" "${2}"
+NEXT
+GOTO @CONN_INFO_DICT
+
+@CONN_INFO_DICT_LOOP:
+MTCH "<key>(.+)([A-Z][a-z]+)</key>"r #+2
+STOR "1" "${1} ${2}"
+STOR "OVERFLOW_RET" "@CONN_INFO_DICT_OVERFLOW_RET"
+@CONN_INFO_DICT_OVERFLOW_RET:
+SCAT "^network${INTERFACES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @OVERFLOW
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto #+2
+GOTO @CONN_INFO_DICT_OVERFLOW_RET_1
+MTCH "<([a-z]+)>([^<]+)$"ir else goto @CONNECTIVITY_1
+#matched "<([a-z]+)>([^<]+)$" but not "<([a-z]+)>([^<]+)</([a-z]+)>"
+NEXT
+MTCH "</${1}>" else goto @CONNECTIVITY_1
+
+@CONN_INFO_DICT_OVERFLOW_RET_1:
+STOR "OVERFLOW_RET" "@CONN_INFO_DICT_OVERFLOW_RET_1"
+SCAT "^network${INTERFACES_SEEN}_overflow" "${2}" @OVERFLOW
+NEXT
+GOTO @CONN_INFO_DICT
+
+@CONN_SUMMARY:
+EXPT "<array>"i else goto @CONNECTIVITY
+STOR "CONN_SUMMARY_LOOP_COUNT" "0"
+@CONN_SUMMARY_LOOP:
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @CONNECTIVITY
+NBNE #${2} #0 @CONN_ERROR
+NADD "CONN_SUMMARY_LOOP_COUNT" #1
+GOTO @CONN_SUMMARY_LOOP
+
+@CONN_ERROR:
+NBGT #${ERROR_LEVEL} #${2} #+2
+STOR "ERROR_LEVEL" "${2}"
+SCAT "ERROR_MESSAGE" "An error was detected on Interface ${CONN_SUMMARY_LOOP_COUNT}\r"
+GOTO @CONNECTIVITY
+
+@DRIVES:
+NEXT
+@DRIVES_1:
+EXPT "<key>([^<]+)</key>"ir else goto @STATUS
+SBNE "${1}" "Detail"i ELSE #+2
+GOTO @DRIV_DETAIL
+SBNE "${1}" "Info"i ELSE #+2
+GOTO @DRIV_INFO
+SBNE "${1}" "Summary"i ELSE #+2
+GOTO @DRIV_SUMMARY
+GOTO @STATUS_1
+
+@DRIV_DETAIL:
+NEXT
+STOR "DRIVES_SEEN" "-1"
+@DRIV_DETAIL_1:
+EXPT "<dict>"i else goto @DRIVES
+EXPT "<key>([^<]+)</key>"ir else goto @DRIVES
+NADD "DRIVES_SEEN" #1
+STOR "STRING" "^drives${DRIVES_SEEN}"
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r  ²5³Drive $${^drivebay_${DRIVES_SEEN}}²0P³"
+
+#loop on every <key> in the <dict>
+@DRIV_DETAIL_DICT:
+MTCH "</dict>"i ELSE #+4
+NEXT
+MTCH "</array>"i ELSE @DRIV_DETAIL_1
+GOTO @DRIVES
+
+MTCH "<key>([^<]+)</key>"ir else goto @DRIVES
+@DRIV_DETAIL_DICT_LOOP:
+STOR "DRIVE_VAR_NAME" "${1}"
+MTCH "<key>(.+)([A-Z][a-z]+)</key>"r #+2
+STOR "1" "${1} ${2}"
+STOR "OVERFLOW_RET" "@DRIV_DETAIL_OVERFLOW_RET"
+@DRIV_DETAIL_OVERFLOW_RET:
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @OVERFLOW
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @DRIVES_1
+STOR "${DRIVE_VAR_NAME} ${DRIVES_SEEN}" "${2}"
+
+STOR "OVERFLOW_RET" "@DRIV_DETAIL_OVERFLOW_RET_1"
+@DRIV_DETAIL_OVERFLOW_RET_1:
+SCAT "^drives${DRIVES_SEEN}_overflow" "$${${DRIVE_VAR_NAME} ${DRIVES_SEEN}}" @OVERFLOW
+NEXT
+GOTO @DRIV_DETAIL_DICT
+
+@DRIV_INFO:
+NEXT
+STOR "DRIVES_SEEN" "-1"
+@DRIV_INFO_1:
+EXPT "<dict>"i else goto @DRIVES
+EXPT "<key>([^<]+)</key>"ir else goto @DRIVES
+NADD "DRIVES_SEEN" #1
+STOR "STRING" "^drives${DRIVES_SEEN}"
+
+#loop on every <key> in the <dict>
+@DRIV_INFO_DICT:
+MTCH "</dict>"i ELSE #+4
+NEXT
+MTCH "</array>"i ELSE @DRIV_INFO_1
+GOTO @DRIVES
+
+MTCH "<key>([^<]+)</key>"ir else goto @DRIVES
+SBNE "${1}" "Location"i @DRIV_INFO_DICT_LOOP
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @DRIVES_1
+STOR "^drivebay_${DRIVES_SEEN}" "${2}"
+NEXT
+GOTO @DRIV_INFO_DICT
+
+@DRIV_INFO_DICT_LOOP:
+STOR "OVERFLOW_RET" "@DRIV_INFO_DICT_LOOP"
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @OVERFLOW
+NEXT
+SBNE "${1}" "Capacity"i #+5
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @DRIVES_1
+MTCH "integer" "${1}" #+3
+EVAL $2 := sprintf( "%.2f GB", $2 / 1024 )
+GOTO #+2
+
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @DRIVES_1
+STOR "OVERFLOW_RET" "@DRIV_INFO_DICT_RET_1"
+@DRIV_INFO_DICT_RET_1:
+SCAT "^drives${DRIVES_SEEN}_overflow" "${2}" @OVERFLOW
+NEXT
+GOTO @DRIV_INFO_DICT
+
+@DRIV_SUMMARY:
+EXPT "<array>"i else goto @DRIVES
+STOR "DRIV_SUMMARY_LOOP_COUNT" "0"
+@DRIV_SUMMARY_LOOP:
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @DRIVES_1
+NBNE #${2} #0 @DRIV_ERROR
+NADD "DRIV_SUMMARY_LOOP_COUNT" #1
+GOTO @DRIV_SUMMARY_LOOP:
+
+@DRIV_ERROR:
+NBGT #${ERROR_LEVEL} #${2} #+2
+STOR "ERROR_LEVEL" "${2}"
+SCAT "ERROR_MESSAGE" "An error was detected on Drive ${DRIV_SUMMARY_LOOP_COUNT}\r"
+GOTO @DRIVES
+
+@ENCLOSURE:
+NEXT
+@ENCLOSURE_1:
+EXPT "<key>([^<]+)</key>"ir else goto @STATUS
+SBNE "${1}" "Detail"i ELSE #+2
+GOTO @ENCL_DETAIL
+SBNE "${1}" "Info"i ELSE #+2
+GOTO @ENCL_INFO
+SBNE "${1}" "Summary"i ELSE #+2
+GOTO @ENCL_SUMMARY
+GOTO @STATUS_1
+
+#ignore for now
+@ENCL_DETAIL:
+@ENCL_INFO:
+NEXT
+EXPT "</array>"i else goto #+1
+GOTO @ENCLOSURE
+
+@ENCL_SUMMARY:
+EXPT "<array>"i else goto @ENCLOSURE
+@ENCL_SUMMARY_LOOP:
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @ENCLOSURE_1
+SCAT "^security" "\r  ²5³Security²0P³"
+SCAT "^security" "\r    ²4³Security Lock:²0P³ $${^lock_status}"
+NBNE #${2} #0 @ENCL_ERROR
+SCAT "^security" "\r    No enclosure intrusion detected."
+GOTO @ENCL_SUMMARY_LOOP
+
+@ENCL_ERROR:
+SCAT "^security" "\r    ²1³Enclosure intrusion detected.²0³"
+NBGT #${ERROR_LEVEL} #${2} #+2
+STOR "ERROR_LEVEL" "${2}"
+SCAT "ERROR_MESSAGE" "An enclosure intrusion was detected.\r"
+GOTO @ENCLOSURE
+
+
+#match all <dict> elements where group=Blowers
+@FAN:
+NEXT
+STOR "STRING" "^blowers"
+EXPT "<array>"i else goto @STATUS
+STOR "FANS_SEEN" "-1"
+
+@FAN_ARRAY:
+NEXT
+@FAN_ARRAY_1:
+EXPT "<(.+)>"r else goto @STATUS
+
+#if start of <dict> element
+MTCH "<dict>"i #+4
+NEXT
+STOR "RET" "@FAN_DICT"
+GOTO @PARSE_DICT
+
+#if empty <dict/> element
+MTCH "<dict/>"i #+2
+GOTO @FAN_ARRAY
+
+#if end of FAN <array>
+MTCH "</array>"i #+4
+#if (0 <= FANS_SEEN)
+NBGT #0 #${FANS_SEEN} #+2
+#  then
+STOR "^blowers_title" "\r  ²5³Blowers²0P³"
+#endif
+GOTO @STATUS
+
+#else ignore this element
+STOR "RET" "@FAN_ARRAY_1"
+GOTO @IGNORE
+
+#dict.<key> contains the value for key from the <dict> element
+@FAN_DICT:
+#if (dict.group == "Blowers")
+#   && (dict.type == "fan-[(rp)|(pw)]m")
+SBNE "${dict.group}" "Blowers"i @FAN_ARRAY
+SBNE"${dict.type}" "fan-[rp][pw]m"ir @FAN_ARRAY
+
+#  then
+NADD "FANS_SEEN" #1
+STOR "${dict.location} speed" "${dict.current-value}"
+STOR "OVERFLOW_RET" "@BLOWERS_SCAT"
+@BLOWERS_SCAT:
+SCAT "^blowers_overflow" "\r    ²4³${dict.location}:²0³ $${${dict.location} speed} RPM" @OVERFLOW
+#    if (dict.summary > 0)
+#       && (dict.summary < 255)
+NBGT #${dict.summary} #254 @FAN_ARRAY
+NBGT #${dict.summary} #0 @FAN_WARN
+#      then
+#        handle fan error (@FAN_WARN)
+#    endif
+#endif
+GOTO @FAN_ARRAY
+
+@FAN_WARN:
+NBGT #${ERROR_LEVEL} #${dict.summary} #+2
+STOR "ERROR_LEVEL" "${dict.summary}"
+
+#if (dict.current-value > dict.minFailureThreshold)
+NBGT #${dict.current-value} #${dict.minFailureThreshold} #+3
+#    TOO SLOW ERROR!
+SCAT "ERROR_MESSAGE" "${dict.location} is too slow!\r"
+GOTO @FAN_ARRAY
+#if (dict.current-value > dict.minWarningThreshold)
+NBGT #${dict.current-value} #${dict.minWarningThreshold} #+3
+#    TOO SLOW WARNING!
+SCAT "ERROR_MESSAGE" "${dict.location} is slow!\r"
+GOTO @FAN_ARRAY
+#if (maxFailureThreshold > dict.current-value)
+NBGT #${dict.maxFailureThreshold} #${dict.current-value} #+3
+#    TOO FAST ERROR!
+SCAT "ERROR_MESSAGE" "${dict.location} is too fast!\r"
+GOTO @FAN_ARRAY
+#if (maxWarningThreshold > dict.current-value)
+NBGT #${dict.maxWarningThreshold} #${dict.current-value} #+3
+#    TOO FAST WARNING!
+SCAT "ERROR_MESSAGE" "${dict.location} is fast!\r"
+GOTO @FAN_ARRAY
+SCAT "ERROR_MESSAGE" "${dict.location} fan.\r"
+GOTO @FAN_ARRAY
+
+#match all <dict> elements where (type==power) || (type==voltage) || (type==temperature)
+@SENSORS:
+NEXT
+EXPT "<array>"i else goto @STATUS
+STOR "POWER_SEEN" "-1"
+STOR "TEMP_SEEN" "-1"
+
+@SENSOR_ARRAY:
+NEXT
+@SENSOR_ARRAY_1:
+EXPT "<(.+)>"r else goto @STATUS
+
+#if start of <dict> element
+MTCH "<dict>"i #+4
+NEXT
+STOR "RET" "@SENSOR_DICT"
+GOTO @PARSE_DICT
+
+#if empty <dict/> element
+MTCH "<dict/>"i #+2
+GOTO @SENSOR_ARRAY
+
+#if end of SENSOR <array>
+MTCH "</array>"i #+2
+#if (0 <= TEMP_SEEN)
+NBGT #0 #${TEMP_SEEN} #+2
+#  then
+STOR "^temperature_title" "\r  ²5³Temperature²0P³"
+#elseif (0 <= POWER_SEEN)
+NBGT #0 #${POWER_SEEN} #+2
+STOR "^power_title" "\r  ²5³Power²0P³"
+GOTO @STATUS
+
+#else ignore this element
+STOR "RET" "@SENSOR_ARRAY_1"
+GOTO @IGNORE
+
+#dict.<key> contains the value for key from the <dict> element
+@SENSOR_DICT:
+STOR "dict.original-value" "${dict.current-value}"
+EVAL ${dict.current-value} := ${dict.current-value} / 65536
+STOR "group" "^${dict.group}"
+
+#if showing temperature
+SBNE "${Temperature[true,false]}" "false"i #+2
+GOTO @POWER_CHECK
+#if (dict.type == "temperature")
+SBNE "${dict.type}" "temperature"i @POWER_CHECK
+STOR "type" "^temperature"
+NADD "TEMP_SEEN" #1
+GOTO @SENSOR_DICT_1
+
+@POWER_CHECK:
+#if showing power
+SBNE "${Power[true,false]}" "false"i #+2
+GOTO @SENSOR_ARRAY
+#if (dict.type == "current")
+SBNE "${dict.type}" "current"i #+2
+GOTO @POWER_TYPE
+#if (dict.type == "voltage")
+SBNE "${dict.type}" "voltage"i #+2
+GOTO @POWER_TYPE
+#if (dict.type == "power")
+SBNE "${dict.type}" "power"i @SENSOR_ARRAY
+
+@POWER_TYPE:
+EVAL ${dict.current-value} := sprintf( "%.2f", ${dict.current-value} )
+STOR "type" "^power"
+NADD "POWER_SEEN" #1
+
+@SENSOR_DICT_1:
+#type should now be one of ^temperature or ^power (or any other type in the output)
+
+#if ${type} (nor ${type}_overflow) does not contain group
+
+SBNE "${${type}_overflow}" ".*${group}.*"r #+2
+GOTO @SENSOR_DICT_2
+
+SBNE "${${type}}" ".*${group}.*"r #+2
+GOTO @SENSOR_DICT_2
+
+STOR "STRING" "${${type}}"
+STOR "MATCH" ".*${group}.*"
+STOR "RET" "@SENSOR_DICT_RECURSE_RET"
+STOR "RET_VAL" ""
+GOTO @RECURSIVE_SBNE
+
+@SENSOR_DICT_RECURSE_RET:
+SBNE "${RET_VAL}" "true" #+2
+GOTO @SENSOR_DICT_2
+
+#  then
+STOR "OVERFLOW_RET" "@TYPE_SCAT"
+STOR "STRING" "${type}"
+@TYPE_SCAT:
+SCAT "${type}_overflow" "$${${group}}$${${group}_overflow}" @OVERFLOW
+STOR "${group}" ""
+STOR "${group}_overflow" "\r    ²4³${dict.group}²0³"
+#endif
+
+@SENSOR_DICT_2:
+STOR "STRING" "${group}"
+#if (dict.type == "temperature")
+SBNE "${dict.type}" "temperature"i #+2
+GOTO @TEMP_DICT
+
+#if (dict.type == "current")
+SBNE "${dict.type}" "current"i #+2
+GOTO @CURRENT_DICT
+
+#if (dict.type == "voltage")
+SBNE "${dict.type}" "voltage"i #+2
+GOTO @VOLTS_DICT
+
+#if (dict.type == "power")
+SBNE "${dict.type}" "power"i @SENSOR_ARRAY
+GOTO @POWER_DICT
+
+GOTO @SENSOR_ARRAY
+
+@TEMP_DICT:
+#  then
+EVAL ${x} := sprintf( "%.2f", ${dict.current-value} )
+STOR "${dict.location} C" "${x}"
+STOR "OVERFLOW_RET" "@TEMP_SCAT"
+@TEMP_SCAT:
+SCAT "${STRING}_overflow" "\r      ²4³${dict.location}:²0³ $${${dict.location} C} C" @OVERFLOW
+
+EVAL ${x} := sprintf( "%.2f", 1.8 * ${dict.current-value} + 32 )
+STOR "${dict.location} F" "${x}"
+
+STOR "OVERFLOW_RET" "@TEMP_SCAT_2"
+@TEMP_SCAT_2:
+SCAT "${STRING}_overflow" " ($${${dict.location} F} F)" @OVERFLOW
+STOR "WARN_LINE" "@TEMP_WARN"
+GOTO @CHECK_SENSOR_SUMMARY
+
+@VOLTS_DICT:
+#  then
+STOR "${dict.location} volts" "${dict.current-value}"
+STOR "OVERFLOW_RET" "@VOLTS_SCAT"
+@VOLTS_SCAT:
+SCAT "${STRING}_overflow" "\r      ²4³${dict.location}:²0³ $${${dict.location} volts} volts" @OVERFLOW
+STOR "WARN_LINE" "@PWR_WARN"
+STOR "WARN_UNIT" "voltage"
+GOTO @CHECK_SENSOR_SUMMARY
+
+@CURRENT_DICT:
+#  then
+STOR "${dict.location} amps" "${dict.current-value}"
+STOR "OVERFLOW_RET" "@CURRENT_SCAT"
+@CURRENT_SCAT:
+SCAT "${STRING}_overflow" "\r      ²4³${dict.location}:²0³ $${${dict.location} amps} amps" @OVERFLOW
+STOR "WARN_LINE" "@PWR_WARN"
+STOR "WARN_UNIT" "current"
+GOTO @CHECK_SENSOR_SUMMARY
+
+@POWER_DICT:
+#  then
+STOR "${dict.location}" "${dict.current-value}"
+STOR "OVERFLOW_RET" "@POWER_SCAT"
+@POWER_SCAT:
+SCAT "${STRING}_overflow" "\r      ²4³${dict.location}:²0³ $${${dict.location}} watts" @OVERFLOW
+STOR "WARN_LINE" "@PWR_WARN"
+STOR "WARN_UNIT" "wattage"
+#GOTO @CHECK_SENSOR_SUMMARY
+
+@CHECK_SENSOR_SUMMARY:
+#    if (dict.summary > 0)
+#       && (dict.summary < 255)
+#      then
+#        handle fan error (WARN_LINE)
+NBGT #${dict.summary} #254 @SENSOR_ARRAY
+NBGT #${dict.summary} #0 "${WARN_LINE}"
+#    endif
+#endif
+GOTO @SENSOR_ARRAY
+
+
+@TEMP_WARN:
+NBGT #${ERROR_LEVEL} #${dict.summary} #+2
+STOR "ERROR_LEVEL" "${dict.summary}"
+
+#if (dict.original-value > dict.minFailureThreshold)
+NBGT #${dict.original-value} #${dict.minFailureThreshold} #+3
+#    TOO COLD ERROR!
+SCAT "ERROR_MESSAGE" "${dict.location} is cold!\r"
+GOTO @SENSOR_ARRAY
+#if (dict.original-value > dict.minWarningThreshold)
+NBGT #${dict.original-value} #${dict.minWarningThreshold} #+3
+#    TOO COLD WARNING!
+SCAT "ERROR_MESSAGE" "${dict.location} is cool.\r"
+GOTO @SENSOR_ARRAY
+#if (maxFailureThreshold > dict.original-value)
+NBGT #${dict.maxFailureThreshold} #${dict.original-value} #+3
+#    TOO HOT ERROR!
+SCAT "ERROR_MESSAGE" "${dict.location} is hot!\r"
+GOTO @SENSOR_ARRAY
+#if (maxWarningThreshold > dict.original-value)
+NBGT #${dict.maxWarningThreshold} #${dict.original-value} #+3
+#    TOO HOT WARNING!
+SCAT "ERROR_MESSAGE" "${dict.location} is warm.\r"
+GOTO @SENSOR_ARRAY
+SCAT "ERROR_MESSAGE" "${dict.location} temperature.\r"
+GOTO @SENSOR_ARRAY
+
+@PWR_WARN:
+NBGT #${ERROR_LEVEL} #${dict.summary} #+2
+STOR "ERROR_LEVEL" "${dict.summary}"
+
+#if (dict.original-value > dict.minFailureThreshold)
+NBGT #${dict.original-value} #${dict.minFailureThreshold} #+3
+#    TOO LOW ERROR!
+SCAT "ERROR_MESSAGE" "${dict.location} ${WARN_UNIT} is too low!\r"
+GOTO @SENSOR_ARRAY
+#if (dict.original-value > dict.minWarningThreshold)
+NBGT #${dict.original-value} #${dict.minWarningThreshold} #+3
+#    TOO LOW WARNING!
+SCAT "ERROR_MESSAGE" "${dict.location} ${WARN_UNIT} is low.\r"
+GOTO @SENSOR_ARRAY
+#if (maxFailureThreshold > dict.original-value)
+NBGT #${dict.maxFailureThreshold} #${dict.original-value} #+3
+#    TOO HIGH ERROR!
+SCAT "ERROR_MESSAGE" "${dict.location} ${WARN_UNIT} is too high!\r"
+GOTO @SENSOR_ARRAY
+#if (maxWarningThreshold > dict.original-value)
+NBGT #${dict.maxWarningThreshold} #${dict.original-value} #+3
+#    TOO HIGH WARNING!
+SCAT "ERROR_MESSAGE" "${dict.location} ${WARN_UNIT} is high.\r"
+GOTO @SENSOR_ARRAY
+SCAT "ERROR_MESSAGE" "${dict.location} ${WARN_UNIT}.\r"
+GOTO @SENSOR_ARRAY
+
+
+#generic subroutines for parsing the plist XML
+
+#loop on every <key> in the <dict>
+# create variables: dict.<key> = <value>
+@PARSE_DICT:
+MTCH "</dict>"i ELSE #+2
+GOTO ${RET}
+
+MTCH "<key>([^<]+)</key>"ir else goto ${RET}
+STOR "VAR_NAME" "${1}"
+NEXT
+MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @IGNORE_DICT_ENTRY
+STOR "dict.${VAR_NAME}" "${2}"
+NEXT
+GOTO @PARSE_DICT
+
+@IGNORE_DICT_ENTRY:
+STOR "PARSE_DICT_RET" #${RET}
+STOR "RET" "@IGNORE_DICT_ENTRY_RET"
+GOTO @IGNORE
+@IGNORE_DICT_ENTRY_RET:
+STOR "RET" #${PARSE_DICT_RET}
+#NEXT
+GOTO @PARSE_DICT
+
+#Deal with strings > 255 characters...
+@OVERFLOW:
+NADD #"overflow_counter" #1
+SCAT "${STRING}" "$${^OF${overflow_counter}}"
+STOR "^OF${overflow_counter}" "${${STRING}_overflow}"
+STOR "${STRING}_overflow" ""
+GOTO ${OVERFLOW_RET}
+
+@RECURSIVE_SBNE
+STOR "SC" #0
+STOR "RET0" "${RET}"
+GOTO @RECURSIVE_SBNE_INNER
+
+@RECURSIVE_SBNE_INNER
+NADD "SC" #1
+SBNE "${STRING}" "${MATCH}"r #+3
+STOR "RET_VAL" "true"
+GOTO @RECURSE_2
+
+SBNE "${STRING}" ".*\$\{(.*)}(.*)"r @RECURSE_2
+
+STOR "RET${SC}" "@RECURSE_1"
+STOR "STRING${SC}" "${2}"
+STOR "STRING" "${${1}}"
+GOTO @RECURSIVE_SBNE_INNER
+
+@RECURSE_1:
+STOR "RET${SC}" "@RECURSE_2"
+STOR "STRING" "${STRING${SC}}"
+CHCK "${STRING}" #+2
+SBNE "RET_VAL" "true" @RECURSIVE_SBNE_INNER
+
+@RECURSE_2:
+NADD "SC" #-1
+GOTO ${RET${SC}}
+
+</script>
+
+<script-output>
+
+\B5\Xserve Information\0P\${^identity}${^identity_overflow}${^drives0}${^drives0_overflow}${^drives1}${^drives1_overflow}${^drives2}${^drives2_overflow}${^drives3}${^drives3_overflow}${^power_title}${^power}${^power_overflow}${^network0}${^network0_overflow}${^network1}${^network1_overflow}${^network2}${^network2_overflow}${^network3}${^network3_overflow}${^temperature_title}${^temperature}${^temperature_overflow}${^blowers_title}${^blowers}${^blowers_overflow}${^security}
+
+</script-output>
+
+
+<!--
+Sample plist:
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Status</key>
+	<dict>
+		<key>Connectivity</key>
+		<dict>
+			<key>Detail</key>
+			<array>
+				<dict/>
+				<dict>
+					<key>BytesIn</key>
+					<integer>2274061</integer>
+					<key>BytesOut</key>
+					<integer>8487890</integer>
+					<key>DuplexMode</key>
+					<string>full-duplex</string>
+					<key>IPAddress</key>
+					<string>129.170.17.108</string>
+					<key>Link</key>
+					<string>active</string>
+					<key>Mbps</key>
+					<string>100baseTX</string>
+					<key>PacketsIn</key>
+					<integer>19688</integer>
+					<key>PacketsOut</key>
+					<integer>8697</integer>
+					<key>SubNetMask</key>
+					<string>255.255.255.0</string>
+				</dict>
+				<dict>
+					<key>BytesIn</key>
+					<integer>0</integer>
+					<key>BytesOut</key>
+					<integer>342</integer>
+					<key>Link</key>
+					<string>inactive</string>
+					<key>PacketsIn</key>
+					<integer>0</integer>
+					<key>PacketsOut</key>
+					<integer>0</integer>
+				</dict>
+			</array>
+			<key>Info</key>
+			<array>
+				<dict>
+					<key>Kind</key>
+					<string>FireWire</string>
+					<key>Name</key>
+					<string>fw0</string>
+					<key>UserDefinedName</key>
+					<string>Built-in FireWire</string>
+				</dict>
+				<dict>
+					<key>HWAddress</key>
+					<string>00:0d:93:9c:37:97</string>
+					<key>Kind</key>
+					<string>Ethernet</string>
+					<key>Name</key>
+					<string>en1</string>
+					<key>UserDefinedName</key>
+					<string>Built-in Ethernet 2</string>
+				</dict>
+				<dict>
+					<key>HWAddress</key>
+					<string>00:03:93:f4:c9:00</string>
+					<key>Kind</key>
+					<string>Ethernet</string>
+					<key>Name</key>
+					<string>en3</string>
+					<key>UserDefinedName</key>
+					<string>PCI Ethernet Slot 2, Port 2</string>
+				</dict>
+			</array>
+			<key>Summary</key>
+			<array>
+				<integer>0</integer>
+				<integer>0</integer>
+				<integer>0</integer>
+			</array>
+		</dict>
+		<key>Controls</key>
+		<array>
+			<dict>
+				<key>current-value</key>
+				<integer>1</integer>
+				<key>location</key>
+				<string>Clock Slew</string>
+				<key>summary</key>
+				<integer>255</integer>
+				<key>type</key>
+				<string>slew</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>3988</integer>
+				<key>group</key>
+				<string>Blowers</string>
+				<key>location</key>
+				<string>CPU A1</string>
+				<key>maxFailureThreshold</key>
+				<integer>14500</integer>
+				<key>maxWarningThreshold</key>
+				<integer>14000</integer>
+				<key>medianValue</key>
+				<integer>0</integer>
+				<key>minFailureThreshold</key>
+				<integer>2500</integer>
+				<key>minWarningThreshold</key>
+				<integer>3000</integer>
+				<key>sort-key</key>
+				<integer>10001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>fan-rpm</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>3989</integer>
+				<key>group</key>
+				<string>Blowers</string>
+				<key>location</key>
+				<string>CPU A2</string>
+				<key>maxFailureThreshold</key>
+				<integer>14500</integer>
+				<key>maxWarningThreshold</key>
+				<integer>14000</integer>
+				<key>medianValue</key>
+				<integer>0</integer>
+				<key>minFailureThreshold</key>
+				<integer>2500</integer>
+				<key>minWarningThreshold</key>
+				<integer>3000</integer>
+				<key>sort-key</key>
+				<integer>10002</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>fan-rpm</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>3998</integer>
+				<key>group</key>
+				<string>Blowers</string>
+				<key>location</key>
+				<string>CPU A3</string>
+				<key>maxFailureThreshold</key>
+				<integer>14500</integer>
+				<key>maxWarningThreshold</key>
+				<integer>14000</integer>
+				<key>medianValue</key>
+				<integer>0</integer>
+				<key>minFailureThreshold</key>
+				<integer>2500</integer>
+				<key>minWarningThreshold</key>
+				<integer>3000</integer>
+				<key>sort-key</key>
+				<integer>10003</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>fan-rpm</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>4019</integer>
+				<key>group</key>
+				<string>Blowers</string>
+				<key>location</key>
+				<string>CPU B1</string>
+				<key>maxFailureThreshold</key>
+				<integer>14500</integer>
+				<key>maxWarningThreshold</key>
+				<integer>14000</integer>
+				<key>medianValue</key>
+				<integer>0</integer>
+				<key>minFailureThreshold</key>
+				<integer>2500</integer>
+				<key>minWarningThreshold</key>
+				<integer>3000</integer>
+				<key>sort-key</key>
+				<integer>20001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>fan-rpm</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>4021</integer>
+				<key>group</key>
+				<string>Blowers</string>
+				<key>location</key>
+				<string>CPU B2</string>
+				<key>maxFailureThreshold</key>
+				<integer>14500</integer>
+				<key>maxWarningThreshold</key>
+				<integer>14000</integer>
+				<key>medianValue</key>
+				<integer>0</integer>
+				<key>minFailureThreshold</key>
+				<integer>2500</integer>
+				<key>minWarningThreshold</key>
+				<integer>3000</integer>
+				<key>sort-key</key>
+				<integer>20002</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>fan-rpm</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>4024</integer>
+				<key>group</key>
+				<string>Blowers</string>
+				<key>location</key>
+				<string>CPU B3</string>
+				<key>maxFailureThreshold</key>
+				<integer>14500</integer>
+				<key>maxWarningThreshold</key>
+				<integer>14000</integer>
+				<key>medianValue</key>
+				<integer>0</integer>
+				<key>minFailureThreshold</key>
+				<integer>2500</integer>
+				<key>minWarningThreshold</key>
+				<integer>3000</integer>
+				<key>sort-key</key>
+				<integer>20003</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>fan-rpm</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>5304</integer>
+				<key>group</key>
+				<string>Blowers</string>
+				<key>location</key>
+				<string>System Controller</string>
+				<key>maxFailureThreshold</key>
+				<integer>14500</integer>
+				<key>maxWarningThreshold</key>
+				<integer>14000</integer>
+				<key>medianValue</key>
+				<integer>0</integer>
+				<key>minFailureThreshold</key>
+				<integer>2500</integer>
+				<key>minWarningThreshold</key>
+				<integer>3000</integer>
+				<key>sort-key</key>
+				<integer>30001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>fan-pwm</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>3700</integer>
+				<key>group</key>
+				<string>Blowers</string>
+				<key>location</key>
+				<string>PCI Slot</string>
+				<key>maxFailureThreshold</key>
+				<integer>14500</integer>
+				<key>maxWarningThreshold</key>
+				<integer>14000</integer>
+				<key>medianValue</key>
+				<integer>0</integer>
+				<key>minFailureThreshold</key>
+				<integer>2500</integer>
+				<key>minWarningThreshold</key>
+				<integer>3000</integer>
+				<key>sort-key</key>
+				<integer>40001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>fan-pwm</string>
+			</dict>
+		</array>
+		<key>Drives</key>
+		<dict>
+			<key>Detail</key>
+			<array>
+				<dict>
+					<key>BytesRead</key>
+					<integer>102613504</integer>
+					<key>BytesWritten</key>
+					<integer>69591552</integer>
+					<key>ReadErrors</key>
+					<integer>0</integer>
+					<key>WriteErrors</key>
+					<integer>0</integer>
+				</dict>
+				<dict>
+					<key>BytesRead</key>
+					<integer>159232</integer>
+					<key>BytesWritten</key>
+					<integer>104448</integer>
+					<key>ReadErrors</key>
+					<integer>0</integer>
+					<key>WriteErrors</key>
+					<integer>0</integer>
+				</dict>
+			</array>
+			<key>Info</key>
+			<array>
+				<dict>
+					<key>Capacity</key>
+					<integer>78533</integer>
+					<key>Interconnect</key>
+					<string>ATA</string>
+					<key>Kind</key>
+					<string>disk0</string>
+					<key>Location</key>
+					<string>Internal (Bay 1)</string>
+					<key>Manufacturer</key>
+					<string>Hitachi</string>
+					<key>Model</key>
+					<string>Hitachi HDS722580VLSA80                 </string>
+				</dict>
+				<dict>
+					<key>Capacity</key>
+					<integer>78533</integer>
+					<key>Interconnect</key>
+					<string>ATA</string>
+					<key>Kind</key>
+					<string>disk1</string>
+					<key>Location</key>
+					<string>Internal (Bay 2)</string>
+					<key>Manufacturer</key>
+					<string>Hitachi</string>
+					<key>Model</key>
+					<string>Hitachi HDS722580VLSA80                 </string>
+				</dict>
+			</array>
+			<key>Summary</key>
+			<array>
+				<integer>0</integer>
+				<integer>0</integer>
+			</array>
+		</dict>
+		<key>Enclosure</key>
+		<dict>
+			<key>Detail</key>
+			<array>
+				<dict>
+					<key>Enabled</key>
+					<integer>0</integer>
+				</dict>
+			</array>
+			<key>Info</key>
+			<array>
+				<dict>
+					<key>Name</key>
+					<string>Enclosure Intrusion</string>
+				</dict>
+			</array>
+			<key>Summary</key>
+			<array>
+				<integer>0</integer>
+			</array>
+		</dict>
+		<key>Identity</key>
+		<dict>
+			<key>BootROM</key>
+			<string>$0005.17f0</string>
+			<key>CPUs</key>
+			<integer>1</integer>
+			<key>KeySwitch</key>
+			<false/>
+			<key>L2Cache</key>
+			<integer>512</integer>
+			<key>MHz</key>
+			<integer>2000</integer>
+			<key>Model</key>
+			<string>RackMac3,1</string>
+			<key>Name</key>
+			<string>doctor</string>
+			<key>OS</key>
+			<string>Mac OS X Server</string>
+			<key>OSBuild</key>
+			<string>7M34</string>
+			<key>RAM</key>
+			<integer>512</integer>
+			<key>Serial</key>
+			<string>QP4241WWPNJ</string>
+			<key>Uptime</key>
+			<integer>1707</integer>
+			<key>Version</key>
+			<string>10.3.5</string>
+		</dict>
+		<key>Memory</key>
+		<array>
+			<dict>
+				<key>ConfigurationType</key>
+				<integer>2</integer>
+				<key>Size</key>
+				<integer>256</integer>
+				<key>Slot</key>
+				<string>DIMM0/J11</string>
+				<key>Speed</key>
+				<string>PC3200U-30330</string>
+				<key>Type</key>
+				<string>DDR SDRAM</string>
+			</dict>
+			<dict>
+				<key>ConfigurationType</key>
+				<integer>2</integer>
+				<key>Size</key>
+				<integer>256</integer>
+				<key>Slot</key>
+				<string>DIMM1/J12</string>
+				<key>Speed</key>
+				<string>PC3200U-30330</string>
+				<key>Type</key>
+				<string>DDR SDRAM</string>
+			</dict>
+		</array>
+		<key>Power</key>
+		<dict>
+			<key>Detail</key>
+			<array/>
+			<key>Info</key>
+			<array/>
+			<key>Summary</key>
+			<array/>
+		</dict>
+		<key>Sensors</key>
+		<array>
+			<dict>
+				<key>current-value</key>
+				<integer>1171875</integer>
+				<key>group</key>
+				<string>Processor Power</string>
+				<key>location</key>
+				<string>CPU 1 Power</string>
+				<key>maxFailureThreshold</key>
+				<integer>4718580</integer>
+				<key>maxWarningThreshold</key>
+				<integer>4325400</integer>
+				<key>medianValue</key>
+				<integer>0</integer>
+				<key>minFailureThreshold</key>
+				<integer>0</integer>
+				<key>minWarningThreshold</key>
+				<integer>0</integer>
+				<key>sort-key</key>
+				<integer>10001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>power</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>97020</integer>
+				<key>group</key>
+				<string>System Voltages 2</string>
+				<key>location</key>
+				<string>1.5v</string>
+				<key>maxFailureThreshold</key>
+				<integer>108134</integer>
+				<key>maxWarningThreshold</key>
+				<integer>103219</integer>
+				<key>medianValue</key>
+				<integer>98304</integer>
+				<key>minFailureThreshold</key>
+				<integer>88474</integer>
+				<key>minWarningThreshold</key>
+				<integer>93389</integer>
+				<key>sort-key</key>
+				<integer>20001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>215257</integer>
+				<key>group</key>
+				<string>System Voltages 3</string>
+				<key>location</key>
+				<string>3.3v Sleep</string>
+				<key>maxFailureThreshold</key>
+				<integer>237896</integer>
+				<key>maxWarningThreshold</key>
+				<integer>227082</integer>
+				<key>medianValue</key>
+				<integer>216269</integer>
+				<key>minFailureThreshold</key>
+				<integer>194642</integer>
+				<key>minWarningThreshold</key>
+				<integer>205455</integer>
+				<key>sort-key</key>
+				<integer>10002</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>77616</integer>
+				<key>group</key>
+				<string>System Voltages 2</string>
+				<key>location</key>
+				<string>1.2v Sleep</string>
+				<key>maxFailureThreshold</key>
+				<integer>86507</integer>
+				<key>maxWarningThreshold</key>
+				<integer>82575</integer>
+				<key>medianValue</key>
+				<integer>78643</integer>
+				<key>minFailureThreshold</key>
+				<integer>70778</integer>
+				<key>minWarningThreshold</key>
+				<integer>74711</integer>
+				<key>sort-key</key>
+				<integer>10002</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>98226</integer>
+				<key>group</key>
+				<string>System Voltages 2</string>
+				<key>location</key>
+				<string>1.5v Sleep</string>
+				<key>maxFailureThreshold</key>
+				<integer>108134</integer>
+				<key>maxWarningThreshold</key>
+				<integer>103219</integer>
+				<key>medianValue</key>
+				<integer>98304</integer>
+				<key>minFailureThreshold</key>
+				<integer>88474</integer>
+				<key>minWarningThreshold</key>
+				<integer>93389</integer>
+				<key>sort-key</key>
+				<integer>20002</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>118128</integer>
+				<key>group</key>
+				<string>System Voltages 2</string>
+				<key>location</key>
+				<string>1.8v</string>
+				<key>maxFailureThreshold</key>
+				<integer>129761</integer>
+				<key>maxWarningThreshold</key>
+				<integer>123863</integer>
+				<key>medianValue</key>
+				<integer>117965</integer>
+				<key>minFailureThreshold</key>
+				<integer>106168</integer>
+				<key>minWarningThreshold</key>
+				<integer>112067</integer>
+				<key>sort-key</key>
+				<integer>30001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>96300</integer>
+				<key>group</key>
+				<string>System Voltages 1</string>
+				<key>location</key>
+				<string>System Bus IO VDD</string>
+				<key>maxFailureThreshold</key>
+				<integer>108134</integer>
+				<key>maxWarningThreshold</key>
+				<integer>103219</integer>
+				<key>medianValue</key>
+				<integer>98304</integer>
+				<key>minFailureThreshold</key>
+				<integer>88474</integer>
+				<key>minWarningThreshold</key>
+				<integer>93389</integer>
+				<key>sort-key</key>
+				<integer>30001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>171252</integer>
+				<key>group</key>
+				<string>System Voltages 1</string>
+				<key>location</key>
+				<string>DDR IO</string>
+				<key>maxFailureThreshold</key>
+				<integer>187433</integer>
+				<key>maxWarningThreshold</key>
+				<integer>178913</integer>
+				<key>medianValue</key>
+				<integer>170394</integer>
+				<key>minFailureThreshold</key>
+				<integer>153354</integer>
+				<key>minWarningThreshold</key>
+				<integer>161874</integer>
+				<key>sort-key</key>
+				<integer>40001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>171252</integer>
+				<key>group</key>
+				<string>System Voltages 1</string>
+				<key>location</key>
+				<string>DDR IO Sleep</string>
+				<key>maxFailureThreshold</key>
+				<integer>187433</integer>
+				<key>maxWarningThreshold</key>
+				<integer>178913</integer>
+				<key>medianValue</key>
+				<integer>170394</integer>
+				<key>minFailureThreshold</key>
+				<integer>153354</integer>
+				<key>minWarningThreshold</key>
+				<integer>161874</integer>
+				<key>sort-key</key>
+				<integer>40002</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>215292</integer>
+				<key>group</key>
+				<string>System Voltages 3</string>
+				<key>location</key>
+				<string>3.3v</string>
+				<key>maxFailureThreshold</key>
+				<integer>237896</integer>
+				<key>maxWarningThreshold</key>
+				<integer>227082</integer>
+				<key>medianValue</key>
+				<integer>216269</integer>
+				<key>minFailureThreshold</key>
+				<integer>194642</integer>
+				<key>minWarningThreshold</key>
+				<integer>205455</integer>
+				<key>sort-key</key>
+				<integer>10001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>215257</integer>
+				<key>group</key>
+				<string>System Voltages 3</string>
+				<key>location</key>
+				<string>3.3v Trickle</string>
+				<key>maxFailureThreshold</key>
+				<integer>237896</integer>
+				<key>maxWarningThreshold</key>
+				<integer>227082</integer>
+				<key>medianValue</key>
+				<integer>216269</integer>
+				<key>minFailureThreshold</key>
+				<integer>194642</integer>
+				<key>minWarningThreshold</key>
+				<integer>205455</integer>
+				<key>sort-key</key>
+				<integer>10003</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>335688</integer>
+				<key>group</key>
+				<string>System Voltages 3</string>
+				<key>location</key>
+				<string>5v Sleep</string>
+				<key>maxFailureThreshold</key>
+				<integer>360448</integer>
+				<key>maxWarningThreshold</key>
+				<integer>344064</integer>
+				<key>medianValue</key>
+				<integer>327680</integer>
+				<key>minFailureThreshold</key>
+				<integer>294912</integer>
+				<key>minWarningThreshold</key>
+				<integer>311296</integer>
+				<key>sort-key</key>
+				<integer>20002</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>786432</integer>
+				<key>group</key>
+				<string>System Voltages 3</string>
+				<key>location</key>
+				<string>12v</string>
+				<key>maxFailureThreshold</key>
+				<integer>865075</integer>
+				<key>maxWarningThreshold</key>
+				<integer>825754</integer>
+				<key>medianValue</key>
+				<integer>786432</integer>
+				<key>minFailureThreshold</key>
+				<integer>707789</integer>
+				<key>minWarningThreshold</key>
+				<integer>747110</integer>
+				<key>sort-key</key>
+				<integer>30001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>333984</integer>
+				<key>group</key>
+				<string>System Voltages 3</string>
+				<key>location</key>
+				<string>5v</string>
+				<key>maxFailureThreshold</key>
+				<integer>360448</integer>
+				<key>maxWarningThreshold</key>
+				<integer>344064</integer>
+				<key>medianValue</key>
+				<integer>327680</integer>
+				<key>minFailureThreshold</key>
+				<integer>294912</integer>
+				<key>minWarningThreshold</key>
+				<integer>311296</integer>
+				<key>sort-key</key>
+				<integer>20001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>1572864</integer>
+				<key>group</key>
+				<string>Enclosure Temperatures</string>
+				<key>location</key>
+				<string>Between the Processors</string>
+				<key>sort-key</key>
+				<integer>10001</integer>
+				<key>summary</key>
+				<integer>255</integer>
+				<key>type</key>
+				<string>temperature</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>112350</integer>
+				<key>group</key>
+				<string>System Voltages 1</string>
+				<key>location</key>
+				<string>System Controller Vcore</string>
+				<key>maxFailureThreshold</key>
+				<integer>122552</integer>
+				<key>maxWarningThreshold</key>
+				<integer>116982</integer>
+				<key>medianValue</key>
+				<integer>111411</integer>
+				<key>minFailureThreshold</key>
+				<integer>100270</integer>
+				<key>minWarningThreshold</key>
+				<integer>105841</integer>
+				<key>sort-key</key>
+				<integer>20001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>794624</integer>
+				<key>group</key>
+				<string>System Voltages 3</string>
+				<key>location</key>
+				<string>12v Trickle</string>
+				<key>maxFailureThreshold</key>
+				<integer>865075</integer>
+				<key>maxWarningThreshold</key>
+				<integer>825754</integer>
+				<key>medianValue</key>
+				<integer>786432</integer>
+				<key>minFailureThreshold</key>
+				<integer>707789</integer>
+				<key>minWarningThreshold</key>
+				<integer>747110</integer>
+				<key>sort-key</key>
+				<integer>30002</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>78540</integer>
+				<key>group</key>
+				<string>System Voltages 2</string>
+				<key>location</key>
+				<string>1.2v</string>
+				<key>maxFailureThreshold</key>
+				<integer>86508</integer>
+				<key>maxWarningThreshold</key>
+				<integer>82575</integer>
+				<key>medianValue</key>
+				<integer>78643</integer>
+				<key>minFailureThreshold</key>
+				<integer>70779</integer>
+				<key>minWarningThreshold</key>
+				<integer>74711</integer>
+				<key>sort-key</key>
+				<integer>10001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>2621440</integer>
+				<key>group</key>
+				<string>Enclosure Temperatures</string>
+				<key>location</key>
+				<string>Behind the DIMMs</string>
+				<key>maxFailureThreshold</key>
+				<integer>4587520</integer>
+				<key>maxWarningThreshold</key>
+				<integer>3932160</integer>
+				<key>medianValue</key>
+				<integer>3407872</integer>
+				<key>minFailureThreshold</key>
+				<integer>0</integer>
+				<key>minWarningThreshold</key>
+				<integer>0</integer>
+				<key>sort-key</key>
+				<integer>30001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>temperature</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>2195456</integer>
+				<key>group</key>
+				<string>Enclosure Temperatures</string>
+				<key>location</key>
+				<string>PCI Slots</string>
+				<key>maxFailureThreshold</key>
+				<integer>3932160</integer>
+				<key>maxWarningThreshold</key>
+				<integer>3604480</integer>
+				<key>medianValue</key>
+				<integer>2293760</integer>
+				<key>minFailureThreshold</key>
+				<integer>0</integer>
+				<key>minWarningThreshold</key>
+				<integer>0</integer>
+				<key>sort-key</key>
+				<integer>40001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>temperature</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>2097152</integer>
+				<key>group</key>
+				<string>Enclosure Temperatures</string>
+				<key>location</key>
+				<string>System Controller Ambient</string>
+				<key>sort-key</key>
+				<integer>20001</integer>
+				<key>summary</key>
+				<integer>255</integer>
+				<key>type</key>
+				<string>temperature</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>2908160</integer>
+				<key>group</key>
+				<string>Enclosure Temperatures</string>
+				<key>location</key>
+				<string>System Controller Internal</string>
+				<key>maxFailureThreshold</key>
+				<integer>5898240</integer>
+				<key>maxWarningThreshold</key>
+				<integer>4915200</integer>
+				<key>medianValue</key>
+				<integer>3604480</integer>
+				<key>minFailureThreshold</key>
+				<integer>0</integer>
+				<key>minWarningThreshold</key>
+				<integer>0</integer>
+				<key>sort-key</key>
+				<integer>20002</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>temperature</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>123200</integer>
+				<key>group</key>
+				<string>System Currents</string>
+				<key>location</key>
+				<string>CPU 1 12v</string>
+				<key>sort-key</key>
+				<integer>20001</integer>
+				<key>summary</key>
+				<integer>255</integer>
+				<key>type</key>
+				<string>current</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>80000</integer>
+				<key>group</key>
+				<string>System Voltages 1</string>
+				<key>location</key>
+				<string>CPU 1 Vcore</string>
+				<key>maxFailureThreshold</key>
+				<integer>88266</integer>
+				<key>maxWarningThreshold</key>
+				<integer>84197</integer>
+				<key>medianValue</key>
+				<integer>80280</integer>
+				<key>minFailureThreshold</key>
+				<integer>71990</integer>
+				<key>minWarningThreshold</key>
+				<integer>76059</integer>
+				<key>sort-key</key>
+				<integer>10001</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>voltage</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>960000</integer>
+				<key>group</key>
+				<string>System Currents</string>
+				<key>location</key>
+				<string>CPU 1 Core</string>
+				<key>sort-key</key>
+				<integer>10001</integer>
+				<key>summary</key>
+				<integer>255</integer>
+				<key>type</key>
+				<string>current</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>2080768</integer>
+				<key>group</key>
+				<string>Processor Temperatures</string>
+				<key>location</key>
+				<string>CPU 1 Ambient</string>
+				<key>sort-key</key>
+				<integer>10002</integer>
+				<key>summary</key>
+				<integer>255</integer>
+				<key>type</key>
+				<string>temperature</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>2579723</integer>
+				<key>group</key>
+				<string>Processor Temperatures</string>
+				<key>location</key>
+				<string>CPU 1 Internal</string>
+				<key>maxFailureThreshold</key>
+				<integer>5898240</integer>
+				<key>maxWarningThreshold</key>
+				<integer>5636096</integer>
+				<key>medianValue</key>
+				<integer>4980736</integer>
+				<key>minFailureThreshold</key>
+				<integer>0</integer>
+				<key>minWarningThreshold</key>
+				<integer>0</integer>
+				<key>sort-key</key>
+				<integer>10003</integer>
+				<key>summary</key>
+				<integer>0</integer>
+				<key>type</key>
+				<string>temperature</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>1245184</integer>
+				<key>group</key>
+				<string>Processor Temperatures</string>
+				<key>location</key>
+				<string>CPU 1 Inlet</string>
+				<key>sort-key</key>
+				<integer>10001</integer>
+				<key>summary</key>
+				<integer>255</integer>
+				<key>type</key>
+				<string>temperature</string>
+			</dict>
+			<dict>
+				<key>current-value</key>
+				<integer>1081344</integer>
+				<key>group</key>
+				<string>Processor Temperatures</string>
+				<key>location</key>
+				<string>CPU 2 Inlet</string>
+				<key>sort-key</key>
+				<integer>20001</integer>
+				<key>summary</key>
+				<integer>255</integer>
+				<key>type</key>
+				<string>temperature</string>
+			</dict>
+		</array>
+	</dict>
+	<key>command</key>
+	<string>status</string>
+	<key>version</key>
+	<integer>1</integer>
+</dict>
+</plist>
+-->

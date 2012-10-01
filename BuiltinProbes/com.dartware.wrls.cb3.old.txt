@@ -1,0 +1,330 @@
+<!-- 
+	Wireless - CB3 (com.dartware.wrls.cb3.old)
+	
+	Copyright © 2005, Dartware, LLC. 	This probe is part of Dartware's InterMapper
+	Wireless Add-on package and should not be be distributed or used without license.
+
+	Probe created by Tex, 16 May 2005.
+	Last modified 17 May 2005, by ics.
+-->
+
+<header>
+	type			= 	"tcp-script"
+	package			= 	"com.dartware"
+	probe_name		=	"wrls.cb3.old"
+	human_name		=	"Wireless - CB3"
+	display_name	=	"Wireless/CB3/CB3 Bridge"
+	version			= 	"1.1"
+	address_type	= 	"IP"
+	port_number		=	"80"
+	equiv_class		= 	"WRLS"
+</header>
+
+<description>
+
+\GB\CB3\P0\
+
+This TCP probe queries a CB3 wireless bridge via a HTTP GET request.
+
+\i\User\p\ is the username to use when logging in.
+
+\i\Password\p\ is the password for the User specified above.
+
+\i\Port\p\ is the CB3's web interface HTTP port.
+
+\i\Quality Warning\p\ is the value (as a percentage) that the communications quality must fall below for the device to go into the WARN state.
+
+\i\Quality Alarm\p\ is the value (as a percentage) that the communications quality must fall below for the device to go into the ALARM state.
+
+</description>
+
+<parameters>
+
+"User"				=		""
+"Password*"			=		""
+
+"Quality Warning"		=		"90"
+"Quality Alarm"			=		"75"
+
+</parameters>
+
+<script>
+
+CONN #60 (connect timeout in secs)
+FAIL @FAILED
+
+CHCK "${User}" ELSE @NO_USER
+
+WAIT #30 @IDLE (idle timeout in secs)
+SEND "GET /info_data.js HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" ELSE #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User}${Password*}" ELSE #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+SEND "\r\n"
+DISC @DISCONNECT (disconnect handler)
+
+MTCH "HTTP/"i ELSE @UNEXPECTED_GREETING
+MTCH "200" ELSE @BAD_GET_RESPONSE
+
+STOR "^content_length" #2048
+#Scan lines for "Content-Length" or "" (end-of-header \r\n)
+NEXT
+MTCH "Content-Length[^0-9]*([0-9]+)"ir else goto #+4
+STOR "^content_length" "${1}"
+EXPT "^$"r
+GOTO #+2
+MTCH "^$"r else goto #-5
+
+LINE #${^content_length}
+DISC @NO_MATCH
+EXPT "data=\"(.*)\""ir
+
+EVAL ${^data} := unpack( "${1}", "#~" )
+
+#The sprintf handles the null-terminated string
+EVAL ${^ssid} := sprintf( "%s", substr( "${^data}", 0, 32 ) )
+
+EVAL ${^channel} := unpack( substr( "${^data}", 32, 1 ), "C" )
+
+EVAL ${^AP_MAC} := sprintf( "%a", substr( "${^data}", 33, 6 ) )
+
+EVAL ${^tx} := unpack( substr( "${^data}", 39, 1 ), "C" )
+
+#SBNE "${^tx}" "" #+2
+#GOTO #+4
+NBGT #2 #${^tx} @TX_RATE_1
+NBGT #4 #${^tx} @TX_RATE_2
+NBGT #8 #${^tx} @TX_RATE_5_5
+STOR "^tx_rate" "11"
+GOTO #+6
+
+@TX_RATE_1:
+STOR "^tx_rate" "1"
+GOTO #+4
+@TX_RATE_2:
+STOR "^tx_rate" "2"
+GOTO #+2
+@TX_RATE_5_5:
+STOR "^tx_rate" "5.5"
+
+EVAL ${quality} := unpack( substr( "${^data}", 40, 1 ), "c" )
+EVAL ${quality} := round( ${quality} * 100 / 92 )
+
+EVAL ${^bridge_MAC} := sprintf( "%a", substr( "${^data}", 47, 6 ) )
+
+#'Current IP address' is next at i=47+6:
+#putLine ("Current IP address",byteArrayToIPAddress (a.slice (i,i+4)));
+
+#Bridge Firmware version
+# (MAY BE OVERRIDDEN BY HARD-WIRED NUMBER IN /info.html)
+STOR "^ver" ""
+EVAL ${^v} := unpack( substr( "${^data}", 57, 1 ), "c" )
+SBNE "${^v}" "([0-9])"r @NO_BRIDGE_FIRMWARE
+SCAT "^ver" "${^v}."
+
+EVAL ${^v} := unpack( substr( "${^data}", 58, 1 ), "c" )
+SBNE "${^v}" "([0-9])"r @NO_BRIDGE_FIRMWARE
+SCAT "^ver" "${^v}."
+
+EVAL ${^v} := unpack( substr( "${^data}", 59, 1 ), "c" )
+SBNE "${^v}" "([0-9])"r @NO_BRIDGE_FIRMWARE
+SCAT "^ver" "${^v}"
+
+STOR "^bridge_firmware" "${^ver}"
+GOTO #+2
+@NO_BRIDGE_FIRMWARE:
+STOR "^bridge_firmware" "n/a"
+
+#WLAN Firmware version
+STOR "^ver" ""
+EVAL ${^v} := unpack( substr( "${^data}", 60, 1 ), "c" )
+SBNE "${^v}" "([0-9])"r @NO_WLAN_FIRMWARE
+SCAT "^ver" "${^v}."
+
+EVAL ${^v} := unpack( substr( "${^data}", 61, 1 ), "c" )
+SBNE "${^v}" "([0-9])"r @NO_WLAN_FIRMWARE
+SCAT "^ver" "${^v}."
+
+EVAL ${^v} := unpack( substr( "${^data}", 62, 1 ), "c" )
+SBNE "${^v}" "([0-9])"r @NO_WLAN_FIRMWARE
+SCAT "^ver" "${^v}"
+
+STOR "^wlan_firmware" "${^ver}"
+GOTO #+2
+@NO_WLAN_FIRMWARE:
+STOR "^wlan_firmware" "n/a"
+
+#WLAN Secondary Firmware version
+STOR "^ver" ""
+EVAL ${^v} := unpack( substr( "${^data}", 63, 1 ), "c" )
+SBNE "${^v}" "([0-9])"r @NO_WLAN_FIRMWARE
+SCAT "^ver" "${^v}."
+
+EVAL ${^v} := unpack( substr( "${^data}", 64, 1 ), "c" )
+SBNE "${^v}" "([0-9])"r @NO_WLAN_FIRMWARE
+SCAT "^ver" "${^v}."
+
+EVAL ${^v} := unpack( substr( "${^data}", 65, 1 ), "c" )
+SBNE "${^v}" "([0-9])"r @NO_WLAN_FIRMWARE
+SCAT "^ver" "${^v}"
+
+STOR "^wlan_sec_firmware" "${^ver}"
+GOTO #+2
+@NO_WLAN_SEC_FIRMWARE:
+STOR "^wlan_sec_firmware" "n/a"
+
+#Reconnect and get data from /3 to fill in Frag. Threshold and RTS Threshold
+STOR "RET" "@GET_THRESHOLDS"
+DISC @RECONNECT
+SKIP ".*"r ELSE @RECONNECT
+
+GOTO @RECONNECT
+
+@GET_THRESHOLDS:
+WAIT #30 @IDLE (idle timeout in secs)
+SEND "GET /3 HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" ELSE #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User}${Password*}" ELSE #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+SEND "\r\n"
+DISC @DISCONNECT (disconnect handler)
+
+MTCH "HTTP/"i ELSE @UNEXPECTED_GREETING
+MTCH "200" ELSE @BAD_GET_RESPONSE
+
+STOR "^content_length" #2048
+#Scan lines for "Content-Length" or "" (end-of-header \r\n)
+NEXT
+MTCH "Content-Length[^0-9]*([0-9]+)"ir else goto #+4
+STOR "^content_length" "${1}"
+EXPT "^$"r
+GOTO #+2
+MTCH "^$"r else goto #-5
+
+LINE #${^content_length}
+DISC @NO_MATCH
+EXPT "data=\"(.*)\""ir
+
+EVAL ${^data} := unpack( "${1}", "#~" )
+
+#0-1
+EVAL ${^thresh} := unpack( substr( "${^data}", 0, 2 ), ">S" )
+NBGT #${^thresh} #0 #+3
+STOR "^RTS_thresh" "n/a       "
+GOTO #+2
+STOR "^RTS_thresh" "${^thresh} bytes"
+
+#2-3
+EVAL ${^thresh} := unpack( substr( "${^data}", 2, 2 ), ">S" )
+NBGT #${^thresh} #0 #+3
+STOR "^frag_thresh" "n/a       "
+GOTO #+2
+STOR "^frag_thresh" "${^thresh} bytes"
+
+#Reconnect and get data from /bridge/index.html for Bridge Firmware version
+STOR "RET" "@GET_BRIDGE_FIRMWARE"
+DISC @RECONNECT
+SKIP ".*"r ELSE @RECONNECT
+
+GOTO @RECONNECT
+
+@GET_BRIDGE_FIRMWARE:
+WAIT #30 @IDLE (idle timeout in secs)
+SEND "GET /info.html HTTP/1.0\r\n"
+CHCK "${_REMOTEADDRESS}" ELSE #+3
+SEND "Host: ${_REMOTEADDRESS}\r\n"
+SEND "User-Agent: InterMapper/${_VERSION}\r\n"
+CHCK "${User}${Password*}" ELSE #+2
+SEND "Authorization: Basic ${_BASE64:${User}:${Password*}}\r\n"
+SEND "\r\n"
+SEND "\r\n"
+DISC @DONE (disconnect handler)
+
+MTCH "HTTP/"i ELSE @UNEXPECTED_GREETING
+MTCH "200" ELSE @BAD_GET_RESPONSE
+EXPT "^$"r
+
+EXPT "\"Bridge firmware\",\\s*\"(.*)\""ir
+STOR "^bridge_firmware" "${1}"
+
+@DONE:
+
+NBGT #${quality} #${Quality Warning} #+4
+NBGT #${quality} #${Quality Alarm} #+2
+DONE ALRM "Communications quality is bad!"
+DONE WARN "Communications quality is low!"
+DONE OKAY
+
+@FAILED:
+#use default error message in 4.2.1 and later
+DONE DOWN
+
+@RECONNECT:
+RCON
+GOTO ${RET}:
+
+@IDLE:
+DONE DOWN "[HTTP] No data for ${_IDLETIMEOUT} seconds.  Was expecting \"${_STRINGTOMATCH}\". [Line ${_IDLELINE}]"
+
+@UNEXPECTED_GREETING:
+DONE DOWN "[HTTP] Unexpected greeting from port ${_REMOTEPORT}. (${_LINE:50})"
+
+@NO_MATCH:
+DONE WARN "Unable to parse page."
+
+@BAD_GET_RESPONSE:
+MTCH "201" ELSE #+2
+DONE WARN "[HTTP] 201 Created"
+MTCH "202" ELSE #+2
+DONE WARN "[HTTP] 202 Accepted"
+MTCH "204" ELSE #+2
+DONE WARN "[HTTP] 204 No Content"
+MTCH "301" ELSE #+2
+DONE WARN "[HTTP] 301 Moved Permanently"
+MTCH "302" ELSE #+2
+DONE WARN "Invalid Username or Password"
+MTCH "304" ELSE #+2
+DONE WARN "[HTTP] 304 Not Modified"
+MTCH "400" ELSE #+2
+DONE WARN "[HTTP] 400 Bad Request"
+MTCH "401" ELSE #+2
+DONE WARN "[HTTP] 401 Unauthorized"
+MTCH "403" ELSE #+2
+DONE WARN "[HTTP] 403 Forbidden"
+MTCH "404" ELSE #+2
+DONE WARN "[HTTP] 404 Not Found: ${_LINE}"
+MTCH "500" ELSE #+2
+DONE ALRM "[HTTP] 500 Internal Server Error"
+MTCH "501" ELSE #+2
+DONE ALRM "[HTTP] 501 Not Implemented"
+MTCH "502" ELSE #+2
+DONE ALRM "[HTTP] 502 Bad Gateway"
+MTCH "503" ELSE #+2
+DONE ALRM "[HTTP] 503 Service Unavailable"
+DONE ALRM "[HTTP] Unknown Error Code ${_LINE:4}"
+
+@NO_USER:
+DONE ALRM "No Username specified."
+
+@DISCONNECT:
+DONE DOWN "[HTTP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} seconds."
+
+</script>
+
+<script-output>
+²B5³CB3 Statistics²P0³
+         ²4³SSID:²0³ ${^ssid}
+      ²4³Channel:²0³ ${^channel}
+  ²4³AP MAC Adrs:²0³ ${^AP_MAC}  ²4³Bridge MAC Adrs:²0³ ${^bridge_MAC}
+      ²4³Tx Rate:²3³ ${^tx_rate} Mbits/sec       ²4³Bridge Firmware:²0³ ${^bridge_firmware}
+²4³Comm. Quality:²0³ ${quality} ²3³%                ²4³WLAN Firmware:²0³ ${^wlan_firmware}
+ ²4³Frag. Thresh:²3³ ${^frag_thresh}      ²4³WLAN Sec. Firmware:²0³ ${^wlan_sec_firmware}
+   ²4³RTS Thresh:²3³ ${^RTS_thresh}
+</script-output>
+
