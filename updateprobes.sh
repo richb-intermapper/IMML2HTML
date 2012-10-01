@@ -16,13 +16,13 @@
 # categories.txt - a file with the category names at the beginning of the line
 
 python ScanProbeFiles.py > probedescr.txt
-# pcregrep -M -e '(?s)(<header>\s*?.*?<\/header>)' -e '(?s)(<description>\s*?.*?<\/description>)' * > ~/Documents/src/Probe->HTML/probesections.txt
-# cd ~/Desktop/Junk/
 python PrefixWithCategory.py < probedescr.txt > categories.txt
 sort -t"|" -k1,1 -k2n,2 < categories.txt \
   |	sed -e 's/^\(.*\):\|1\|\(.*\)/<h2>\1<\/h2> /' \
   |	sed -e 's/^.*:\|[0-9]*\|/	/' > cleancategories.html
 
+# pcregrep -M -e '(?s)(<header>\s*?.*?<\/header>)' -e '(?s)(<description>\s*?.*?<\/description>)' * > ~/Documents/src/Probe->HTML/probesections.txt
+# cd ~/Desktop/Junk/
 
 # This is a set of commands to:
 #	remove all "normal lines" with status 200, 206, 301, 302, 304, etc.
