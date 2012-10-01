@@ -2,9 +2,9 @@
 
 [InterMapper](http://intermapper.com) has a set of built in *probes* (software plug-ins) that control how a device can be tested.
 
-This repository lists the built-in probes, and creates an HTML documentation page that displays the current set of probes. This file, ProbeReference.html, can be diff'd to see what probes have changed from version to version.
+This repository contains programs and scripts that create an HTML document that displays the <definition> section of each of the builtin probes to provide a reference to that probe's use. This file, ProbeReference.html, can be diff'd to see what probes have changed from version to version. The repository also contains the current set of built-in probes.
 
-ProbeReference lists each of the probes according to their Category, in the order of their apperance in the Set Probe window. Its time stamp shows when the file was created.
+ProbeReference.html lists each of the probes according to their Category, in the order of their apperance in the Set Probe window. Its time stamp shows when the file was created.
 
 To update the ProbeReference.html:
 
