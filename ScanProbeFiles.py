@@ -4,10 +4,7 @@
 #  - <description> ... </description>
 
 # To do:
-# handle Uxxx in IMML
-# ignore comment anywhere (.*--) 
 # Handle a folder hierarchy of probes
-# segregate file name, version, date info, etc. below info for each probe
 
 import os
 import sys
@@ -260,7 +257,7 @@ def ProcessProbeFile(path, ifile):
 # infile = 'com.dartware.email.imap.txt'
 # ProcessProbeFile(path, infile)
 
-path = '/Users/richb/Documents/src/BuiltinProbes - 5.6.1/'
+path = './BuiltinProbes/'
 listing = os.listdir(path)
 
 for infile in listing:
