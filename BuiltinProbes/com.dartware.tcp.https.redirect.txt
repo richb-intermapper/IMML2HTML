@@ -17,21 +17,21 @@
 
 <description>
 
-²GB³Hypertext Transfer Protocol (HTTPs) - Redirect²P³
+\GB\Hypertext Transfer Protocol (HTTPs) - Redirect\P\
 
-The protocol used to transfer web pages on the World Wide Web, defined in ²U2=http://www.ietf.org/rfc/rfc2068.txt³RFC 2068²P0³ and  ²U2=http://www.ietf.org/rfc/rfc1945.txt³RFC 1945²P0³. The default TCP port number for HTTP connections is port 80.
+The protocol used to transfer web pages on the World Wide Web, defined in \U2=http://www.ietf.org/rfc/rfc2068.txt\RFC 2068\P0\ and  \U2=http://www.ietf.org/rfc/rfc1945.txt\RFC 1945\P0\. The default TCP port number for HTTP connections is port 80.
 
 This TCP probe lets you test that a web server is redirecting certain URL's to a specific URL.
 
-²i³Host Name²p³ is the domain name of the web server (e.g. "www.intermapper.com"). This can be derived from the host name part of the URL that you want to test. 
+\i\Host Name\p\ is the domain name of the web server (e.g. "www.intermapper.com"). This can be derived from the host name part of the URL that you want to test. 
 
-²i³URL Path²p³ is the full path of the desired file on the web server (e.g. "/index.html"). The first character must be a '/'.
+\i\URL Path\p\ is the full path of the desired file on the web server (e.g. "/index.html"). The first character must be a '/'.
 
-²i³Redirect URL²p³ is the complete URL that the given URL Path is redirected to. The URL should begin with "http://".
+\i\Redirect URL\p\ is the complete URL that the given URL Path is redirected to. The URL should begin with "http://".
 
-²i³User ID²p³ is the user name typed into the web browser's password dialog. The default is to leave this blank. You should set this parameter if you want to test a web page that requires authentication.
+\i\User ID\p\ is the user name typed into the web browser's password dialog. The default is to leave this blank. You should set this parameter if you want to test a web page that requires authentication.
 
-²i³Password²p³ is the password for the web browser's dialog. The default is to leave this blank. You should set this parameter if you want to test a web page that requires authentication.
+\i\Password\p\ is the password for the web browser's dialog. The default is to leave this blank. You should set this parameter if you want to test a web page that requires authentication.
 
 </description>
 
@@ -117,9 +117,9 @@ DONE DOWN "[HTTP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} 
 
 <script-output>
 
-²B5³HTTP Information²0P³
-  ²4³Time to establish connection:²0³ ${_connect} msecs
-  ²4³Time spent connected to host:²0³ ${_active} msecs
+\B5\HTTP Information\0P\
+  \4\Time to establish connection:\0\ ${_connect} msecs
+  \4\Time spent connected to host:\0\ ${_active} msecs
 
 </script-output>
 

@@ -362,7 +362,7 @@ GOTO @STATUS
 NEXT
 EXPT "<dict>"i else goto @STATUS
 EXPT "<key>([^<]+)</key>"ir else goto @STATUS
-SCAT "^identity_overflow" "\r  ²5³Identity²0P³"
+SCAT "^identity_overflow" "\r  \5\Identity\0P\"
 
 #loop on every <key> in the <dict>
 @INFO_DICT:
@@ -402,7 +402,7 @@ GOTO @INFO_DICT
 
 
 @INFO_DICT_LOOP:
-SCAT "^identity_overflow" "\r    ²4³${1}:²0³ " @INFO_OVERFLOW
+SCAT "^identity_overflow" "\r    \4\${1}:\0\ " @INFO_OVERFLOW
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @INFO_DICT
 @INFO_DICT_LOOP_1:
@@ -444,7 +444,7 @@ NEXT
 EXPT "<dict>"i else goto @CONNECTIVITY
 EXPT "<key>([^<]+)</key>"ir else goto @CONNECTIVITY
 NADD "INTERFACES_SEEN" #1
-SCAT "^network${INTERFACES_SEEN}_overflow" "\r  ²5³Interface $${^interface${INTERFACES_SEEN}}²0P³"
+SCAT "^network${INTERFACES_SEEN}_overflow" "\r  \5\Interface $${^interface${INTERFACES_SEEN}}\0P\"
 
 #loop on every <key> in the <dict>
 @CONN_DETAIL_DICT:
@@ -462,7 +462,7 @@ STOR "1" "${1} ${2}"
 GOTO #+2
 STOR "first_word" "${1}"
 STOR "id" "${INTERFACE_VAR_NAME} ${INTERFACES_SEEN}"
-SCAT "^network${INTERFACES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @CONN_DETAIL_OVERFLOW
+SCAT "^network${INTERFACES_SEEN}_overflow" "\r    \4\${1}:\0\ " @CONN_DETAIL_OVERFLOW
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @CONNECTIVITY_1
 SBNE "${1}" "integer"i @CONN_DETAIL_DICT_LOOP_1
@@ -592,7 +592,7 @@ GOTO @CONN_INFO_DICT
 @CONN_INFO_DICT_LOOP:
 MTCH "<key>(.+)([A-Z][a-z]+)</key>"r #+2
 STOR "1" "${1} ${2}"
-SCAT "^network${INTERFACES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @CONN_INFO_OVERFLOW
+SCAT "^network${INTERFACES_SEEN}_overflow" "\r    \4\${1}:\0\ " @CONN_INFO_OVERFLOW
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @CONNECTIVITY_1
 @CONN_INFO_DICT_LOOP_1:
@@ -646,7 +646,7 @@ STOR "DRIVES_SEEN" "-1"
 EXPT "<dict>"i else goto @DRIVES
 EXPT "<key>([^<]+)</key>"ir else goto @DRIVES
 NADD "DRIVES_SEEN" #1
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r  ²5³Drive $${^drivebay_${DRIVES_SEEN}}²0P³"
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r  \5\Drive $${^drivebay_${DRIVES_SEEN}}\0P\"
 
 #loop on every <key> in the <dict>
 @DRIV_DETAIL_DICT:
@@ -660,7 +660,7 @@ MTCH "<key>([^<]+)</key>"ir else goto @DRIVES
 STOR "DRIVE_VAR_NAME" "${1}"
 MTCH "<key>(.+)([A-Z][a-z]+)</key>"r #+2
 STOR "1" "${1} ${2}"
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @DRIV_DETAIL_OVERFLOW
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r    \4\${1}:\0\ " @DRIV_DETAIL_OVERFLOW
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @DRIVES_1
 @DRIV_DETAIL_DICT_LOOP_1:
@@ -704,7 +704,7 @@ NEXT
 GOTO @DRIV_INFO_DICT
 
 @DRIV_INFO_DICT_LOOP:
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @DRIV_INFO_OVERFLOW
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r    \4\${1}:\0\ " @DRIV_INFO_OVERFLOW
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @DRIVES_1
 @DRIV_INFO_DICT_LOOP_1:
@@ -763,14 +763,14 @@ EXPT "<array>"i else goto @ENCLOSURE
 @ENCL_SUMMARY_LOOP:
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @ENCLOSURE_1
-SCAT "^security" "\r  ²5³Security²0P³"
-SCAT "^security" "\r    ²4³Security Lock:²0P³ $${^lock_status}"
+SCAT "^security" "\r  \5\Security\0P\"
+SCAT "^security" "\r    \4\Security Lock:\0P\ $${^lock_status}"
 NBNE #${2} #0 @ENCL_ERROR
 SCAT "^security" "\r    No enclosure intrusion detected."
 GOTO @ENCL_SUMMARY_LOOP
 
 @ENCL_ERROR:
-SCAT "^security" "\r    ²1³Enclosure intrusion detected.²0³"
+SCAT "^security" "\r    \1\Enclosure intrusion detected.\0\"
 NBGT #${ERROR_LEVEL} #${2} #+2
 STOR "ERROR_LEVEL" "${2}"
 SCAT "ERROR_MESSAGE" "An enclosure intrusion was detected.\r"
@@ -795,7 +795,7 @@ NEXT
 EXPT "<dict>"i else goto @FAN
 EXPT "<key>([^<]+)</key>"ir else goto @FAN
 NADD "FAN_DETAIL_SEEN" #1
-SCAT "^blowers" "\r  ²5³Fan ${FAN_DETAIL_SEEN}²0P³"
+SCAT "^blowers" "\r  \5\Fan ${FAN_DETAIL_SEEN}\0P\"
 
 #loop on every <key> in the <dict>
 @FAN_DETAIL_DICT:
@@ -805,7 +805,7 @@ MTCH "</array>"i ELSE @FAN_DETAIL_1
 GOTO @FAN
 
 MTCH "<key>([^<]+)</key>"ir else goto @FAN
-SCAT "^blowers" "\r    ²4³${1}:²0³ "
+SCAT "^blowers" "\r    \4\${1}:\0\ "
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @FAN_1
 STOR "Fan ${FAN_DETAIL_SEEN} speed" "${2}"
@@ -854,7 +854,7 @@ GOTO @TEMP_SUMMARY
 GOTO @STATUS_1
 
 @TEMP_DETAIL:
-SCAT "^temperature" "\r  ²5³Temperature:²0P³"
+SCAT "^temperature" "\r  \5\Temperature:\0P\"
 STOR "TEMP_DETAIL_SEEN" "-1"
 NEXT
 @TEMP_DETAIL_1:
@@ -898,7 +898,7 @@ SBNE "${1}" "key"i @TEMP_INFO_DICT
 SBNE "${2}" "Name"i @TEMP_INFO_DICT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @TEMPERATURE_1
 STOR "^TEMP_NAME ${TEMP_INFO_SEEN}" "${2}"
-SCAT "^temperature" "\r    ²4³$${^TEMP_NAME ${TEMP_INFO_SEEN}}²0³ "
+SCAT "^temperature" "\r    \4\$${^TEMP_NAME ${TEMP_INFO_SEEN}}\0\ "
 STOR "${^TEMP_NAME ${TEMP_INFO_SEEN}} C" "${TEMPERATURE ${TEMP_INFO_SEEN}}"
 SCAT "^temperature" "$${${^TEMP_NAME ${TEMP_INFO_SEEN}} C}°C"
 #convert to Fahrenheit
@@ -941,14 +941,14 @@ GOTO @POWR_INFO
 SBNE "${1}" "Summary"i ELSE #+2
 GOTO @POWR_SUMMARY
 
-SCAT "^power" "\r  ²5³${^POWR_NAME}²0P³"
+SCAT "^power" "\r  \5\${^POWR_NAME}\0P\"
 STOR "LOOP_COUNT" "0"
 NADD "RAILS_SEEN" #-1
 @PWR_LOOP
 NBGT #${LOOP_COUNT} #${RAILS_SEEN} @STATUS_1
 #Because we don't want the variable names to be VOLT_# in the chart data windows, we use the value of the RAIL_# variable as the variable name
 STOR "${RAIL_${LOOP_COUNT}}" "${_FLOAT:${VOLT_${LOOP_COUNT}}}"
-SCAT "^power" "\r    ²4³${RAIL_${LOOP_COUNT}}:²0³ $${${RAIL_${LOOP_COUNT}}}"
+SCAT "^power" "\r    \4\${RAIL_${LOOP_COUNT}}:\0\ $${${RAIL_${LOOP_COUNT}}}"
 NADD "LOOP_COUNT" #1
 GOTO @PWR_LOOP
 

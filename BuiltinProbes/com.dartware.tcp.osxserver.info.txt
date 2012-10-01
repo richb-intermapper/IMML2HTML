@@ -16,18 +16,18 @@
 
 <description>
 
-²GB³OS X Server Information²P³
+\GB\OS X Server Information\P\
 
 This TCP probe queries a \U2=http://www.apple.com/server/macosx/\Mac OS X Server\P0\ installation for various details using the Server Admin port and protocol.
 
 A request for status information is made via an HTTPS post to the Server Admin port. The server responds with XML data that is then parsed by the probe.
 
-²i³User²p³ is the name of any user on the specified server.  An admin user is not required.
+\i\User\p\ is the name of any user on the specified server.  An admin user is not required.
 
-²i³Password²p³ is the password for the user specified in ²i³User²p³.
+\i\Password\p\ is the password for the user specified in \i\User\p\.
 
 
-²i3³Note: The implementation of this probe uses OpenSSL on MacOS X.²p0³
+\i3\Note: The implementation of this probe uses OpenSSL on MacOS X.\p0\
 
 </description>
 
@@ -282,14 +282,14 @@ NADD "DRIVES_SEEN" #1
 MTCH "</dict>"i ELSE @GET_DRIVE_VARS
 
 CHCK "${DRIVE_NAME ${DRIVES_SEEN}}" else goto @NEXT_DRIVE_DICT
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r  ²5³${DRIVE_NAME ${DRIVES_SEEN}}²0P³"
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r  \5\${DRIVE_NAME ${DRIVES_SEEN}}\0P\"
 CHCK "${DRIVE_FREE ${DRIVES_SEEN}}" else goto @STORE_DRIVE_TOTAL
 STOR "drive" "${DRIVE_FREE ${DRIVES_SEEN}}"
 EVAL $drive:=sprintf( "%.2f", ${drive}/(1024*1024) )
 STOR "DRIVE_FREE ${DRIVES_SEEN}" "$drive"
 @RET_1:
 STOR "RET" "@RET_1"
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r    ²4³Free MBytes:²0³  " @DRIV_DETAIL_OVERFLOW
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r    \4\Free MBytes:\0\  " @DRIV_DETAIL_OVERFLOW
 @RET_2:
 STOR "RET" "@RET_2"
 SCAT "^drives${DRIVES_SEEN}_overflow" "$${DRIVE_FREE ${DRIVES_SEEN}}" @DRIV_DETAIL_OVERFLOW
@@ -300,7 +300,7 @@ EVAL $drive:=sprintf( "%.2f", ${drive}/(1024*1024) )
 STOR "DRIVE_TOTAL ${DRIVES_SEEN}" "$drive"
 @RET_3:
 STOR "RET" "@RET_3"
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r    ²4³Total MBytes:²0³ " @DRIV_DETAIL_OVERFLOW
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r    \4\Total MBytes:\0\ " @DRIV_DETAIL_OVERFLOW
 @RET_4:
 STOR "RET" "@RET_4"
 SCAT "^drives${DRIVES_SEEN}_overflow" "$${DRIVE_TOTAL ${DRIVES_SEEN}}" @DRIV_DETAIL_OVERFLOW
@@ -340,9 +340,9 @@ GOTO ${RET}
 
 <script-output>
 
-²B5³OS X Server Information²0P³
-  ²4³CPU Usage:²0P³         ${cpu} %
-  ²4³Network Traffic:²0P³   ${network} Bps${^drives0}${^drives0_overflow}${^drives1}${^drives1_overflow}${^drives2}${^drives2_overflow}${^drives3}${^drives3_overflow}
+\B5\OS X Server Information\0P\
+  \4\CPU Usage:\0P\         ${cpu} %
+  \4\Network Traffic:\0P\   ${network} Bps${^drives0}${^drives0_overflow}${^drives1}${^drives1_overflow}${^drives2}${^drives2_overflow}${^drives3}${^drives3_overflow}
 
 </script-output>
 

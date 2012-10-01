@@ -24,11 +24,11 @@
 <description>
 \g0i++\For Liebert UPS devices.\p--\
 \i\NOTE: This probe is meant to aid Dartware's development of probes for the Liebert product line.\p\
-\p\1) Check other probes to see if one exists for your Liebert UPS device.\p\
-\p\2) If not, select this probe.\p\
-\p\3) Open the status window and "Copy All" (right/option click on the window)\p\
-\p\4) "Paste" into an email and \bu=mailto:upsbundle@intermapper.com\send the info to us\p\.
-\p\5) We'll try to develop a probe for your device as soon as possible.\p\
+1) Check other probes to see if one exists for your Liebert UPS device.
+2) If not, select this probe.
+3) Open the status window and "Copy All" (right/option click on the window)
+4) Paste into an email and \u=mailto:upsbundle@intermapper.com\send the info\p\ to us.
+5) We'll try to develop a probe for your device as soon as possible.
 
 \b++\A. Probed MIB(s)\p--\
 \i\This probe works best with devices which have implemented the listed MIB(s).\p\

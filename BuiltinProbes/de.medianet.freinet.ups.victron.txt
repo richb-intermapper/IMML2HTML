@@ -28,29 +28,18 @@
 This probe monitors some needfull USV parameters.
 
 \i\UPS Battery Status - Alarm\p\ is the ALARM threshold for Battery Status.
-\i\If the value is 2 USV working normal.
-\i\If the value is 1 USV is on bypass, the device will enter the Alarm
-state.
+\i\If the value is 2 USV working normal.\p\
+\i\If the value is 1 USV is on bypass, the device will enter the Alarm state.\p\
 
-\i\UPS Battery Remaining - Warning\p\ is the WARNING threshold for the
-estimated battery time remaining. If the Battery Remaining is less than
-this threshold, the device will enter the Warning state.
+\i\UPS Battery Remaining - Warning\p\ is the WARNING threshold for the estimated battery time remaining. If the Battery Remaining is less than this threshold, the device will enter the Warning state.
 
-\i\UPS Battery low Voltage - Warning\p\ is the WARNING threshold for the
-min. battery voltage. If the Battery voltage is less than this threshold,
-the device will enter the Warning state.
+\i\UPS Battery low Voltage - Warning\p\ is the WARNING threshold for the min. battery voltage. If the Battery voltage is less than this threshold, the device will enter the Warning state.
 
-\i\Low Input Voltage line 1 - Alarm\p\ is the ALARM threshold for min input
-voltage on phase 1. If the input voltage drops below this threshold, the
-device will enter the Alarm state.
+\i\Low Input Voltage line 1 - Alarm\p\ is the ALARM threshold for min input voltage on phase 1. If the input voltage drops below this threshold, the device will enter the Alarm state.
 
-\i\Low Input Voltage line 2 - Alarm\p\ is the ALARM threshold for min input
-voltage on phase 2. If the input voltage drops below this threshold, the
-device will enter the Alarm state.
+\i\Low Input Voltage line 2 - Alarm\p\ is the ALARM threshold for min input voltage on phase 2. If the input voltage drops below this threshold, the device will enter the Alarm state.
 
-\i\Low Input Voltage line 3 - Alarm\p\ is the ALARM threshold for min input
-voltage on phase 3. If the input voltage drops below this threshold, the
-device will enter the Alarm state.
+\i\Low Input Voltage line 3 - Alarm\p\ is the ALARM threshold for min input voltage on phase 3. If the input voltage drops below this threshold, the device will enter the Alarm state.
 </description>
 
 <parameters>

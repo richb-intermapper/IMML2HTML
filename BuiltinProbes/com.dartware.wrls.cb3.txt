@@ -313,13 +313,13 @@ DONE DOWN "[HTTP] Disconnected from port ${_REMOTEPORT} after ${_SECSCONNECTED} 
 </script>
 
 <script-output>
-²B5³CB3 Statistics²P0³
-         ²4³SSID:²0³ ${^ssid}
-      ²4³Channel:²0³ ${^channel}
-  ²4³AP MAC Adrs:²0³ ${^AP_MAC}  ²4³Bridge MAC Adrs:²0³ ${^bridge_MAC}
-      ²4³Tx Rate:²3³ ${^tx_rate} Mbits/sec       ²4³Bridge Firmware:²0³ ${^bridge_firmware}
-²4³Comm. Quality:²0³ ${quality} ²3³%                ²4³WLAN Firmware:²0³ ${^wlan_firmware}
- ²4³Frag. Thresh:²3³ ${^frag_thresh}      ²4³WLAN Sec. Firmware:²0³ ${^wlan_sec_firmware}
-   ²4³RTS Thresh:²3³ ${^RTS_thresh}
+\B5\CB3 Statistics\P0\
+         \4\SSID:\0\ ${^ssid}
+      \4\Channel:\0\ ${^channel}
+  \4\AP MAC Adrs:\0\ ${^AP_MAC}  \4\Bridge MAC Adrs:\0\ ${^bridge_MAC}
+      \4\Tx Rate:\3\ ${^tx_rate} Mbits/sec       \4\Bridge Firmware:\0\ ${^bridge_firmware}
+\4\Comm. Quality:\0\ ${quality} \3\%                \4\WLAN Firmware:\0\ ${^wlan_firmware}
+ \4\Frag. Thresh:\3\ ${^frag_thresh}      \4\WLAN Sec. Firmware:\0\ ${^wlan_sec_firmware}
+   \4\RTS Thresh:\3\ ${^RTS_thresh}
 </script-output>
 
