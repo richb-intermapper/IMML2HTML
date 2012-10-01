@@ -16,18 +16,18 @@ import datetime
 import time
 
 crlf        = "\r\n"
-cr             = "\r"
-lf             = "\n"
-pTag         = '<p class="proberef">'
-closepTag     = '</p>'
-liTag        = '<li class="proberef">'
-closeliTag     = '</li>'
+cr          = "\r"
+lf          = "\n"
+pTag        = '<p class="proberef">'
+closepTag   = '</p>'
+liTag       = '<li class="proberef">'
+closeliTag  = '</li>'
 
 def CleanLineEndings(aLine):
-    aLine = aLine.replace(crlf, "")      # remove crlf
-    aLine = aLine.replace(cr, "")         # remove cr
-    aLine = aLine.replace(lf, "")         # remove lf
-    return aLine
+#    str = aLine.replace(crlf, "")      # remove crlf
+    str = aLine.replace(cr, "")         # remove cr
+    str = str.replace(lf, "")         # remove lf
+    return str
     
 # Clean up markup string
 # remove the tag (M or G), and +, -, 0-9
@@ -50,6 +50,12 @@ def CleanMarkup(markup, urlString, tag):
 # Replace all "\" with "`" for ease of RE processing
 # Put back all backslashes when complete
 
+# Remove Proportional/Monospace markings from IMML within this line
+# Assume we're in proportional ("G"). If \...m...\ encountered, 
+#    switch to monospace and follow by with '<code>'
+# when we encounter closing \...g...\, precede with </code> and continue on
+# Also: remove "g" & "m" from markup tags
+
 def IMMLtoHTML(aLine):
     
     if aLine == "":                          # empty line - ignore
@@ -57,18 +63,14 @@ def IMMLtoHTML(aLine):
     if aLine.find("--") == 0:                # comment at the start of line - ignore
         return None
 
-# Remove Proportional/Monospace markings from IMML within this line
-# Assume we're in proportional ("G"). If \...m...\ encountered, 
-#    switch to monospace and follow by with '<code>'
-# when we encounter closing \...g...\, precede with </code> and continue on
-
-    bLine = aLine.replace("\\", "`")    # convert '\' to '`' for parsing
+    bLine = CleanLineEndings(aLine)
+    bLine = bLine.replace("\\", "`")    # convert '\' to '`' for parsing
     cLine = ""
     inMarkup = False
     inMono = False
     markup = ""                            # contains the markup characters up to a "=" (in URL)
     urlStr = ""                            # if present, contains "=" and the URL
-    for c in bLine:
+    for c in bLine:						   # character by character scan of the line
         if c == "\xb2" or c == "\xb3":	
             c = "`"
         if c == "`":                    # start/end markup section
@@ -134,7 +136,8 @@ def IMMLtoHTML(aLine):
         cLine = cLine[1:]
         cLine = liTag + cLine + closeliTag            # wrap in <li> ... </li> tags
     cLine = cLine.replace("`", "\\")                # finally put back bare '\'s
-    return cLine + closepTag + lf + pTag    
+    cLine = pTag + cLine + closepTag + lf 
+    return cLine
 
 # Get the meta-info about the probe:
 # - display_name
@@ -176,13 +179,13 @@ def GetProbeDescription(path, infile):
         #print infile + ":" + aLine + "<br />"
         if aLine == "":
             break
-        #print "Next line: '" + aLine + "'"
+        aLine = CleanLineEndings(aLine)
         bLine = aLine.lower()
         if bLine.find("<description>") != -1:
-            aLine = pTag                        # issue opening <p> tag
+            aLine = ""                        	# issue opening <p> tag
             printing = True                        # start handling subsequent lines
         if bLine.find("</description>") != -1:    # Done! issue closing </p> tag
-            aLine = closepTag
+            aLine = ""
             f.close()
             notDone = False
         if printing:
@@ -198,7 +201,7 @@ def ProcessProbeFile(path, ifile):
     
     # output header line
     print filename + ": " + category
-    print "<blockquote>" + definitions + "</blockquote>" + pTag
+    print "<blockquote>" + definitions + "</blockquote>" + lf + pTag
     print "<i>Filename: " + filename + "</i><br />"
     print "<i>Version: " + version + "</i>"
     print closepTag
