@@ -4,7 +4,7 @@
 # isolate all display_name and <description> ... </description> lines
 # regularize them with a Python script
 # Sort them into category order
-# Output a series of HTML-formatted entries
+# Output an HTML-formatted page that shows all the files
 
 # USAGE
 #   
@@ -12,14 +12,14 @@
 #
 # OUTPUTS
 # 
-# probedescr.xml - a file containing all the display_name and <definition> ... </definition> lines
+# probedescr.txtl - a file containing all the display_name and <definition> ... </definition> lines
 # categories.txt - a file with the category names at the beginning of the line
 
 python ScanProbeFiles.py > probedescr.txt
 python PrefixWithCategory.py < probedescr.txt > categories.txt
 sort -t"|" -k1,1 -k2n,2 < categories.txt \
   |	sed -e 's/^\(.*\):\|1\|\(.*\)/<h2>\1<\/h2> /' \
-  |	sed -e 's/^.*:\|[0-9]*\|/	/' > cleancategories.html
+  |	sed -e 's/^.*:\|[0-9]*\|/	/' > ProbeReference.html
 
 # pcregrep -M -e '(?s)(<header>\s*?.*?<\/header>)' -e '(?s)(<description>\s*?.*?<\/description>)' * > ~/Documents/src/Probe->HTML/probesections.txt
 # cd ~/Desktop/Junk/

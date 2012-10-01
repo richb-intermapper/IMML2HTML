@@ -69,6 +69,8 @@ def IMMLtoHTML(aLine):
     markup = ""                            # contains the markup characters up to a "=" (in URL)
     urlStr = ""                            # if present, contains "=" and the URL
     for c in bLine:
+        if c == "\xb2" or c == "\xb3":	
+            c = "`"
         if c == "`":                    # start/end markup section
             if inMarkup:                # if we're already within markup
                 inMarkup = False        # this is the end
@@ -141,8 +143,9 @@ def IMMLtoHTML(aLine):
 # return it as (display_name, filename, version)
 def GetProbeMetaInfo(path, infile):
     f = open(path+infile, 'r')
-    dispPat = re.compile("display_name")
-    versPat = re.compile(r"version.*?=.*[\"\']?([0-9.]+)")
+    #dispPat = re.compile("display_name")
+    dispPat = re.compile("display_name.*?=")		
+    versPat = re.compile(r"version[\"\']?.*?=.*[\"\']?([0-9]+\.[0-9]+)")
     displayName = ""
     version = ""
     while displayName == "" or version == "":
@@ -152,10 +155,9 @@ def GetProbeMetaInfo(path, infile):
         bLine = aLine.lower()
         if dispPat.search(bLine) is not None:
             displayName = CleanLineEndings(aLine)
-#            print "Found Display Name*****:" + infile + ": " + aLine
-        if versPat.search(bLine) is not None:
-#            print "Found Version*****"
-            version = "123.45"
+        matches = versPat.search(bLine)
+        if matches:
+            version = matches.group(1)
 #    else:
 #        print "Fell off end of file****"
         
@@ -219,8 +221,9 @@ def ProcessProbeFile(path, ifile):
 # infile = 'com.dartware.email.imap.txt'
 # ProcessProbeFile(path, infile)
 
-path = '/Users/richb/Desktop/Newstuff/BuiltinProbes/'
+path = '/Users/richb/Documents/src/BuiltinProbes - 5.6.1/'
 listing = os.listdir(path)
 
 for infile in listing:
-    ProcessProbeFile(path, infile)
+    if infile[0] != ".":
+        ProcessProbeFile(path, infile)
