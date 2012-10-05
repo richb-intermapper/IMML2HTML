@@ -176,7 +176,7 @@ GOTO @SUMMARY_LOOP
 @DONE:
 #if no stations were found, then set ^station_list to something user-friendly.
 NBGT #${num_stations} #0 #+2
-STOR "^station_list" "\I3\No stations connected.\P\\n"
+STOR "^station_list" "≤I3≥No stations connected.≤P≥\n"
 
 #check RSSI thresholds
 #loop over all stations' RSSI values!

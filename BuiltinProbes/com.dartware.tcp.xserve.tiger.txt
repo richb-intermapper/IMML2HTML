@@ -375,7 +375,7 @@ GOTO ${RET}
 NEXT
 EXPT "<dict>"i else goto @STATUS
 EXPT "<key>([^<]+)</key>"ir else goto @STATUS
-SCAT "^identity_overflow" "\r  \5\Identity\0P\"
+SCAT "^identity_overflow" "\r  ²5³Identity²0P³"
 
 #loop on every <key> in the <dict>
 @INFO_DICT:
@@ -423,7 +423,7 @@ MTCH "<key>([A-Z][A-Z0-9])([A-Z][a-z][a-z]+)</key>"r #+2
 STOR "1" "${1} ${2}"
 STOR "OVERFLOW_RET" "@INFO_DICT_OVERFLOW_RET"
 @INFO_DICT_OVERFLOW_RET:
-SCAT "^identity_overflow" "\r    \4\${1}:\0\ " @OVERFLOW
+SCAT "^identity_overflow" "\r    ²4³${1}:²0³ " @OVERFLOW
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @INFO_DICT
 STOR "OVERFLOW_RET" "@INFO_DICT_OVERFLOW_RET_1"
@@ -463,7 +463,7 @@ NEXT
 GOTO @CONN_DETAIL_1
 
 EXPT "<key>([^<]+)</key>"ir else goto @CONNECTIVITY
-SCAT "^network${INTERFACES_SEEN}_overflow" "\r  \5\Interface $${^interface${INTERFACES_SEEN}}\0P\"
+SCAT "^network${INTERFACES_SEEN}_overflow" "\r  ²5³Interface $${^interface${INTERFACES_SEEN}}²0P³"
 
 #loop on every <key> in the <dict>
 @CONN_DETAIL_DICT:
@@ -483,7 +483,7 @@ STOR "first_word" "${1}"
 STOR "id" "${INTERFACE_VAR_NAME} ${INTERFACES_SEEN}"
 STOR "OVERFLOW_RET" "@CONN_DETAIL_DICT_OVERFLOW_RET"
 @CONN_DETAIL_DICT_OVERFLOW_RET:
-SCAT "^network${INTERFACES_SEEN}_overflow" "\r    \4\${1}:\0\ " @OVERFLOW
+SCAT "^network${INTERFACES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @OVERFLOW
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @CONNECTIVITY_1
 SBNE "${1}" "integer"i @CONN_DETAIL_DICT_LOOP_1
@@ -622,7 +622,7 @@ MTCH "<key>(.+)([A-Z][a-z]+)</key>"r #+2
 STOR "1" "${1} ${2}"
 STOR "OVERFLOW_RET" "@CONN_INFO_DICT_OVERFLOW_RET"
 @CONN_INFO_DICT_OVERFLOW_RET:
-SCAT "^network${INTERFACES_SEEN}_overflow" "\r    \4\${1}:\0\ " @OVERFLOW
+SCAT "^network${INTERFACES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @OVERFLOW
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto #+2
 GOTO @CONN_INFO_DICT_OVERFLOW_RET_1
@@ -673,7 +673,7 @@ EXPT "<dict>"i else goto @DRIVES
 EXPT "<key>([^<]+)</key>"ir else goto @DRIVES
 NADD "DRIVES_SEEN" #1
 STOR "STRING" "^drives${DRIVES_SEEN}"
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r  \5\Drive $${^drivebay_${DRIVES_SEEN}}\0P\"
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r  ²5³Drive $${^drivebay_${DRIVES_SEEN}}²0P³"
 
 #loop on every <key> in the <dict>
 @DRIV_DETAIL_DICT:
@@ -689,7 +689,7 @@ MTCH "<key>(.+)([A-Z][a-z]+)</key>"r #+2
 STOR "1" "${1} ${2}"
 STOR "OVERFLOW_RET" "@DRIV_DETAIL_OVERFLOW_RET"
 @DRIV_DETAIL_OVERFLOW_RET:
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r    \4\${1}:\0\ " @OVERFLOW
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @OVERFLOW
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @DRIVES_1
 STOR "${DRIVE_VAR_NAME} ${DRIVES_SEEN}" "${2}"
@@ -726,7 +726,7 @@ GOTO @DRIV_INFO_DICT
 
 @DRIV_INFO_DICT_LOOP:
 STOR "OVERFLOW_RET" "@DRIV_INFO_DICT_LOOP"
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r    \4\${1}:\0\ " @OVERFLOW
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r    ²4³${1}:²0³ " @OVERFLOW
 NEXT
 SBNE "${1}" "Capacity"i #+5
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @DRIVES_1
@@ -781,14 +781,14 @@ EXPT "<array>"i else goto @ENCLOSURE
 @ENCL_SUMMARY_LOOP:
 NEXT
 MTCH "<([a-z]+)>([^<]+)</([a-z]+)>"ir else goto @ENCLOSURE_1
-SCAT "^security" "\r  \5\Security\0P\"
-SCAT "^security" "\r    \4\Security Lock:\0P\ $${^lock_status}"
+SCAT "^security" "\r  ²5³Security²0P³"
+SCAT "^security" "\r    ²4³Security Lock:²0P³ $${^lock_status}"
 NBNE #${2} #0 @ENCL_ERROR
 SCAT "^security" "\r    No enclosure intrusion detected."
 GOTO @ENCL_SUMMARY_LOOP
 
 @ENCL_ERROR:
-SCAT "^security" "\r    \1\Enclosure intrusion detected.\0\"
+SCAT "^security" "\r    ²1³Enclosure intrusion detected.²0³"
 NBGT #${ERROR_LEVEL} #${2} #+2
 STOR "ERROR_LEVEL" "${2}"
 SCAT "ERROR_MESSAGE" "An enclosure intrusion was detected.\r"
@@ -822,7 +822,7 @@ MTCH "</array>"i #+4
 #if (0 <= FANS_SEEN)
 NBGT #0 #${FANS_SEEN} #+2
 #  then
-STOR "^blowers_title" "\r  \5\Blowers\0P\"
+STOR "^blowers_title" "\r  ²5³Blowers²0P³"
 #endif
 GOTO @STATUS
 
@@ -842,7 +842,7 @@ NADD "FANS_SEEN" #1
 STOR "${dict.location} speed" "${dict.current-value}"
 STOR "OVERFLOW_RET" "@BLOWERS_SCAT"
 @BLOWERS_SCAT:
-SCAT "^blowers_overflow" "\r    \4\${dict.location}:\0\ $${${dict.location} speed} RPM" @OVERFLOW
+SCAT "^blowers_overflow" "\r    ²4³${dict.location}:²0³ $${${dict.location} speed} RPM" @OVERFLOW
 #    if (dict.summary > 0)
 #       && (dict.summary < 255)
 NBGT #${dict.summary} #254 @FAN_ARRAY
@@ -907,10 +907,10 @@ MTCH "</array>"i #+2
 #if (0 <= TEMP_SEEN)
 NBGT #0 #${TEMP_SEEN} #+2
 #  then
-STOR "^temperature_title" "\r  \5\Temperature\0P\"
+STOR "^temperature_title" "\r  ²5³Temperature²0P³"
 #elseif (0 <= POWER_SEEN)
 NBGT #0 #${POWER_SEEN} #+2
-STOR "^power_title" "\r  \5\Power\0P\"
+STOR "^power_title" "\r  ²5³Power²0P³"
 GOTO @STATUS
 
 #else ignore this element
@@ -977,7 +977,7 @@ STOR "STRING" "${type}"
 @TYPE_SCAT:
 SCAT "${type}_overflow" "$${${group}}$${${group}_overflow}" @OVERFLOW
 STOR "${group}" ""
-STOR "${group}_overflow" "\r    \4\${dict.group}\0\"
+STOR "${group}_overflow" "\r    ²4³${dict.group}²0³"
 #endif
 
 @SENSOR_DICT_2:
@@ -1006,7 +1006,7 @@ EVAL ${x} := sprintf( "%.2f", ${dict.current-value} )
 STOR "${dict.location} C" "${x}"
 STOR "OVERFLOW_RET" "@TEMP_SCAT"
 @TEMP_SCAT:
-SCAT "${STRING}_overflow" "\r      \4\${dict.location}:\0\ $${${dict.location} C} C" @OVERFLOW
+SCAT "${STRING}_overflow" "\r      ²4³${dict.location}:²0³ $${${dict.location} C} C" @OVERFLOW
 
 EVAL ${x} := sprintf( "%.2f", 1.8 * ${dict.current-value} + 32 )
 STOR "${dict.location} F" "${x}"
@@ -1022,7 +1022,7 @@ GOTO @CHECK_SENSOR_SUMMARY
 STOR "${dict.location} volts" "${dict.current-value}"
 STOR "OVERFLOW_RET" "@VOLTS_SCAT"
 @VOLTS_SCAT:
-SCAT "${STRING}_overflow" "\r      \4\${dict.location}:\0\ $${${dict.location} volts} volts" @OVERFLOW
+SCAT "${STRING}_overflow" "\r      ²4³${dict.location}:²0³ $${${dict.location} volts} volts" @OVERFLOW
 STOR "WARN_LINE" "@PWR_WARN"
 STOR "WARN_UNIT" "voltage"
 GOTO @CHECK_SENSOR_SUMMARY
@@ -1032,7 +1032,7 @@ GOTO @CHECK_SENSOR_SUMMARY
 STOR "${dict.location} amps" "${dict.current-value}"
 STOR "OVERFLOW_RET" "@CURRENT_SCAT"
 @CURRENT_SCAT:
-SCAT "${STRING}_overflow" "\r      \4\${dict.location}:\0\ $${${dict.location} amps} amps" @OVERFLOW
+SCAT "${STRING}_overflow" "\r      ²4³${dict.location}:²0³ $${${dict.location} amps} amps" @OVERFLOW
 STOR "WARN_LINE" "@PWR_WARN"
 STOR "WARN_UNIT" "current"
 GOTO @CHECK_SENSOR_SUMMARY
@@ -1042,7 +1042,7 @@ GOTO @CHECK_SENSOR_SUMMARY
 STOR "${dict.location}" "${dict.current-value}"
 STOR "OVERFLOW_RET" "@POWER_SCAT"
 @POWER_SCAT:
-SCAT "${STRING}_overflow" "\r      \4\${dict.location}:\0\ $${${dict.location}} watts" @OVERFLOW
+SCAT "${STRING}_overflow" "\r      ²4³${dict.location}:²0³ $${${dict.location}} watts" @OVERFLOW
 STOR "WARN_LINE" "@PWR_WARN"
 STOR "WARN_UNIT" "wattage"
 #GOTO @CHECK_SENSOR_SUMMARY

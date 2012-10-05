@@ -133,7 +133,7 @@ NEXT
 MTCH "<[^<]*>\\s*([^<]*)\\s*</[a-z]+>"ir else goto @END_ROW
 STOR "^rts" "${1}"
 
-SCAT "^about-output" "\B5\Tranzeo CPE Information\0P\\r   \4\Name of your TR-CPE:\0P\  ${^name}\r       \4\CPE MAC Address:\0P\  ${^MAC}\r      \4\Firmware Version:\0P\  ${^firmware}\r         \4\RTS Threshold:\0P\  ${^rts}\r"
+SCAT "^about-output" "²B5³Tranzeo CPE Information²0P³\r   ²4³Name of your TR-CPE:²0P³  ${^name}\r       ²4³CPE MAC Address:²0P³  ${^MAC}\r      ²4³Firmware Version:²0P³  ${^firmware}\r         ²4³RTS Threshold:²0P³  ${^rts}\r"
 
 STOR "RET" "@SEND_GET_WLAN"
 DISC if disconnected goto @RECONNECT
@@ -245,8 +245,8 @@ SBNE "$foundSSID" "found" @SSID_NOT_FOUND
 GOTO @DONE_PARSING
 
 @DONE_PARSING:
-STOR "^script-output" "\4\AP MAC Address (BSSID):\0P\  ${^bssid}\r               \4\Channel:\0P\  ${^channel}"
-STOR "^script-output1" "\r       \4\Signal Strength:\0P\  $${signal} dbm\r              \4\Security:\0P\  ${^security}"
+STOR "^script-output" "²4³AP MAC Address (BSSID):²0P³  ${^bssid}\r               ²4³Channel:²0P³  ${^channel}"
+STOR "^script-output1" "\r       ²4³Signal Strength:²0P³  $${signal} dbm\r              ²4³Security:²0P³  ${^security}"
 NBNE #${Warning Threshold} #${signal} goto #+2
 GOTO @CHECK_STRENGTH
 NBGT #${Warning Threshold} #${signal} goto @CHECK_STRENGTH

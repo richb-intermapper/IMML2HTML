@@ -282,14 +282,14 @@ NADD "DRIVES_SEEN" #1
 MTCH "</dict>"i ELSE @GET_DRIVE_VARS
 
 CHCK "${DRIVE_NAME ${DRIVES_SEEN}}" else goto @NEXT_DRIVE_DICT
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r  \5\${DRIVE_NAME ${DRIVES_SEEN}}\0P\"
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r  ²5³${DRIVE_NAME ${DRIVES_SEEN}}²0P³"
 CHCK "${DRIVE_FREE ${DRIVES_SEEN}}" else goto @STORE_DRIVE_TOTAL
 STOR "drive" "${DRIVE_FREE ${DRIVES_SEEN}}"
 EVAL $drive:=sprintf( "%.2f", ${drive}/(1024*1024) )
 STOR "DRIVE_FREE ${DRIVES_SEEN}" "$drive"
 @RET_1:
 STOR "RET" "@RET_1"
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r    \4\Free MBytes:\0\  " @DRIV_DETAIL_OVERFLOW
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r    ²4³Free MBytes:²0³  " @DRIV_DETAIL_OVERFLOW
 @RET_2:
 STOR "RET" "@RET_2"
 SCAT "^drives${DRIVES_SEEN}_overflow" "$${DRIVE_FREE ${DRIVES_SEEN}}" @DRIV_DETAIL_OVERFLOW
@@ -300,7 +300,7 @@ EVAL $drive:=sprintf( "%.2f", ${drive}/(1024*1024) )
 STOR "DRIVE_TOTAL ${DRIVES_SEEN}" "$drive"
 @RET_3:
 STOR "RET" "@RET_3"
-SCAT "^drives${DRIVES_SEEN}_overflow" "\r    \4\Total MBytes:\0\ " @DRIV_DETAIL_OVERFLOW
+SCAT "^drives${DRIVES_SEEN}_overflow" "\r    ²4³Total MBytes:²0³ " @DRIV_DETAIL_OVERFLOW
 @RET_4:
 STOR "RET" "@RET_4"
 SCAT "^drives${DRIVES_SEEN}_overflow" "$${DRIVE_TOTAL ${DRIVES_SEEN}}" @DRIV_DETAIL_OVERFLOW
