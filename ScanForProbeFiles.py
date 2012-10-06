@@ -163,15 +163,32 @@ def ProcessProbeFile(probepath, infile):
         # print "*** Bad News - File: %s; Category '%s'; Version '%s'" % (filename, category, version)
         return None
     definitions = GetProbeDescription(infile)        # couldn't find <definitions>
-    if len(definition) == 0:
+    if len(definitions) == 0:
         return None
     
-    # output header line
-    print filename + ": " + category
-    print "<blockquote>" + definitions + "</blockquote>" + lf + pTag
-    print "<i>Filename: " + filename + "</i><br />"
-    print "<i>Version: " + version + "</i>"
-    print closepTag
+    # Output lines have the form: 
+    #   category|filename|1|version
+    #   category|filename|2|<blockquote>
+    #   category|filename|3| HTML-ized line1
+    #   category|filename|4| HTML-ized line2
+    #	...
+    #   category|filename|n-1| HTML-ized line n-2
+    #   category|filename|n| </blockquote>
+
+    print "%s|%s|%d|%s" % (category, filename, 1, version)
+    print "%s|%s|%d|%s" % (category, filename, 2, "<blockquote>")
+    for i in range(len(definitions)):
+        print "%s|%s|%d|%s" % (category, filename, i+2, definitions[i])
+    print "%s|%s|%d|%s" % (category, filename, i+3, "</blockquote>"+pTag)    
+    print "%s|%s|%d|%s" % (category, filename, i+4, "<i>Filename: "+filename+"</i><br />")    
+    print "%s|%s|%d|%s" % (category, filename, i+5, "<i>Version: "+version+"</i><br />")    
+    print "%s|%s|%d|%s" % (category, filename, i+6, closepTag)    
+    
+#     print filename + ": " + category
+#     print "<blockquote>" + definitions + "</blockquote>" + lf + pTag
+#     print "<i>Filename: " + filename + "</i><br />"
+#     print "<i>Version: " + version + "</i>"
+#     print closepTag
 
 
 # Main Routine
@@ -182,13 +199,6 @@ def ProcessProbeFile(probepath, infile):
 #     Output the information in the proper format
 def main(argv=None):
 
-    # Print heading info with date
-    today = str(datetime.date.today())
-    print ":|1|"
-    print ":|2|<description>"
-    print ":|3|<h1>InterMapper Builtin Probe Documentation</h1>"
-    print ":|4|<i>Updated: " + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>"
-    
     # path = './'
     # infile = 'com.dartware.email.imap.txt'
     # ProcessProbeFile(path, infile)
@@ -203,6 +213,8 @@ def main(argv=None):
     if probepath == "":						# build path to local copy of probes
         wd = os.getcwd()
         probepath = join(wd, 'BuiltinProbes')
+    if probepath[-1] != os.sep:				# make sure the path ends in separator
+        probepath += os.sep
     # print probepath
     # print "Hi Rich"
     
@@ -214,6 +226,13 @@ def main(argv=None):
             if (usableFile(fname)):
                 listing.append(fname)    
 
+    # Print heading info with date
+    today = str(datetime.date.today())
+    print "||1|"
+    print "||2|<h1>InterMapper Probe Documentation</h1>"
+    print "||3|%s<i>Base Folder: %s</i>%s" % (pTag, probepath, closepTag)
+    print "||4|<i>Updated: " + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>"
+    
 #     for dir, file in listing:
 #         print "File: '%s' in '%s'" % (file, dir)
         
