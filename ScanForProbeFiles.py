@@ -9,6 +9,7 @@
 # 
 
 import os
+from os.path import join, getsize
 import sys
 import re
 import datetime
@@ -23,6 +24,30 @@ closepTag   = '</p>'
 liTag       = '<li class="proberef">'
 closeliTag  = '</li>'
 
+def usableFile(fname):
+    '''
+    check that the file name doesn't contain any useless path elements
+    - anything path element staring with "." including: 
+    	.hg
+    	.hgignore
+    	.git
+    	.gitignore
+    	.DS_Store
+    	.index
+    - CVS as the sole path element
+    - xxxx.zip as a suffix
+    Returns true if none of these patterns match
+    '''
+    if fname.find(os.sep + ".") != -1:
+        return False
+    if fname.find(os.sep + "CVS" + os.sep) != -1:
+    	return False
+    if fname.find(".zip") == (len(fname) - 4):
+#        print "File: '%s'" % fname
+#    	print "***File: '%s', Len: %d, Match: %d" % (fname, len(fname), fname.find(".zip"))
+    	return False
+    return True
+
 def CleanLineEndings(aLine):
 
     """
@@ -35,16 +60,16 @@ def CleanLineEndings(aLine):
 def GetProbeMetaInfo(path, infile):
 
     """
-	Get the meta-info about the probe:
-	- display_name
-	- filename
-	- version
-	return it as (display_name, filename, version)
+    Get the meta-info about the probe:
+    - display_name
+    - filename
+    - version
+    return it as (display_name, filename, version)
 
     """
     f = open(path+infile, 'r')
     #dispPat = re.compile("display_name")
-    dispPat = re.compile("display_name.*?=")		
+    dispPat = re.compile("display_name.*?=")        
     versPat = re.compile(r"version[\"\']?.*?=.*[\"\']?([0-9]+\.[0-9]+)")
     displayName = ""
     version = ""
@@ -63,6 +88,7 @@ def GetProbeMetaInfo(path, infile):
         
     f.close()
     return (displayName, infile, version)
+
 
 def GetProbeDescription(path, infile):
 
@@ -85,7 +111,7 @@ def GetProbeDescription(path, infile):
         aLine = CleanLineEndings(aLine)
         bLine = aLine.lower()
         if bLine.find("<description>") != -1:
-            aLine = ""                        	# issue opening <p> tag
+            aLine = ""                            # issue opening <p> tag
             printing = True                        # start handling subsequent lines
         if bLine.find("</description>") != -1:    # Done! issue closing </p> tag
             aLine = ""
@@ -123,21 +149,46 @@ def ProcessProbeFile(path, ifile):
 #     (Category, file name, version, date last modified)
 #     Retrieve the <definitions> section
 #     Output the information in the proper format
+def main(argv=None):
 
-# Print heading info with date
-today = str(datetime.date.today())
-print ":|1|"
-print ":|2|<description>"
-print ":|3|<h1>InterMapper Builtin Probe Documentation</h1>"
-print ":|4|<i>Updated: " + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>"
+    # Print heading info with date
+    today = str(datetime.date.today())
+    print ":|1|"
+    print ":|2|<description>"
+    print ":|3|<h1>InterMapper Builtin Probe Documentation</h1>"
+    print ":|4|<i>Updated: " + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>"
+    
+    # path = './'
+    # infile = 'com.dartware.email.imap.txt'
+    # ProcessProbeFile(path, infile)
 
-# path = './'
-# infile = 'com.dartware.email.imap.txt'
-# ProcessProbeFile(path, infile)
+    args = sys.argv[1:]                      # retrieve the arguments
+    if len(args) == 0:                       # handle missing argument
+        arg = ""
+    else:
+        arg = args[0]
+    
+    path = arg
+    if path == "":
+        path = './BuiltinProbes/'
+    # print path
+    
+    listing = []
+    # walk the root directry, build a list of all the non-directory files
+    for root, dirs, files in os.walk(path):
+#        print root #, "consumes",
+        for name in files:
+            fname = join(root, name)
+            if (usableFile(fname)):
+                listing.append(fname)    
 
-path = './BuiltinProbes/'
-listing = os.listdir(path)
-
-for infile in listing:
-    if infile[0] != ".":
-        ProcessProbeFile(path, infile)
+    for line in listing:
+        print line
+        
+    # at this point
+#     for infile in listing:
+#         if infile[0] != ".":
+#             ProcessProbeFile(path, infile)
+#             
+if __name__ == "__main__":
+    sys.exit(main())
