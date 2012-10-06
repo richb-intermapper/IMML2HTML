@@ -57,22 +57,28 @@ def CleanLineEndings(aLine):
     str = str.replace(lf, "")         # remove lf
     return str
     
-def GetProbeMetaInfo(path, infile):
+def GetProbeMetaInfo(probepath, infile):
 
     """
     Get the meta-info about the probe:
+    Input:	
+    - probepath is the directory that encloses all the probes
+    - infile is the specific file to check
+    
+    Return: it as (display_name, filename, version)
     - display_name
-    - filename
+    - filename including enclosing folder(s) if not at top level of probes folder
     - version
-    return it as (display_name, filename, version)
 
     """
-    f = open(path+infile, 'r')
+    f = open(infile, 'r')
     #dispPat = re.compile("display_name")
     dispPat = re.compile("display_name.*?=")        
+    namePat = re.compile("human_name.*?=")  # look for "human_name"      
     versPat = re.compile(r"version[\"\']?.*?=.*[\"\']?([0-9]+\.[0-9]+)")
     displayName = ""
     version = ""
+    humanname = ""
     while displayName == "" or version == "":
         aLine = f.readline()
         if aLine == "":
@@ -83,21 +89,31 @@ def GetProbeMetaInfo(path, infile):
         matches = versPat.search(bLine)
         if matches:
             version = matches.group(1)
+        matches = namePat.search(bLine)
+        if matches:
+            humanname = matches.group(1)
 #    else:
 #        print "Fell off end of file****"
         
     f.close()
-    return (displayName, infile, version)
+    
+    if displayName == "":							# some probes don't have "display_name"
+        displayName = "Uncategorized/" + humanname  # just use the human name
+        
+    # clean up the path
+    enclosingpath = infile[len(probepath):]
+    # print "Enclosing path: '%s'" % enclosingpath
+    return (displayName, enclosingpath, version)
 
 
-def GetProbeDescription(path, infile):
+def GetProbeDescription(infile):
 
     """
     Scan through the file line by line
     Find all the lines between <description> and </description>
     Change each line from IMML to HTML
     """
-    f = open(path+infile, 'r')
+    f = open(infile, 'r')
     # print "Opening: '" + infile + "'<br />"
 
     printing = False
@@ -124,7 +140,7 @@ def GetProbeDescription(path, infile):
                 resultstr += bLine + lf
     return resultstr
 
-def ProcessProbeFile(path, ifile):
+def ProcessProbeFile(probepath, infile):
 
     """
     Process each probe file:
@@ -132,8 +148,13 @@ def ProcessProbeFile(path, ifile):
        pull out the <description> section
        Append the filename and version numbers
     """
-    (category, filename, version) = GetProbeMetaInfo(path, infile)
-    definitions = GetProbeDescription(path, infile)
+    (category, filename, version) = GetProbeMetaInfo(probepath, infile)
+    if category == "" or version == "":              # couldn't find category or version
+        print "*** Bad News - File: %s; Category '%s'; Version '%s'" % (filename, category, version)
+        return None
+    definitions = GetProbeDescription(infile)        # couldn't find <definitions>
+    if definitions == "":
+        return None
     
     # output header line
     print filename + ": " + category
@@ -168,27 +189,27 @@ def main(argv=None):
     else:
         arg = args[0]
     
-    path = arg
-    if path == "":
-        path = './BuiltinProbes/'
-    # print path
+    probepath = arg
+    if probepath == "":						# build path to local copy of probes
+        wd = os.getcwd()
+        probepath = join(wd, 'BuiltinProbes')
+    # print probepath
+    # print "Hi Rich"
     
     listing = []
     # walk the root directry, build a list of all the non-directory files
-    for root, dirs, files in os.walk(path):
-#        print root #, "consumes",
+    for root, dirs, files in os.walk(probepath):
         for name in files:
             fname = join(root, name)
             if (usableFile(fname)):
                 listing.append(fname)    
 
-    for line in listing:
-        print line
+#     for dir, file in listing:
+#         print "File: '%s' in '%s'" % (file, dir)
         
-    # at this point
-#     for infile in listing:
-#         if infile[0] != ".":
-#             ProcessProbeFile(path, infile)
-#             
+    # at this point, listing contains a list of filenames to process
+    for infile in listing:
+        ProcessProbeFile(probepath, infile)
+            
 if __name__ == "__main__":
     sys.exit(main())
