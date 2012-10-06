@@ -13,10 +13,15 @@ import sys
 import re
 import datetime
 import time
+from IMML2HTML import IMMLtoHTML
 
 crlf        = "\r\n"
 cr          = "\r"
 lf          = "\n"
+pTag        = '<p class="proberef">'
+closepTag   = '</p>'
+liTag       = '<li class="proberef">'
+closeliTag  = '</li>'
 
 def CleanLineEndings(aLine):
 
@@ -90,7 +95,7 @@ def GetProbeDescription(path, infile):
             bLine = IMMLtoHTML(aLine)
             # resultstr += bLine
             if bLine is not None:
-                resultstr += bLine
+                resultstr += bLine + lf
     return resultstr
 
 def ProcessProbeFile(path, ifile):

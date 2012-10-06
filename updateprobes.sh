@@ -15,11 +15,11 @@
 # probedescr.txtl - a file containing all the display_name and <definition> ... </definition> lines
 # categories.txt - a file with the category names at the beginning of the line
 
-python ScanProbeFiles.py > probedescr.txt
+python ScanForProbeFiles.py > probedescr.txt
 python PrefixWithCategory.py < probedescr.txt > categories.txt
 sort -t"|" -k1,1 -k2n,2 < categories.txt \
   |	sed -e 's/^\(.*\):\|1\|\(.*\)/<h2>\1<\/h2> /' \
-  |	sed -e 's/^.*:\|[0-9]*\|/	/' > ProbeReference.html
+  |	sed -e 's/^.*:\|[0-9]*\|/	/' > ProvisionalProbeReference.html
 
 # pcregrep -M -e '(?s)(<header>\s*?.*?<\/header>)' -e '(?s)(<description>\s*?.*?<\/description>)' * > ~/Documents/src/Probe->HTML/probesections.txt
 # cd ~/Desktop/Junk/
