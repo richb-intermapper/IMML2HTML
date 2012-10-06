@@ -19,9 +19,9 @@ from IMML2HTML import IMMLtoHTML
 crlf        = "\r\n"
 cr          = "\r"
 lf          = "\n"
-pTag        = '<p class="proberef">'
+pTag        = '<p class="content">'
 closepTag   = '</p>'
-liTag       = '<li class="proberef">'
+liTag       = '<li class="content">'
 closeliTag  = '</li>'
 
 def usableFile(fname):
@@ -108,7 +108,9 @@ def GetProbeMetaInfo(probepath, infile):
     if displayName == "" and humanname != "":	# some probes don't have "display_name"
         # print "***Line: '%s'; human_name: '%s'" % (bLine, humanname)
         displayName = "Uncategorized/" + humanname  # just use the human name
-        
+    if displayName.find("/") == -1:
+        displayName = "Uncategorized/" + displayName  # No category? Add "Uncategorized/"
+
     # clean up the path
     enclosingpath = infile[len(probepath):]
     # print "Enclosing path: '%s'" % enclosingpath
@@ -226,12 +228,15 @@ def main(argv=None):
             if (usableFile(fname)):
                 listing.append(fname)    
 
+
+
+
     # Print heading info with date
     today = str(datetime.date.today())
-    print "||1|"
+    print "||1|<link rel='stylesheet' type='text/css' href='http://www.intermapper.com/library/styles/client.css' />"
     print "||2|<h1>InterMapper Probe Documentation</h1>"
-    print "||3|%s<i>Base Folder: %s</i>%s" % (pTag, probepath, closepTag)
-    print "||4|<i>Updated: " + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>"
+    print "||3|%s<i>Base Folder: %s</br />" % (pTag, probepath)
+    print "||4|Updated: " + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>" + closepTag
     
 #     for dir, file in listing:
 #         print "File: '%s' in '%s'" % (file, dir)
