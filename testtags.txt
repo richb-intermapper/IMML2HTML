@@ -2,11 +2,11 @@ display_name = "Test/Blah blah blah"
 <description>
 1
 2 take the form "domain\\user" for a domain login.  [Should Be (sb) two backslashes in final; IMML processing will remove one.]
-3 You may enter \${ADDRESS} ...
+3 \m\[blank]\g\
 4 You may enter \${ADDRESS} and \${PORT} will  [Backslash shoud remain - it escapes the ${...} macro to prevent it from being processed by IMML in the description.]
 4 Testing "# of objects" - [should retain the pound sign]
-5 All kinds of underlines: a \u2\BlitzMail\p0\ server ... see \U2\http://www.nagios.org\P0\ defined in \U2=http://www.ietf.org/rfc/rfc1034.txt\RFC 1034\p0\ [sb simple underline, link & text is "www.nagios.org", link is different from text]
-6 ... in a \u4=http://dartware.com/support/users/probes.html#tableviewer\single zip archive.\p0\ [Note: pound sign in middle of URL]
+5 All kinds of underlines: a \u2\BlitzMail\p0\ server ... see \U2\http://www.nagios.org\P0\ defined in \U2=http://www.ietf.org/rfc/rfc1034.txt\RFC 1034\p0\ and \u4=http://dartware.com/support/users/probes.html#tableviewer\single zip archive.\p0\ [sb simple underline, link & text is "www.nagios.org", link is different from text, and pound sign in middle of URL]
+6 [blank]
 7 \m-\  command[check_swap]=/usr/local/nagios/libexec/check_swap -w 20% -c 10%\g+\ [sb monospaced]
 8 \g0i++\For APC UPS devices that have the AP961x Network Management Card.\p--\ [sb italics]
 9 \bG3\Bugs or Requests? \p\\iG3\\U=mailto:upsbundle@dartware.com\Please contact us.\p\\pM0\ ["Bugs or requests" sb bold; URL sb italics]
@@ -17,9 +17,11 @@ display_name = "Test/Blah blah blah"
 9 Prop \g0\Prop, too \m0\mono\g0\ prop \m0\ mono
 10 blah blah blah \m\Code code code [next line should be proportional space]
 11 The probe waits to receive a "RFB ###.###" string. 
-12 Evil URLs should be prop: \u2\http://example.com/mgmgm\p\ \u2\http://example.com/mgmg\p\ \u2\http://example.com/gmgmg\p\ \u2\http://example.com/gmgm\p\ 
-13 and more prop... \u2=http://example.com/mgmgm\http://example.com/mgmgm\p\ \u2=http://example.com/mgmg\http://example.com/mgmg\p\ \u2=http://example.com/gmgmg\http://example.com/gmgmg\p\ \u2=http://example.com/gmgm\http://example.com/gmgm\p\ 
-16 [This line should be prop spacing]
+12 Evil URLs should be prop: \u2\http://example.com/mgmgm\p\ \u2\http://example.com/mgmg\p\ \u2\http://example.com/gmgmg\p\ \u2\http://example.com/gmgm\p\ \m\[sb prop]\g\
+13 More evil URLs \u2=http://example.com/mgmgm\http://example.com/mgmgm\p\ \u2=http://example.com/mgmg\http://example.com/mgmg\p\ \u2=http://example.com/gmgmg\http://example.com/gmgmg\p\ \u2=http://example.com/gmgm\http://example.com/gmgm\p\ \m\[sb prop, too]
+14 [This line should be prop spacing]
+15 \m\[blank]\g\
+16 \m\[blank]\g\
 17 \b\Looking for Bold strings\p\ 
 18 \B\Looking for Bold strings\P\ 
 19 \b\Looking for Bold strings\P\ 
@@ -68,7 +70,7 @@ display_name = "Test/Blah blah blah"
 50 SFLOW-MIB, which can be retrieved from \4u=http://www.sflow.org/SFLOW-MIB.txt\http://www.sflow.org/SFLOW-MIB.txt\p0\.)
 51 The protocol used to set up voice communications for Voice over IP (VOIP), as described in \u2=http://www.ietf.org/rfc/rfc3261.txt\RFC 3261\p0\. This probe sends a SIP request in a single UDP packet and checks for a valid SIP response.
 52 This probe demonstrates an InterMapper Custom SNMP probe, and many of the features that are described in the Custom Probes section of the \u2=http://www.intermapper.com/docs/developer/index.html\Developer Guide\P0\. If you have questions about this probe, \u2=mailto:support@dartware.com\please contact us.\p0\
-53 This probe requires that you first import these MIBs: \u4=http://www.ietf.org/rfc/rfc1213.txt\RFC1213-MIB (MIB-II)\p0\, \u4=http://www.ietf.org/rfc/rfc1493.txt\Bridge MIB (rfc1493)\p0\, \u4=http://www.ietf.org/rfc/rfc2011.txt\IP-MIB (rfc2011)\p0\, \u4=http://www.ietf.org/rfc/rfc2863.txt\IF-MIB (rfc2863)\p0\, and \u4=http://www.ietf.org/rfc/rfc2096.txt\IP-FORWARD-MIB (rfc2096).\p0\ These are all bundled together in a \u4=http://dartware.com/support/users/probes.html\tableviewer\single zip archive.\p0\ 
+53 This probe requires that you first import these MIBs: \u4=http://www.ietf.org/rfc/rfc1213.txt\RFC1213-MIB (MIB-II)\p0\, \u4=http://www.ietf.org/rfc/rfc1493.txt\Bridge MIB (rfc1493)\p0\, \u4=http://www.ietf.org/rfc/rfc2011.txt\IP-MIB (rfc2011)\p0\, \u4=http://www.ietf.org/rfc/rfc2863.txt\IF-MIB (rfc2863)\p0\, and \u4=http://www.ietf.org/rfc/rfc2096.txt\IP-FORWARD-MIB (rfc2096).\p0\ These are all bundled together in a \u4=http://dartware.com/support/users/probes.html#tableviewer\single zip archive.\p0\ 
 54 For more information on the <b>snmptrap</b> command, read the net-snmp documentation for the \u2=http://www.net-snmp.org/tutorial/tutorial-4/commands/snmptrap.html\trap tutorial\p0\ and the \u2=http://www.net-snmp.org/docs/man/snmpinform.html\snmptrap command\0p\. The remainder of this note shows how to send a trap with variables from the Dartware MIB:
 55 This TCP probe queries a \U2=http://www.barracudanetworks.com/\Barracuda Spam Firewall\P0\ for various performance statistics.
 56 The \u2\DND\p0\ is a centralized authentication/directory service developed at Dartmouth College. The default TCP port number for DND connections is port 902.
@@ -78,7 +80,7 @@ display_name = "Test/Blah blah blah"
 60 \i3\Note: The implementation of this probe uses OpenSSL on MacOSX.\p0\
 61 The protocol used for accessing and manipulating email messages on a server, as defined in \U2=http://www.ietf.org/rfc/rfc2060.txt\RFC 2060\P0\.  The default TCP port number for IMAP4 connections is port 143.
 62 This TCP probe queries an \U2=http://www.dartware.com/\InterMapper DataCenter\P0\ server to verify that IMAuth is configured and running on that server. This will only work when run against InterMapper DataCenter 5.1 or later.
-63 InterMapper tracks the number of bytes sent out the main UDP polling socket. Bytes/Loop is the average bytes sent per loop, averaged over the last batch of N loops. Bytes Peak is the maximum number of bytes sent in a *single* polling loop.  (In the current implementation, the peak bytes is checked on every loop, but only resets to 0 when you change the \ loops parameter; ie peak bytes is not the peak bytes of the last batch of N loops.)
+63 InterMapper tracks the number of bytes sent out the main UDP polling socket. Bytes/Loop is the average bytes sent per loop, averaged over the last batch of N loops. Bytes Peak is the maximum number of bytes sent in a *single* polling loop.  (In the current implementation, the peak bytes is checked on every loop, but only resets to 0 when you change the # loops parameter; ie peak bytes is not the peak bytes of the last batch of N loops.)
 64 The protocol used to access directories supporting the X.500 models, as described in \u2=http://www.ietf.org/rfc/rfc2251.txt\RFC 2251\p0\.
 65 The print server protocol used to print over a TCP/IP network, as defined in \U2=http://www.ietf.org/rfc/rfc1179.txt\RFC 1179\P0\. The default TCP port number for LPR connections is port 515.
 66 The protocol used to read network news on TCP/IP Internets, as defined in \U2=http://www.ietf.org/rfc/rfc0977.txt\RFC 977\P0\.  The default TCP port number for NNTP connections is port 119.
@@ -95,7 +97,7 @@ display_name = "Test/Blah blah blah"
 77 Subversion is a version control system intended as a replacement for CVS. The software is released under an Apache/BSD style open-source license. The project can be found at \U2=http://subversion.tigris.org\http://subversion.tigris.org\P0\.
 78 A description of the custom protocol used by svnserve can be found at \U2=http://svn.collab.net/repos/svn/trunk/subversion/libsvn_ra_svn/protocol\http://svn.collab.net/repos/svn/trunk/subversion/libsvn_ra_svn/protocol\P0\.
 79 The protocol used for terminal-to-terminal communication and distributed computation as described in \u2=http://www.ietf.org/rfc/rfc0854.txt\RFC 854\p0\. The default TCP port number for Telnet connections is port 23.
-80 Attempt to connect to a VNC Server. VNC uses RFB (Remote Frame Buffer) protocol for communication between clients and server.  The probe waits to receive a "RFB \\\.\\\" string. If it arrives, the VNC server is assumed to be up and the probe simply disconnects.
+80 Attempt to connect to a VNC Server. VNC uses RFB (Remote Frame Buffer) protocol for communication between clients and server.  The probe waits to receive a "RFB ###.###" string. If it arrives, the VNC server is assumed to be up and the probe simply disconnects.
 81 The Virtual Network Computer (VNC) protocol was originally designed at AT&T Labs in Cambridge. There are many implementations: the developers now support it from the RealVNC site at \U2\http://www.realvnc.com/\P0\.
 82 \g0i++\For APC UPS devices that have the AP961x Network Management Card.\p--\
 83 \b++\A. Probed MIB(s)\p--\
@@ -152,5 +154,6 @@ display_name = "Test/Blah blah blah"
 134 \b++\B. Displayed Values\p--\
 135 \b++\C. Alarms\p--\
 136 \bG3\Bugs or Requests? \p\\iU=mailto:upsbundle@dartware.com\Please contact us.\p\
+137 \gi\Testing of IM \${Chartable}, \${scalable10} and \${scalable2} Macros\p\
 
 </description>
