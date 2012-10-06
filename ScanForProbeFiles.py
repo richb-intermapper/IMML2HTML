@@ -36,11 +36,16 @@ def usableFile(fname):
     	.index
     - CVS as the sole path element
     - xxxx.zip as a suffix
+    - "MIB_Viewers" and "MIB Viewers" - they never contain anything interesting
     Returns true if none of these patterns match
     '''
     if fname.find(os.sep + ".") != -1:
         return False
     if fname.find(os.sep + "CVS" + os.sep) != -1:
+    	return False
+    if fname.find(os.sep + "MIB Viewers" + os.sep) != -1:
+    	return False
+    if fname.find(os.sep + "MIB_Viewers" + os.sep) != -1:
     	return False
     if fname.find(".zip") == (len(fname) - 4):
 #        print "File: '%s'" % fname
@@ -73,9 +78,9 @@ def GetProbeMetaInfo(probepath, infile):
     """
     f = open(infile, 'r')
     #dispPat = re.compile("display_name")
-    dispPat = re.compile("display_name.*?=")        
-    namePat = re.compile("human_name.*?=")  # look for "human_name"      
-    versPat = re.compile(r"version[\"\']?.*?=.*[\"\']?([0-9]+\.[0-9]+)")
+    dispPat = re.compile(r'display_name.["]?.*"(.+)"', re.I)        
+    namePat = re.compile(r'human_name.["]?.*"(.+)"', re.I)  # look for "human_name"      
+    versPat = re.compile(r"version[\"\']?.*?=.*[\"\']?([0-9]+\.[0-9]+)", re.I)
     displayName = ""
     version = ""
     humanname = ""
@@ -83,21 +88,25 @@ def GetProbeMetaInfo(probepath, infile):
         aLine = f.readline()
         if aLine == "":
             break
-        bLine = aLine.lower()
-        if dispPat.search(bLine) is not None:
-            displayName = CleanLineEndings(aLine)
-        matches = versPat.search(bLine)
+        aLine = CleanLineEndings(aLine)
+        # bLine = aLine
+        matches = dispPat.search(aLine)
+        if matches:
+            displayName = matches.group(1)
+        matches = versPat.search(aLine)
         if matches:
             version = matches.group(1)
-        matches = namePat.search(bLine)
+        matches = namePat.search(aLine)
         if matches:
             humanname = matches.group(1)
+            #print "***Found HumanName: '%s'; human_name: '%s'" % (aLine, humanname)
 #    else:
 #        print "Fell off end of file****"
         
     f.close()
     
-    if displayName == "":							# some probes don't have "display_name"
+    if displayName == "" and humanname != "":	# some probes don't have "display_name"
+        # print "***Line: '%s'; human_name: '%s'" % (bLine, humanname)
         displayName = "Uncategorized/" + humanname  # just use the human name
         
     # clean up the path
@@ -112,13 +121,14 @@ def GetProbeDescription(infile):
     Scan through the file line by line
     Find all the lines between <description> and </description>
     Change each line from IMML to HTML
+    Return a list of the HTML-ized lines without line endings
     """
     f = open(infile, 'r')
     # print "Opening: '" + infile + "'<br />"
 
     printing = False
     notDone = True                                # set to false when we hit closing </description>
-    resultstr = ""
+    result = []
     while notDone:
         aLine = f.readline()
         #print infile + ":" + aLine + "<br />"
@@ -137,8 +147,8 @@ def GetProbeDescription(infile):
             bLine = IMMLtoHTML(aLine)
             # resultstr += bLine
             if bLine is not None:
-                resultstr += bLine + lf
-    return resultstr
+                result.append(bLine)
+    return result
 
 def ProcessProbeFile(probepath, infile):
 
@@ -150,10 +160,10 @@ def ProcessProbeFile(probepath, infile):
     """
     (category, filename, version) = GetProbeMetaInfo(probepath, infile)
     if category == "" or version == "":              # couldn't find category or version
-        print "*** Bad News - File: %s; Category '%s'; Version '%s'" % (filename, category, version)
+        # print "*** Bad News - File: %s; Category '%s'; Version '%s'" % (filename, category, version)
         return None
     definitions = GetProbeDescription(infile)        # couldn't find <definitions>
-    if definitions == "":
+    if len(definition) == 0:
         return None
     
     # output header line
