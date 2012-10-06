@@ -97,8 +97,11 @@ def ProcessPropMono(bLine):
         cLine += "`" + markup             # append any accumulated markup
     if inMono:
         cLine += "</code>"                # 
+
     # print "End result: [" + markup + "]" + cLine + "<br />"
-    return cLine
+    if cLine == "":                       # If we stripped out the entire line
+        return None                       # return None
+    return cLine                          # otherwise, return the line
     
 def IMMLtoHTML(aLine):
     
@@ -141,6 +144,8 @@ def IMMLtoHTML(aLine):
     pPat =  re.compile("`[-+p0-9]+?`(.*?)`[-+P0-9]+?`", re.I)        	# \p\ ... \p\
 
     cLine = ProcessPropMono(bLine)									# handle prop. and monospace
+    if cLine == None:
+        return None
     cLine = re.sub(iPat,  r"<i>\1</i>", cLine)                 		# italics
     cLine = re.sub(bPat,  r"<b>\1</b>", cLine)                 		# bolds
     cLine = re.sub(ibPat, r"<b><i>\1</i></b>", cLine)         		# bold italics
@@ -149,8 +154,8 @@ def IMMLtoHTML(aLine):
     cLine = re.sub(uPat,  r'<u>\1</u>', cLine)                		# u... (underlined text)
     cLine = re.sub(pPat,  r'\1', cLine)                        		# \p\ ... \p\ is a no-op
 
-#     print "'%s'" % aLine
-#     print "'%s'" % cLine
+    # print "'%s'" % aLine
+    # print "'%s'" % cLine
     if cLine[0] == "*" or cLine[0] == "-":            	# bullet-ish character at front of line
         cLine = cLine[1:]
         cLine = liTag + cLine + closeliTag            	# wrap in <li> ... </li> tags
