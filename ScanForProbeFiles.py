@@ -173,7 +173,7 @@ def ProcessProbeFile(probepath, infile):
     #   category|filename|2|<blockquote>
     #   category|filename|3| HTML-ized line1
     #   category|filename|4| HTML-ized line2
-    #	...
+    #   ...
     #   category|filename|n-1| HTML-ized line n-2
     #   category|filename|n| </blockquote>
 
@@ -185,13 +185,6 @@ def ProcessProbeFile(probepath, infile):
     print "%s|%s|%d|%s" % (category, filename, i+4, "<i>Filename: "+filename+"</i><br />")    
     print "%s|%s|%d|%s" % (category, filename, i+5, "<i>Version: "+version+"</i><br />")    
     print "%s|%s|%d|%s" % (category, filename, i+6, closepTag)    
-    
-#     print filename + ": " + category
-#     print "<blockquote>" + definitions + "</blockquote>" + lf + pTag
-#     print "<i>Filename: " + filename + "</i><br />"
-#     print "<i>Version: " + version + "</i>"
-#     print closepTag
-
 
 # Main Routine
 # For each file from designated directory
@@ -211,39 +204,38 @@ def main(argv=None):
     else:
         arg = args[0]
     
-    probepath = arg
-    if probepath == "":						# build path to local copy of probes
-        wd = os.getcwd()
+    probepath = arg                         # use the argument that was passed in
+    wd = os.getcwd()                        # get the working directory
+    if probepath == "":						# no argument: build path to local copy of probes
         probepath = join(wd, 'BuiltinProbes')
-    if probepath[-1] != os.sep:				# make sure the path ends in separator
-        probepath += os.sep
-    # print probepath
-    # print "Hi Rich"
     
-    listing = []
-    # walk the root directry, build a list of all the non-directory files
-    for root, dirs, files in os.walk(probepath):
-        for name in files:
-            fname = join(root, name)
-            if (usableFile(fname)):
-                listing.append(fname)    
+    listing = []                            # listing holds files to process
+    if os.path.isfile(probepath) or os.path.isfile(join(wd, probepath)):  # if it's just a filename
+        listing.append(probepath)           # add it as the sole item in the list
+    elif os.path.isdir(probepath):
+        if probepath[-1] != os.sep:			# make sure the path ends in separator
+            probepath += os.sep
+        # walk the root directry, build a list of all the non-directory files
+        for root, dirs, files in os.walk(probepath):
+            for name in files:
+                fname = join(root, name)
+                if (usableFile(fname)):
+                    listing.append(fname)
+    else: 
+        print "No such file or directory: '%s'" % probepath 
+        return 1                            # return something bad
 
-
-
-
-    # Print heading info with date
+    # Print heading info with date          # add this to the head of the output file
     today = str(datetime.date.today())
     print "||1|<link rel='stylesheet' type='text/css' href='http://www.intermapper.com/library/styles/client.css' />"
     print "||2|<h1>InterMapper Probe Documentation</h1>"
-    print "||3|%s<i>Base Folder: %s</br />" % (pTag, probepath)
+    print "||3|%s<i>Base: %s</br />" % (pTag, probepath)
     print "||4|Updated: " + time.strftime('%l:%M%p %Z on %b %d, %Y') + "</i>" + closepTag
     
-#     for dir, file in listing:
-#         print "File: '%s' in '%s'" % (file, dir)
-        
-    # at this point, listing contains a list of filenames to process
+    # listing contains a list of filenames to process
     for infile in listing:
         ProcessProbeFile(probepath, infile)
-            
+    return 0
+    
 if __name__ == "__main__":
     sys.exit(main())
