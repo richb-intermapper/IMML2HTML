@@ -1,163 +1,158 @@
-
-<p class="proberef">
-<h1>InterMapper Builtin Probe Reference</h1>
-<i>Updated: 2012-09-30 7:15PM EDT on Sep 30, 2012</i>
-</p>
-testtags.txt: display_name = "Test/Blah blah blah"
-<blockquote><p class="proberef"></p>
-<p class="proberef">1</p>
-<p class="proberef">2 take the form "domain\\user" for a domain login.  [Should Be (sb) two backslashes in final; IMML processing will remove one.]</p>
-<p class="proberef">3 You may enter \${ADDRESS} ...</p>
-<p class="proberef">4 You may enter \${address} and \${PORT} will  [Backslash shoud remain - it escapes the ${...} macro to prevent it from being processed by IMML in the description.]</p>
-<p class="proberef">4 Testing "# of objects" - [should retain the pound sign]</p>
-<p class="proberef">5 All kinds of underlines: a <u>BlitzMail</u> server ... see <a href="http://www.nagios.org">http://www.nagios.org</a> defined in <a href="http://www.ietf.org/rfc/rfc1034.txt">RFC 1034</a> [sb simple underline, link & text is "www.nagios.org", link is different from text]</p>
-<p class="proberef">6 ... in a <a href="http://dartware.com/support/users/probes.html#tableviewer">single zip archive.</a> [Note: pound sign in middle of URL]</p>
-<p class="proberef">7 <code>  command[check_swap]=/usr/local/nagios/libexec/check_swap -w 20% -c 10%</code> [sb monospaced]</p>
-<p class="proberef">8 <i>For APC UPS devices that have the AP961x Network Management Card.</i> [sb italics]</p>
-<p class="proberef">9 <b>Bugs or Requests? </b><i><a href="mailto:upsbundle@dartware.com">Please contact us.</i></a><code> ["Bugs or requests" sb bold; URL sb italics]</code></p>
-<p class="proberef"><li class="proberef"> First bullet [all four sb bulleted]</li></p>
-<p class="proberef"><li class="proberef"> Second bullet</li></p>
-<p class="proberef"><li class="proberef"> Third bullet</li></p>
-<p class="proberef"><li class="proberef"> Fourth bullet</li></p>
-<p class="proberef">9 Prop Prop, too <code>mono</code> prop <code> mono</code></p>
-<p class="proberef">10 blah blah blah <code>Code code code [next line should be proportional space]</code></p>
-<p class="proberef">11 The probe waits to receive a "RFB ###.###" string. </p>
-<p class="proberef">12 Evil URLs should be prop: <a href="http://example.com/mgmgm">http://example.com/mgmgm</a> <a href="http://example.com/mgmg">http://example.com/mgmg</a> <a href="http://example.com/gmgmg">http://example.com/gmgmg</a> <a href="http://example.com/gmgm">http://example.com/gmgm</a> </p>
-<p class="proberef">13 and more prop... <a href="http://example.com/mgmgm">http://example.com/mgmgm</a> <a href="http://example.com/mgmg">http://example.com/mgmg</a> <a href="http://example.com/gmgmg">http://example.com/gmgmg</a> <a href="http://example.com/gmgm">http://example.com/gmgm</a> </p>
-<p class="proberef">16 [This line should be prop spacing]</p>
-<p class="proberef">17 <b>Looking for Bold strings</b> </p>
-<p class="proberef">18 <b>Looking for Bold strings</b> </p>
-<p class="proberef">19 <b>Looking for Bold strings</b> </p>
-<p class="proberef">20 <b>Looking for Bold strings</b> </p>
-<p class="proberef">21 <b>Looking for Bold strings</b> </p>
-<p class="proberef">22 <b>Looking for Bold strings</b> </p>
-<p class="proberef">23 <b>Looking for Bold strings</b> </p>
-<p class="proberef">24 <b>Looking for Bold strings</b> </p>
-<p class="proberef">25 <b>Looking for Bold strings</b> </p>
-<p class="proberef">26 <b>Looking for Bold strings</b> </p>
-<p class="proberef">27 <b>Looking for Bold strings</b> </p>
-<p class="proberef">28 <b>Looking for Bold strings</b> </p>
-<p class="proberef">29 <i>And some italics stuff</i> </p>
-<p class="proberef">30 <i>And some italics stuff</i> </p>
-<p class="proberef">31 <i>And some italics stuff</i> </p>
-<p class="proberef">32 <i>And some italics stuff</i> </p>
-<p class="proberef">33 <i>And some italics stuff</i> </p>
-<p class="proberef">34 <i>And some italics stuff</i> </p>
-<p class="proberef">35 <i>And some italics stuff</i> </p>
-<p class="proberef">36 <i>And some italics stuff</i> </p>
-<p class="proberef">37 <i>And some italics stuff</i> </p>
-<p class="proberef">38 <i>And some italics stuff</i> </p>
-<p class="proberef">39 <i>And some italics stuff</i> </p>
-<p class="proberef">40 <i>And some italics stuff</i> </p>
-<p class="proberef">29 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">30 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">31 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">32 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">33 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">34 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">35 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">36 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">37 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">38 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">39 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">40 <b><i>And bold italic stuff</i></b> </p>
-<p class="proberef">41 as defined in <a href="http://www.ietf.org/rfc/rfc1034.txt">RFC 1034</a> and <a href="http://www.ietf.org/rfc/rfc1035.txt">RFC 1035</a>. This probe sends a DNS request to look up the mail server for a specified domain name.</p>
-<p class="proberef">42 This probe tests the operation of <u>Sassafras Software</u>'s KeyServer via TCP/IP.  <u>KeyServer</u> is a software license management tool for Windows, Macintosh and thin-client based computers.</p>
-<p class="proberef">43 information, see <a href="http://www.nagios.org">http://www.nagios.org</a> </p>
-<p class="proberef">44 <a href="http://www.ietf.org/rfc/rfc1119.txt">RFC 1119</a>. </p>
-<p class="proberef">45 User Guide at <a href="http://dartware.com/go.php?to=intermapper.probegroups">http://dartware.com/go.php?to=intermapper.probegroups</a>.</p>
-<p class="proberef">46 <a href="http://www.ietf.org/rfc/rfc2138.txt">RFC 2138</a>. This probe tests a RADIUS server by </p>
-<p class="proberef">47 the sFlow exporter. It relies on the <a href="http://www.sflow.org/SFLOW-MIB5.txt">sFlow MIB version 1.3,</a> with the Enterprise Number 14706 for sFlow version 5.</p>
-<p class="proberef">48 SFLOW-MIB from <a href="http://www.sflow.org/SFLOW-MIB5.txt">http://www.sflow.org/SFLOW-MIB5.txt</a>)</p>
-<p class="proberef">49 This probe's Status Window displays the sFlow version, and the address and address type of the sFlow exporter. It relies on the <a href="http://www.sflow.org/SFLOW-MIB.txt">sFlow MIB version 1.2</a> with the Enterprise Number 4300 to retrieve stats for sFlow versions 2 and 4. </p>
-<p class="proberef">50 SFLOW-MIB, which can be retrieved from <a href="http://www.sflow.org/SFLOW-MIB.txt">http://www.sflow.org/SFLOW-MIB.txt</a>.)</p>
-<p class="proberef">51 The protocol used to set up voice communications for Voice over IP (VOIP), as described in <a href="http://www.ietf.org/rfc/rfc3261.txt">RFC 3261</a>. This probe sends a SIP request in a single UDP packet and checks for a valid SIP response.</p>
-<p class="proberef">52 This probe demonstrates an InterMapper Custom SNMP probe, and many of the features that are described in the Custom Probes section of the <a href="http://www.intermapper.com/docs/developer/index.html">Developer Guide</a>. If you have questions about this probe, <a href="mailto:support@dartware.com">please contact us.</a></p>
-<p class="proberef">53 This probe requires that you first import these MIBs: <a href="http://www.ietf.org/rfc/rfc1213.txt">RFC1213-MIB (MIB-II)</a>, <a href="http://www.ietf.org/rfc/rfc1493.txt">Bridge MIB (rfc1493)</a>, <a href="http://www.ietf.org/rfc/rfc2011.txt">IP-MIB (rfc2011)</a>, <a href="http://www.ietf.org/rfc/rfc2863.txt">IF-MIB (rfc2863)</a>, and <a href="http://www.ietf.org/rfc/rfc2096.txt">IP-FORWARD-MIB (rfc2096).</a> These are all bundled together in a <a href="http://dartware.com/support/users/probes.html">tableviewer\sinle zip archive.</a> </p>
-<p class="proberef">54 For more information on the <b>snmptrap</b> command, read the net-snmp documentation for the <a href="http://www.net-snmp.org/tutorial/tutorial-4/commands/snmptrap.html">trap tutorial</a> and the <a href="http://www.net-snmp.org/docs/man/snmpinform.html">snmptrap command</a>. The remainder of this note shows how to send a trap with variables from the Dartware MIB:</p>
-<p class="proberef">55 This TCP probe queries a <a href="http://www.barracudanetworks.com/">Barracuda Spam Firewall</a> for various performance statistics.</p>
-<p class="proberef">56 The <u>DND</u> is a centralized authentication/directory service developed at Dartmouth College. The default TCP port number for DND connections is port 902.</p>
-<p class="proberef">57 The standard protocol for transferring files on TCP/IP internets, as defined in <a href="http://www.ietf.org/rfc/rfc0959.txt">RFC 959</a>.  The default TCP port number for FTP control connections is port 21.</p>
-<p class="proberef">58 The document search and retrieval protocol described in <a href="http://www.ietf.org/rfc/rfc1436.txt">RFC 1436</a>.  The default TCP port number for Gopher connections is port 70.</p>
-<p class="proberef">59 The protocol used to transfer web pages on the World Wide Web, defined in <a href="http://www.ietf.org/rfc/rfc2068.txt">RFC 2068</a> and <a href="http://www.ietf.org/rfc/rfc1945.txt">RFC 1945</a>. The default TCP port number for HTTP connections is port 80.</p>
-<p class="proberef">60 <i>Note: The implementation of this probe uses OpenSSL on MacOSX.</i></p>
-<p class="proberef">61 The protocol used for accessing and manipulating email messages on a server, as defined in <a href="http://www.ietf.org/rfc/rfc2060.txt">RFC 2060</a>.  The default TCP port number for IMAP4 connections is port 143.</p>
-<p class="proberef">62 This TCP probe queries an <a href="http://www.dartware.com/">InterMapper DataCenter</a> server to verify that IMAuth is configured and running on that server. This will only work when run against InterMapper DataCenter 5.1 or later.</p>
-<p class="proberef">63 InterMapper tracks the number of bytes sent out the main UDP polling socket. Bytes/Loop is the average bytes sent per loop, averaged over the last batch of N loops. Bytes Peak is the maximum number of bytes sent in a *single* polling loop.  (In the current implementation, the peak bytes is checked on every loop, but only resets to 0 when you change the \ loops parameter; ie peak bytes is not the peak bytes of the last batch of N loops.)</p>
-<p class="proberef">64 The protocol used to access directories supporting the X.500 models, as described in <a href="http://www.ietf.org/rfc/rfc2251.txt">RFC 2251</a>.</p>
-<p class="proberef">65 The print server protocol used to print over a TCP/IP network, as defined in <a href="http://www.ietf.org/rfc/rfc1179.txt">RFC 1179</a>. The default TCP port number for LPR connections is port 515.</p>
-<p class="proberef">66 The protocol used to read network news on TCP/IP Internets, as defined in <a href="http://www.ietf.org/rfc/rfc0977.txt">RFC 977</a>.  The default TCP port number for NNTP connections is port 119.</p>
-<p class="proberef">67 <b>Nagios NRPE over SSL/TLS</b></p>
-<p class="proberef">68 <code>  command[check_swap]=/usr/local/nagios/libexec/check_swap -w 20% -c 10%</code></p>
-<p class="proberef">69 For information about installing an NRPE daemon, see the <a href="http://nagios.sourceforge.net/docs/nrpe/NRPE.pdf">NRPE Documentation</a> (at http://nagios.sourceforge.net/docs/nrpe/NRPE.pdf), especially the section on Remote Host Configuration. Nagios and the Nagios logo are registered trademarks of Ethan Galstad. For more information, see <a href="http://www.nagios.org.">http://www.nagios.org.</a> </p>
-<p class="proberef">70 This TCP probe queries a <a href="http://www.apple.com/server/macosx/">Mac OS X Server</a> installation for various details about its Apple File Sharing using the Server Admin port and protocol.</p>
-<p class="proberef">71 <i>Note: The implementation of this probe uses OpenSSL on MacOS X.</i></p>
-<p class="proberef">72 The protocol used to access email messages from a central maildrop server, as defined in <a href="http://www.ietf.org/rfc/rfc1939.txt">RFC 1939</a>.  The default TCP port number for POP3 connections is port 110.</p>
-<p class="proberef">73 The protocol used to control real-time streams, defined in <a href="http://www.ietf.org/rfc/rfc2326.txt">RFC 2326</a> and <a href="http://www.ietf.org/rfc/rfc1889.txt">RFC 1889</a>.  The default TCP port number for RTSP connections is port 554.</p>
-<p class="proberef">74 The standard protocol used to transfer electronic mail on the Internet, as defined in <a href="http://www.ietf.org/rfc/rfc0821.txt">RFC 821</a>.  The default TCP port number for SMTP connections is port 25.</p>
-<p class="proberef">75 This protocol transfers pager information across the Internet, as defined in <a href="http://www.ietf.org/rfc/rfc1861.txt">RFC 1861</a>.  The default TCP port number for SMTP connections is port 444.</p>
-<p class="proberef">76 This TCP probe opens a connection to the specified port and looks for the identification string that indicates an SSH server as specified in <a href="http://www.ietf.org/rfc/rfc4253.txt">RFC 4253</a>.</p>
-<p class="proberef">77 Subversion is a version control system intended as a replacement for CVS. The software is released under an Apache/BSD style open-source license. The project can be found at <a href="http://subversion.tigris.org">http://subversion.tigris.org</a>.</p>
-<p class="proberef">78 A description of the custom protocol used by svnserve can be found at <a href="http://svn.collab.net/repos/svn/trunk/subversion/libsvn_ra_svn/protocol">http://svn.collab.net/repos/svn/trunk/subversion/libsvn_ra_svn/protocol</a>.</p>
-<p class="proberef">79 The protocol used for terminal-to-terminal communication and distributed computation as described in <a href="http://www.ietf.org/rfc/rfc0854.txt">RFC 854</a>. The default TCP port number for Telnet connections is port 23.</p>
-<p class="proberef">80 Attempt to connect to a VNC Server. VNC uses RFB (Remote Frame Buffer) protocol for communication between clients and server.  The probe waits to receive a "RFB \\\.\\\" string. If it arrives, the VNC server is assumed to be up and the probe simply disconnects.</p>
-<p class="proberef">81 The Virtual Network Computer (VNC) protocol was originally designed at AT&T Labs in Cambridge. There are many implementations: the developers now support it from the RealVNC site at <a href="http://www.realvnc.com/">http://www.realvnc.com/</a>.</p>
-<p class="proberef">82 <i>For APC UPS devices that have the AP961x Network Management Card.</i></p>
-<p class="proberef">83 <b>A. Probed MIB(s)</b></p>
-<p class="proberef">84 <b>B. Displayed Values</b></p>
-<p class="proberef">85 <b>C. Alarms</b></p>
-<p class="proberef">86 <b>D. Warnings</b></p>
-<p class="proberef">87 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
-<p class="proberef">88 <i>For APC UPS devices.</i></p>
-<p class="proberef">89 <b>A. Probed MIB(s)</b></p>
-<p class="proberef">90 <b>B. Displayed Values</b></p>
-<p class="proberef">91 <b>C. Alarms</b></p>
-<p class="proberef">92 <b>D. Warnings</b></p>
-<p class="proberef">93 <b>E. Parameters</b></p>
-<p class="proberef">94 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
-<p class="proberef">95 <i>For BestPower UPS devices.</i></p>
-<p class="proberef">96 <b>A. Probed MIB(s)</b></p>
-<p class="proberef">97 <b>B. Displayed Values</b></p>
-<p class="proberef">98 <b>C. Alarms & Warnings</b></p>
-<p class="proberef">99 <b>D. Parameters</b></p>
-<p class="proberef">100 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
-<p class="proberef">101 <i>For Liebert UPS devices that have the OpenComms Network Management Card.</i></p>
-<p class="proberef">102 <b>A. Probed MIB(s)</b></p>
-<p class="proberef">103 <b>B. Displayed Values</b></p>
-<p class="proberef">104 <b>C. Alarms</b></p>
-<p class="proberef">105 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
-<p class="proberef">106 <i>For Liebert Series 300 UPS devices.</i></p>
-<p class="proberef">107 <b>A. Probed MIB(s)</b></p>
-<p class="proberef">108 <b>B. Displayed Values</b></p>
-<p class="proberef">109 <b>C. Alarms</b></p>
-<p class="proberef">110 <b>Bugs or Requests? </b><i><a href="mailto:upsbundle@dartware.com">Please contact us.</i></a><code></code></p>
-<p class="proberef">111 <i>For Liebert UPS devices.</i></p>
-<p class="proberef">112 1) Check other probes to see if one exists for your Liebert UPS device.</p>
-<p class="proberef">113 2) If not, select this probe.</p>
-<p class="proberef">114 3) Open the status window and "Copy All" (right/option click on the window)</p>
-<p class="proberef">115 \p\4) "Paste" into an email and <a href="mailto:upsbundle@dartware.com">send the info to us</a>.</p>
-<p class="proberef">116 5) We'll try to develop a probe for your device as soon as possible.</p>
-<p class="proberef">117 <b>A. Probed MIB(s)</b></p>
-<p class="proberef">118 <b>B. Displayed Values</b></p>
-<p class="proberef">119 <i>For standard UPS devices.</i></p>
-<p class="proberef">120 <b>A. Probed MIB(s)</b></p>
-<p class="proberef">121 <b>B. Displayed Values</b></p>
-<p class="proberef">122 <b>C. Alarms</b></p>
-<p class="proberef">123 <b>D. Parameters</b></p>
-<p class="proberef">124 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
-<p class="proberef">125 <i>For TrippLite UPS devices with an EnviroSense Unit.</i></p>
-<p class="proberef">126 <b>A. Probed MIB(s)</b></p>
-<p class="proberef">127 <b>B. Displayed Values</b></p>
-<p class="proberef">128 <b>C. Alarms</b></p>
-<p class="proberef">129 <b>Bugs or Requests? </b><i><a href="mailto:upsbundle@dartware.com">Please contact us.</i></a><code></code></p>
-<p class="proberef">130 This probe uses WMI to retrieve performance information about the delivery queues on a MS Exchange 2007 Mailbox Server.  Specifically, it queries the Win32_PerfFormattedData_MSExchangeIS_MSExchangeIS, Win32_PerfFormattedData_MSExchangeIS_MSExchangeISMailbox, Win32_PerfFormattedData_MSExchangeIS_MSExchangeISPublic, Win32_PerfFormattedData_MSExchangeSearchIndices_MSExchangeSearchIndices classes to collect a variety of statistics and then compares them to the criteria you set.  The default criteria for warning and critical conditions are taken from the Microsoft TechNet article <a href="http://technet.microsoft.com/en-us/library/bb201689.aspx">Monitoring Mailbox Servers</a>.</p>
-<p class="proberef">131 This probe monitors an <a href="http://www.alvarion.com">Alvarion</a> B-14 or B-28 base unit </p>
-<p class="proberef">132 <i>For Exide UPS devices.</i></p>
-<p class="proberef">133 <b>A. Probed MIB(s)</b></p>
-<p class="proberef">134 <b>B. Displayed Values</b></p>
-<p class="proberef">135 <b>C. Alarms</b></p>
-<p class="proberef">136 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
-<p class="proberef"></blockquote><p class="proberef">
-<i>Filename: testtags.txt</i><br />
-<i>Version: 123.45</i>
-</p>
+<p class="content">display_name = "Test/Blah blah blah"</p>
+<p class="content"><description></p>
+<p class="content">1</p>
+<p class="content">2 take the form "domain\\user" for a domain login.  [Should Be (sb) two backslashes in final; IMML processing will remove one.]</p>
+<p class="content">3 <code>[blank]</code></p>
+<p class="content">4 You may enter \${ADDRESS} and \${PORT} will  [Backslash shoud remain - it escapes the ${...} macro to prevent it from being processed by IMML in the description.]</p>
+<p class="content">4 Testing "# of objects" - [should retain the pound sign]</p>
+<p class="content">5 All kinds of underlines: a <u>BlitzMail</u> server ... see <a href="http://www.nagios.org">http://www.nagios.org</a> defined in <a href="http://www.ietf.org/rfc/rfc1034.txt">RFC 1034</a> and <a href="http://dartware.com/support/users/probes.html#tableviewer">single zip archive.</a> [sb simple underline, link & text is "www.nagios.org", link is different from text, and pound sign in middle of URL]</p>
+<p class="content">6 [blank]</p>
+<p class="content">7 <code>  command[check_swap]=/usr/local/nagios/libexec/check_swap -w 20% -c 10%</code> [sb monospaced]</p>
+<p class="content">8 <i>For APC UPS devices that have the AP961x Network Management Card.</i> [sb italics]</p>
+<p class="content">9 <b>Bugs or Requests? </b><i><a href="mailto:upsbundle@dartware.com">Please contact us.</i></a><code> ["Bugs or requests" sb bold; URL sb italics]</code></p>
+<p class="content"><li class="content"> First bullet [all four sb bulleted]</li></p>
+<p class="content"><li class="content"> Second bullet</li></p>
+<p class="content"><li class="content"> Third bullet</li></p>
+<p class="content"><li class="content"> Fourth bullet</li></p>
+<p class="content">9 Prop Prop, too <code>mono</code> prop <code> mono</code></p>
+<p class="content">10 blah blah blah <code>Code code code [next line should be proportional space]</code></p>
+<p class="content">11 The probe waits to receive a "RFB ###.###" string. </p>
+<p class="content">12 Evil URLs should be prop: <a href="http://example.com/mgmgm">http://example.com/mgmgm</a> <a href="http://example.com/mgmg">http://example.com/mgmg</a> <a href="http://example.com/gmgmg">http://example.com/gmgmg</a> <a href="http://example.com/gmgm">http://example.com/gmgm</a> <code>[sb prop]</code></p>
+<p class="content">13 More evil URLs <a href="http://example.com/mgmgm">http://example.com/mgmgm</a> <a href="http://example.com/mgmg">http://example.com/mgmg</a> <a href="http://example.com/gmgmg">http://example.com/gmgmg</a> <a href="http://example.com/gmgm">http://example.com/gmgm</a> <code>[sb prop, too]</code></p>
+<p class="content">14 [This line should be prop spacing]</p>
+<p class="content">15 <code>[blank]</code></p>
+<p class="content">16 <code>[blank]</code></p>
+<p class="content">17 <b>Looking for Bold strings</b> </p>
+<p class="content">18 <b>Looking for Bold strings</b> </p>
+<p class="content">19 <b>Looking for Bold strings</b> </p>
+<p class="content">20 <b>Looking for Bold strings</b> </p>
+<p class="content">21 <b>Looking for Bold strings</b> </p>
+<p class="content">22 <b>Looking for Bold strings</b> </p>
+<p class="content">23 <b>Looking for Bold strings</b> </p>
+<p class="content">24 <b>Looking for Bold strings</b> </p>
+<p class="content">25 <b>Looking for Bold strings</b> </p>
+<p class="content">26 <b>Looking for Bold strings</b> </p>
+<p class="content">27 <b>Looking for Bold strings</b> </p>
+<p class="content">28 <b>Looking for Bold strings</b> </p>
+<p class="content">29 <i>And some italics stuff</i> </p>
+<p class="content">30 <i>And some italics stuff</i> </p>
+<p class="content">31 <i>And some italics stuff</i> </p>
+<p class="content">32 <i>And some italics stuff</i> </p>
+<p class="content">33 <i>And some italics stuff</i> </p>
+<p class="content">34 <i>And some italics stuff</i> </p>
+<p class="content">35 <i>And some italics stuff</i> </p>
+<p class="content">36 <i>And some italics stuff</i> </p>
+<p class="content">37 <i>And some italics stuff</i> </p>
+<p class="content">38 <i>And some italics stuff</i> </p>
+<p class="content">39 <i>And some italics stuff</i> </p>
+<p class="content">40 <i>And some italics stuff</i> </p>
+<p class="content">29 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">30 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">31 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">32 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">33 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">34 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">35 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">36 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">37 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">38 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">39 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">40 <b><i>And bold italic stuff</i></b> </p>
+<p class="content">41 as defined in <a href="http://www.ietf.org/rfc/rfc1034.txt">RFC 1034</a> and <a href="http://www.ietf.org/rfc/rfc1035.txt">RFC 1035</a>. This probe sends a DNS request to look up the mail server for a specified domain name.</p>
+<p class="content">42 This probe tests the operation of <u>Sassafras Software</u>'s KeyServer via TCP/IP.  <u>KeyServer</u> is a software license management tool for Windows, Macintosh and thin-client based computers.</p>
+<p class="content">43 information, see <a href="http://www.nagios.org">http://www.nagios.org</a> </p>
+<p class="content">44 <a href="http://www.ietf.org/rfc/rfc1119.txt">RFC 1119</a>. </p>
+<p class="content">45 User Guide at <a href="http://dartware.com/go.php?to=intermapper.probegroups">http://dartware.com/go.php?to=intermapper.probegroups</a>.</p>
+<p class="content">46 <a href="http://www.ietf.org/rfc/rfc2138.txt">RFC 2138</a>. This probe tests a RADIUS server by </p>
+<p class="content">47 the sFlow exporter. It relies on the <a href="http://www.sflow.org/SFLOW-MIB5.txt">sFlow MIB version 1.3,</a> with the Enterprise Number 14706 for sFlow version 5.</p>
+<p class="content">48 SFLOW-MIB from <a href="http://www.sflow.org/SFLOW-MIB5.txt">http://www.sflow.org/SFLOW-MIB5.txt</a>)</p>
+<p class="content">49 This probe's Status Window displays the sFlow version, and the address and address type of the sFlow exporter. It relies on the <a href="http://www.sflow.org/SFLOW-MIB.txt">sFlow MIB version 1.2</a> with the Enterprise Number 4300 to retrieve stats for sFlow versions 2 and 4. </p>
+<p class="content">50 SFLOW-MIB, which can be retrieved from <a href="http://www.sflow.org/SFLOW-MIB.txt">http://www.sflow.org/SFLOW-MIB.txt</a>.)</p>
+<p class="content">51 The protocol used to set up voice communications for Voice over IP (VOIP), as described in <a href="http://www.ietf.org/rfc/rfc3261.txt">RFC 3261</a>. This probe sends a SIP request in a single UDP packet and checks for a valid SIP response.</p>
+<p class="content">52 This probe demonstrates an InterMapper Custom SNMP probe, and many of the features that are described in the Custom Probes section of the <a href="http://www.intermapper.com/docs/developer/index.html">Developer Guide</a>. If you have questions about this probe, <a href="mailto:support@dartware.com">please contact us.</a></p>
+<p class="content">53 This probe requires that you first import these MIBs: <a href="http://www.ietf.org/rfc/rfc1213.txt">RFC1213-MIB (MIB-II)</a>, <a href="http://www.ietf.org/rfc/rfc1493.txt">Bridge MIB (rfc1493)</a>, <a href="http://www.ietf.org/rfc/rfc2011.txt">IP-MIB (rfc2011)</a>, <a href="http://www.ietf.org/rfc/rfc2863.txt">IF-MIB (rfc2863)</a>, and <a href="http://www.ietf.org/rfc/rfc2096.txt">IP-FORWARD-MIB (rfc2096).</a> These are all bundled together in a <a href="http://dartware.com/support/users/probes.html#tableviewer">single zip archive.</a> </p>
+<p class="content">54 For more information on the <b>snmptrap</b> command, read the net-snmp documentation for the <a href="http://www.net-snmp.org/tutorial/tutorial-4/commands/snmptrap.html">trap tutorial</a> and the <a href="http://www.net-snmp.org/docs/man/snmpinform.html">snmptrap command</a>. The remainder of this note shows how to send a trap with variables from the Dartware MIB:</p>
+<p class="content">55 This TCP probe queries a <a href="http://www.barracudanetworks.com/">Barracuda Spam Firewall</a> for various performance statistics.</p>
+<p class="content">56 The <u>DND</u> is a centralized authentication/directory service developed at Dartmouth College. The default TCP port number for DND connections is port 902.</p>
+<p class="content">57 The standard protocol for transferring files on TCP/IP internets, as defined in <a href="http://www.ietf.org/rfc/rfc0959.txt">RFC 959</a>.  The default TCP port number for FTP control connections is port 21.</p>
+<p class="content">58 The document search and retrieval protocol described in <a href="http://www.ietf.org/rfc/rfc1436.txt">RFC 1436</a>.  The default TCP port number for Gopher connections is port 70.</p>
+<p class="content">59 The protocol used to transfer web pages on the World Wide Web, defined in <a href="http://www.ietf.org/rfc/rfc2068.txt">RFC 2068</a> and <a href="http://www.ietf.org/rfc/rfc1945.txt">RFC 1945</a>. The default TCP port number for HTTP connections is port 80.</p>
+<p class="content">60 <i>Note: The implementation of this probe uses OpenSSL on MacOSX.</i></p>
+<p class="content">61 The protocol used for accessing and manipulating email messages on a server, as defined in <a href="http://www.ietf.org/rfc/rfc2060.txt">RFC 2060</a>.  The default TCP port number for IMAP4 connections is port 143.</p>
+<p class="content">62 This TCP probe queries an <a href="http://www.dartware.com/">InterMapper DataCenter</a> server to verify that IMAuth is configured and running on that server. This will only work when run against InterMapper DataCenter 5.1 or later.</p>
+<p class="content">63 InterMapper tracks the number of bytes sent out the main UDP polling socket. Bytes/Loop is the average bytes sent per loop, averaged over the last batch of N loops. Bytes Peak is the maximum number of bytes sent in a *single* polling loop.  (In the current implementation, the peak bytes is checked on every loop, but only resets to 0 when you change the # loops parameter; ie peak bytes is not the peak bytes of the last batch of N loops.)</p>
+<p class="content">64 The protocol used to access directories supporting the X.500 models, as described in <a href="http://www.ietf.org/rfc/rfc2251.txt">RFC 2251</a>.</p>
+<p class="content">65 The print server protocol used to print over a TCP/IP network, as defined in <a href="http://www.ietf.org/rfc/rfc1179.txt">RFC 1179</a>. The default TCP port number for LPR connections is port 515.</p>
+<p class="content">66 The protocol used to read network news on TCP/IP Internets, as defined in <a href="http://www.ietf.org/rfc/rfc0977.txt">RFC 977</a>.  The default TCP port number for NNTP connections is port 119.</p>
+<p class="content">67 <b>Nagios NRPE over SSL/TLS</b></p>
+<p class="content">68 <code>  command[check_swap]=/usr/local/nagios/libexec/check_swap -w 20% -c 10%</code></p>
+<p class="content">69 For information about installing an NRPE daemon, see the <a href="http://nagios.sourceforge.net/docs/nrpe/NRPE.pdf">NRPE Documentation</a> (at http://nagios.sourceforge.net/docs/nrpe/NRPE.pdf), especially the section on Remote Host Configuration. Nagios and the Nagios logo are registered trademarks of Ethan Galstad. For more information, see <a href="http://www.nagios.org.">http://www.nagios.org.</a> </p>
+<p class="content">70 This TCP probe queries a <a href="http://www.apple.com/server/macosx/">Mac OS X Server</a> installation for various details about its Apple File Sharing using the Server Admin port and protocol.</p>
+<p class="content">71 <i>Note: The implementation of this probe uses OpenSSL on MacOS X.</i></p>
+<p class="content">72 The protocol used to access email messages from a central maildrop server, as defined in <a href="http://www.ietf.org/rfc/rfc1939.txt">RFC 1939</a>.  The default TCP port number for POP3 connections is port 110.</p>
+<p class="content">73 The protocol used to control real-time streams, defined in <a href="http://www.ietf.org/rfc/rfc2326.txt">RFC 2326</a> and <a href="http://www.ietf.org/rfc/rfc1889.txt">RFC 1889</a>.  The default TCP port number for RTSP connections is port 554.</p>
+<p class="content">74 The standard protocol used to transfer electronic mail on the Internet, as defined in <a href="http://www.ietf.org/rfc/rfc0821.txt">RFC 821</a>.  The default TCP port number for SMTP connections is port 25.</p>
+<p class="content">75 This protocol transfers pager information across the Internet, as defined in <a href="http://www.ietf.org/rfc/rfc1861.txt">RFC 1861</a>.  The default TCP port number for SMTP connections is port 444.</p>
+<p class="content">76 This TCP probe opens a connection to the specified port and looks for the identification string that indicates an SSH server as specified in <a href="http://www.ietf.org/rfc/rfc4253.txt">RFC 4253</a>.</p>
+<p class="content">77 Subversion is a version control system intended as a replacement for CVS. The software is released under an Apache/BSD style open-source license. The project can be found at <a href="http://subversion.tigris.org">http://subversion.tigris.org</a>.</p>
+<p class="content">78 A description of the custom protocol used by svnserve can be found at <a href="http://svn.collab.net/repos/svn/trunk/subversion/libsvn_ra_svn/protocol">http://svn.collab.net/repos/svn/trunk/subversion/libsvn_ra_svn/protocol</a>.</p>
+<p class="content">79 The protocol used for terminal-to-terminal communication and distributed computation as described in <a href="http://www.ietf.org/rfc/rfc0854.txt">RFC 854</a>. The default TCP port number for Telnet connections is port 23.</p>
+<p class="content">80 Attempt to connect to a VNC Server. VNC uses RFB (Remote Frame Buffer) protocol for communication between clients and server.  The probe waits to receive a "RFB ###.###" string. If it arrives, the VNC server is assumed to be up and the probe simply disconnects.</p>
+<p class="content">81 The Virtual Network Computer (VNC) protocol was originally designed at AT&T Labs in Cambridge. There are many implementations: the developers now support it from the RealVNC site at <a href="http://www.realvnc.com/">http://www.realvnc.com/</a>.</p>
+<p class="content">82 <i>For APC UPS devices that have the AP961x Network Management Card.</i></p>
+<p class="content">83 <b>A. Probed MIB(s)</b></p>
+<p class="content">84 <b>B. Displayed Values</b></p>
+<p class="content">85 <b>C. Alarms</b></p>
+<p class="content">86 <b>D. Warnings</b></p>
+<p class="content">87 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
+<p class="content">88 <i>For APC UPS devices.</i></p>
+<p class="content">89 <b>A. Probed MIB(s)</b></p>
+<p class="content">90 <b>B. Displayed Values</b></p>
+<p class="content">91 <b>C. Alarms</b></p>
+<p class="content">92 <b>D. Warnings</b></p>
+<p class="content">93 <b>E. Parameters</b></p>
+<p class="content">94 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
+<p class="content">95 <i>For BestPower UPS devices.</i></p>
+<p class="content">96 <b>A. Probed MIB(s)</b></p>
+<p class="content">97 <b>B. Displayed Values</b></p>
+<p class="content">98 <b>C. Alarms & Warnings</b></p>
+<p class="content">99 <b>D. Parameters</b></p>
+<p class="content">100 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
+<p class="content">101 <i>For Liebert UPS devices that have the OpenComms Network Management Card.</i></p>
+<p class="content">102 <b>A. Probed MIB(s)</b></p>
+<p class="content">103 <b>B. Displayed Values</b></p>
+<p class="content">104 <b>C. Alarms</b></p>
+<p class="content">105 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
+<p class="content">106 <i>For Liebert Series 300 UPS devices.</i></p>
+<p class="content">107 <b>A. Probed MIB(s)</b></p>
+<p class="content">108 <b>B. Displayed Values</b></p>
+<p class="content">109 <b>C. Alarms</b></p>
+<p class="content">110 <b>Bugs or Requests? </b><i><a href="mailto:upsbundle@dartware.com">Please contact us.</i></a><code></code></p>
+<p class="content">111 <i>For Liebert UPS devices.</i></p>
+<p class="content">112 1) Check other probes to see if one exists for your Liebert UPS device.</p>
+<p class="content">113 2) If not, select this probe.</p>
+<p class="content">114 3) Open the status window and "Copy All" (right/option click on the window)</p>
+<p class="content">115 \p\4) "Paste" into an email and <a href="mailto:upsbundle@dartware.com">send the info to us</a>.</p>
+<p class="content">116 5) We'll try to develop a probe for your device as soon as possible.</p>
+<p class="content">117 <b>A. Probed MIB(s)</b></p>
+<p class="content">118 <b>B. Displayed Values</b></p>
+<p class="content">119 <i>For standard UPS devices.</i></p>
+<p class="content">120 <b>A. Probed MIB(s)</b></p>
+<p class="content">121 <b>B. Displayed Values</b></p>
+<p class="content">122 <b>C. Alarms</b></p>
+<p class="content">123 <b>D. Parameters</b></p>
+<p class="content">124 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
+<p class="content">125 <i>For TrippLite UPS devices with an EnviroSense Unit.</i></p>
+<p class="content">126 <b>A. Probed MIB(s)</b></p>
+<p class="content">127 <b>B. Displayed Values</b></p>
+<p class="content">128 <b>C. Alarms</b></p>
+<p class="content">129 <b>Bugs or Requests? </b><i><a href="mailto:upsbundle@dartware.com">Please contact us.</i></a><code></code></p>
+<p class="content">130 This probe uses WMI to retrieve performance information about the delivery queues on a MS Exchange 2007 Mailbox Server.  Specifically, it queries the Win32_PerfFormattedData_MSExchangeIS_MSExchangeIS, Win32_PerfFormattedData_MSExchangeIS_MSExchangeISMailbox, Win32_PerfFormattedData_MSExchangeIS_MSExchangeISPublic, Win32_PerfFormattedData_MSExchangeSearchIndices_MSExchangeSearchIndices classes to collect a variety of statistics and then compares them to the criteria you set.  The default criteria for warning and critical conditions are taken from the Microsoft TechNet article <a href="http://technet.microsoft.com/en-us/library/bb201689.aspx">Monitoring Mailbox Servers</a>.</p>
+<p class="content">131 This probe monitors an <a href="http://www.alvarion.com">Alvarion</a> B-14 or B-28 base unit </p>
+<p class="content">132 <i>For Exide UPS devices.</i></p>
+<p class="content">133 <b>A. Probed MIB(s)</b></p>
+<p class="content">134 <b>B. Displayed Values</b></p>
+<p class="content">135 <b>C. Alarms</b></p>
+<p class="content">136 <b>Bugs or Requests? </b><a href="mailto:upsbundle@dartware.com">Please contact us.</a></p>
+<p class="content">137 <i>Testing of IM \${Chartable}, \${scalable10} and \${scalable2} Macros</i></p>
+<p class="content"></description></p>
