@@ -32,8 +32,6 @@ The User parameter may be a SQL Server user on the target host, or may take the 
 
 The Timeout (sec) parameter allows you to override the timeout set on the device.
 
-InterMapper invokes the sql_query.vbs VB script which must reside in the Tools sub-directory of the InterMapper Settings directory.
-
 </description> 
 
 <parameters>
